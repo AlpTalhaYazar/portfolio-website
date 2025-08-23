@@ -3,8 +3,12 @@
 import { motion } from "framer-motion";
 import { ArrowDown, Mail } from "lucide-react";
 import { socialLinks } from "@/lib/data";
+import { useTheme } from "@/components/ThemeProvider";
+import { cn } from "@/lib/utils";
 
 const Hero = () => {
+  const { effectiveTheme } = useTheme();
+
   const scrollToNextSection = () => {
     const aboutSection = document.querySelector("#about");
     if (aboutSection) {
@@ -34,7 +38,14 @@ const Hero = () => {
   };
 
   return (
-    <section className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/30">
+    <section
+      className={cn(
+        "relative min-h-screen flex items-center justify-center",
+        effectiveTheme === "matrix"
+          ? "bg-gradient-to-br from-muted/30 via-muted/30 to-muted/30"
+          : "bg-gradient-to-br from-background via-background to-muted/30"
+      )}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <div className="text-center">
           <motion.div

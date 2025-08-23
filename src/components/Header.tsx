@@ -3,8 +3,11 @@
 import { useState, useEffect } from "react";
 import { Menu, X } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
+import { useTheme } from "@/components/ThemeProvider";
+import { cn } from "@/lib/utils";
 
 const Header = () => {
+  const { effectiveTheme } = useTheme();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -35,11 +38,15 @@ const Header = () => {
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+      className={cn(
+        "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
         isScrolled
-          ? "bg-background/95 backdrop-blur-md shadow-sm border-b border-border"
+          ? [
+              "backdrop-blur-md shadow-sm border-b border-border",
+              effectiveTheme === "matrix" ? "bg-muted/30" : "bg-background/95",
+            ]
           : "bg-transparent"
-      }`}
+      )}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-4">

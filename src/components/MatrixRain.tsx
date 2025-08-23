@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { useTheme } from "./ThemeProvider";
+import StructuredData from "./StructuredData";
 
 const MatrixRain = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -26,7 +27,7 @@ const MatrixRain = () => {
     window.addEventListener("resize", resizeCanvas);
 
     // Matrix characters
-    const matrix = "ABCDEFGHIJKLMNOPQRSTUVWXYZ123456789@#$%^&*()*&^%+-/~{[|`]}";
+    const matrix = StructuredData.name;
     const matrixArray = matrix.split("");
 
     const fontSize = 10;

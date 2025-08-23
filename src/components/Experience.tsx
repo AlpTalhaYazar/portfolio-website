@@ -3,10 +3,20 @@
 import { motion } from "framer-motion";
 import { Building2, Calendar, MapPin, ChevronRight } from "lucide-react";
 import { experiences } from "@/lib/data";
+import { useTheme } from "@/components/ThemeProvider";
+import { cn } from "@/lib/utils";
 
 const Experience = () => {
+  const { effectiveTheme } = useTheme();
+
   return (
-    <section id="experience" className="py-20 bg-background">
+    <section
+      id="experience"
+      className={cn(
+        "py-20",
+        effectiveTheme === "matrix" ? "bg-muted/30" : "bg-background"
+      )}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}

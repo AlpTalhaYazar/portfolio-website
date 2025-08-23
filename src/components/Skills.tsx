@@ -2,8 +2,12 @@
 
 import { motion } from "framer-motion";
 import { skills } from "@/lib/data";
+import { useTheme } from "@/components/ThemeProvider";
+import { cn } from "@/lib/utils";
 
 const Skills = () => {
+  const { effectiveTheme } = useTheme();
+
   const skillCategories = {
     backend: { name: "Backend", color: "bg-blue-500" },
     frontend: { name: "Frontend", color: "bg-green-500" },
@@ -31,7 +35,13 @@ const Skills = () => {
   }, {} as Record<string, typeof skills>);
 
   return (
-    <section id="skills" className="py-20 bg-muted/30">
+    <section
+      id="skills"
+      className={cn(
+        "py-20",
+        effectiveTheme === "matrix" ? "bg-muted/30" : "bg-muted/10"
+      )}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}

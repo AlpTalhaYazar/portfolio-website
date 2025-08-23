@@ -9,8 +9,12 @@ import {
   Clock,
 } from "lucide-react";
 import { projects } from "@/lib/data";
+import { useTheme } from "@/components/ThemeProvider";
+import { cn } from "@/lib/utils";
 
 const Projects = () => {
+  const { effectiveTheme } = useTheme();
+
   const getStatusIcon = (status: string) => {
     return status === "active" ? (
       <Clock size={16} className="text-blue-500" />
@@ -30,7 +34,13 @@ const Projects = () => {
   };
 
   return (
-    <section id="projects" className="py-20 bg-background">
+    <section
+      id="projects"
+      className={cn(
+        "py-20",
+        effectiveTheme === "matrix" ? "bg-muted/30" : "bg-background"
+      )}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}

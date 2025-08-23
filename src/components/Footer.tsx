@@ -2,8 +2,12 @@
 
 import { Mail, Heart } from "lucide-react";
 import { socialLinks } from "@/lib/data";
+import { useTheme } from "@/components/ThemeProvider";
+import { cn } from "@/lib/utils";
 
 const Footer = () => {
+  const { effectiveTheme } = useTheme();
+
   const getIcon = (iconName: string) => {
     switch (iconName) {
       case "Github":
@@ -30,7 +34,12 @@ const Footer = () => {
   };
 
   return (
-    <footer className="bg-background border-t border-border">
+    <footer
+      className={cn(
+        "border-t border-border",
+        effectiveTheme === "matrix" ? "bg-muted/30" : "bg-background"
+      )}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid md:grid-cols-3 gap-8">
           {/* Brand */}
