@@ -241,7 +241,6 @@ export const skills: Skill[] = [
   { name: "RESTful APIs", category: "backend", proficiency: "expert" },
   { name: "Microservices", category: "backend", proficiency: "proficient" },
   { name: "RabbitMQ", category: "backend", proficiency: "proficient" },
-  { name: "MassTransit", category: "backend", proficiency: "proficient" },
 
   // Frontend
   { name: "TypeScript", category: "frontend", proficiency: "proficient" },
@@ -260,10 +259,8 @@ export const skills: Skill[] = [
 
   // Tools & DevOps
   { name: "Docker", category: "tools", proficiency: "proficient" },
-  { name: "Kubernetes", category: "tools", proficiency: "intermediate" },
   { name: "Git", category: "tools", proficiency: "proficient" },
   { name: "Linux", category: "tools", proficiency: "proficient" },
-  { name: "Helm", category: "tools", proficiency: "intermediate" },
 ];
 
 export const socialLinks: SocialLink[] = [
