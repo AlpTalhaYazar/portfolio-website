@@ -58,6 +58,25 @@
   --ring: #3b82f6;
 }
 
+/* Matrix theme - inspired by The Matrix movie */
+.matrix {
+  --background: #000000;
+  --foreground: #00ff00;
+  --card: #001100;
+  --card-foreground: #00ff00;
+  --primary: #00ff00;
+  --primary-foreground: #000000;
+  --secondary: #003300;
+  --secondary-foreground: #00cc00;
+  --muted: #002200;
+  --muted-foreground: #008800;
+  --accent: #004400;
+  --accent-foreground: #00ff00;
+  --border: #006600;
+  --input: #003300;
+  --ring: #00ff00;
+}
+
 /* Custom theme variables for Tailwind CSS */
 @theme inline {
   --color-background: var(--background);
@@ -92,4 +111,33 @@ html {
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+}
+
+/* Matrix theme gradient text */
+.matrix .gradient-text {
+  background: linear-gradient(135deg, #00ff00 0%, #00cc00 50%, #008800 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Matrix theme specific styles */
+.matrix {
+  /* Add subtle glow effect to text in matrix mode */
+}
+
+.matrix h1,
+.matrix h2,
+.matrix h3 {
+  text-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+}
+
+.matrix .bg-primary {
+  background-color: #00ff00 !important;
+  box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
+}
+
+.matrix .border-primary {
+  border-color: #00ff00 !important;
+  box-shadow: 0 0 10px rgba(0, 255, 0, 0.2);
 }
