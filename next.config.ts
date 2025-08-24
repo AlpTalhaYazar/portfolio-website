@@ -6,9 +6,6 @@ const nextConfig: NextConfig = {
   trailingSlash: true,
   basePath: "/portfolio-website",
   assetPrefix: "/portfolio-website/",
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   experimental: {
     optimizePackageImports: ["lucide-react", "framer-motion"],
   },

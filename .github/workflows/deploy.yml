@@ -30,11 +30,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build with Next.js (skip linting)
+      - name: Build with Next.js
         run: npm run build
-        env:
-          ESLINT_NO_DEV_ERRORS: true
-          CI: false
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

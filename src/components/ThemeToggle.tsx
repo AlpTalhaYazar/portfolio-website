@@ -6,7 +6,7 @@ import { Sun, Moon, Monitor, Terminal, Zap } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
 
 const ThemeToggle = () => {
-  const { theme, setTheme, effectiveTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 

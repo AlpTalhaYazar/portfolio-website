@@ -20,6 +20,21 @@ const eslintConfig = [
       "next-env.d.ts",
     ],
   },
+  {
+    rules: {
+      // Disable apostrophe escaping rule - it's overly strict for modern React
+      "react/no-unescaped-entities": "off",
+      // Allow unused vars that start with underscore
+      "@typescript-eslint/no-unused-vars": ["error", { 
+        "argsIgnorePattern": "^_",
+        "varsIgnorePattern": "^_"
+      }],
+      // Allow any in utility functions where type flexibility is needed
+      "@typescript-eslint/no-explicit-any": ["error", { 
+        "ignoreRestArgs": true 
+      }],
+    },
+  },
 ];
 
 export default eslintConfig;
