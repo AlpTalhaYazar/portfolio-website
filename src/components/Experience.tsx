@@ -5,6 +5,7 @@ import { Building2, Calendar, MapPin, ChevronRight } from "lucide-react";
 import { experiences } from "@/lib/data";
 import { useTheme } from "@/components/ThemeProvider";
 import { cn } from "@/lib/utils";
+import HologramCard from "@/components/HologramCard";
 
 const Experience = () => {
   const { effectiveTheme } = useTheme();
@@ -14,7 +15,11 @@ const Experience = () => {
       id="experience"
       className={cn(
         "py-20",
-        effectiveTheme === "matrix" ? "bg-muted/30" : "bg-background"
+        effectiveTheme === "matrix"
+          ? "bg-muted/30"
+          : effectiveTheme === "starwars"
+          ? "bg-transparent"
+          : "bg-background"
       )}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -62,7 +67,12 @@ const Experience = () => {
                   index % 2 === 0 ? "md:pr-12" : "md:pl-12"
                 }`}
               >
-                <div className="bg-card border border-border rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow duration-300">
+                <HologramCard
+                  variant={
+                    experience.type === "current" ? "glowing" : "bordered"
+                  }
+                  animate={false}
+                >
                   {/* Header */}
                   <div className="mb-4">
                     <div className="flex items-center gap-2 mb-2">
@@ -133,7 +143,7 @@ const Experience = () => {
                       ))}
                     </div>
                   </div>
-                </div>
+                </HologramCard>
               </div>
             </motion.div>
           ))}

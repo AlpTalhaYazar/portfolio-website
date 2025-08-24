@@ -2,12 +2,12 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 
-type Theme = "light" | "dark" | "matrix" | "system";
+type Theme = "light" | "dark" | "matrix" | "starwars" | "system";
 
 type ThemeProviderContextType = {
   theme: Theme;
   setTheme: (theme: Theme) => void;
-  effectiveTheme: "light" | "dark" | "matrix";
+  effectiveTheme: "light" | "dark" | "matrix" | "starwars";
 };
 
 const ThemeProviderContext = createContext<
@@ -33,7 +33,7 @@ export function ThemeProvider({
 }: ThemeProviderProps) {
   const [theme, setTheme] = useState<Theme>(defaultTheme);
   const [effectiveTheme, setEffectiveTheme] = useState<
-    "light" | "dark" | "matrix"
+    "light" | "dark" | "matrix" | "starwars"
   >("light");
 
   useEffect(() => {
@@ -55,6 +55,8 @@ export function ThemeProvider({
         setEffectiveTheme(systemTheme);
       } else if (theme === "matrix") {
         setEffectiveTheme("matrix");
+      } else if (theme === "starwars") {
+        setEffectiveTheme("starwars");
       } else {
         setEffectiveTheme(theme);
       }
@@ -74,7 +76,7 @@ export function ThemeProvider({
   useEffect(() => {
     // Apply theme to document
     const root = document.documentElement;
-    root.classList.remove("light", "dark", "matrix");
+    root.classList.remove("light", "dark", "matrix", "starwars");
     root.classList.add(effectiveTheme);
   }, [effectiveTheme]);
 

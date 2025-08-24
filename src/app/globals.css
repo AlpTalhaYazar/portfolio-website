@@ -121,6 +121,35 @@ html {
   -webkit-text-fill-color: transparent;
 }
 
+/* Star Wars theme - A long time ago in a galaxy far, far away... */
+.starwars {
+  --background: #000000;
+  --foreground: #ffffff;
+  --card: #0a0a0f;
+  --card-foreground: #ffffff;
+  --primary: #4FC3F7;
+  --primary-foreground: #000000;
+  --secondary: #263238;
+  --secondary-foreground: #ffffff;
+  --muted: #37474F;
+  --muted-foreground: #B0BEC5;
+  --accent: #00BCD4;
+  --accent-foreground: #000000;
+  --border: #455A64;
+  --input: #37474F;
+  --ring: #4FC3F7;
+  
+  /* Star Wars specific colors */
+  --lightsaber-blue: #4FC3F7;
+  --lightsaber-green: #66BB6A;
+  --lightsaber-red: #F44336;
+  --lightsaber-purple: #9C27B0;
+  --empire-gray: #263238;
+  --hologram-blue: #00BCD4;
+  --golden-amber: #FFC107;
+  --death-star-gray: #455A64;
+}
+
 /* Matrix theme specific styles */
 .matrix {
   /* Add subtle glow effect to text in matrix mode */
@@ -140,4 +169,82 @@ html {
 .matrix .border-primary {
   border-color: #00ff00 !important;
   box-shadow: 0 0 10px rgba(0, 255, 0, 0.2);
+}
+
+/* Star Wars theme specific styles */
+.starwars {
+  background: radial-gradient(ellipse at center, #001122 0%, #000000 70%);
+  color: #ffffff;
+}
+
+.starwars h1,
+.starwars h2,
+.starwars h3 {
+  text-shadow: 0 0 10px rgba(79, 195, 247, 0.3);
+}
+
+.starwars .bg-primary {
+  background-color: var(--lightsaber-blue) !important;
+  box-shadow: 0 0 20px rgba(79, 195, 247, 0.4), 0 0 40px rgba(79, 195, 247, 0.2);
+  border: 1px solid rgba(79, 195, 247, 0.6);
+}
+
+.starwars .border-primary {
+  border-color: var(--lightsaber-blue) !important;
+  box-shadow: 0 0 10px rgba(79, 195, 247, 0.3);
+}
+
+/* Lightsaber glow effects */
+.starwars .lightsaber-glow {
+  box-shadow: 
+    0 0 5px currentColor,
+    0 0 10px currentColor,
+    0 0 15px currentColor,
+    0 0 20px currentColor;
+}
+
+.starwars .hologram-effect {
+  position: relative;
+  background: linear-gradient(
+    45deg,
+    transparent 30%,
+    rgba(0, 188, 212, 0.1) 50%,
+    transparent 70%
+  );
+  border: 1px solid rgba(0, 188, 212, 0.3);
+  box-shadow: 
+    inset 0 0 20px rgba(0, 188, 212, 0.1),
+    0 0 20px rgba(0, 188, 212, 0.1);
+}
+
+.starwars .space-background {
+  background: 
+    radial-gradient(2px 2px at 20px 30px, #ffffff, transparent),
+    radial-gradient(2px 2px at 40px 70px, rgba(255, 255, 255, 0.8), transparent),
+    radial-gradient(1px 1px at 90px 40px, #ffffff, transparent),
+    radial-gradient(1px 1px at 130px 80px, rgba(255, 255, 255, 0.6), transparent),
+    radial-gradient(2px 2px at 160px 30px, #ffffff, transparent),
+    linear-gradient(135deg, #001122 0%, #000000 50%, #000011 100%);
+  background-size: 200px 100px;
+  animation: starfield 20s linear infinite;
+}
+
+@keyframes starfield {
+  from { background-position: 0 0; }
+  to { background-position: -200px -100px; }
+}
+
+/* Star Wars gradient text */
+.starwars .gradient-text {
+  background: linear-gradient(135deg, #4FC3F7 0%, #66BB6A 25%, #FFC107 50%, #F44336 75%, #9C27B0 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-size: 200% 200%;
+  animation: rainbow-lightsaber 3s ease-in-out infinite;
+}
+
+@keyframes rainbow-lightsaber {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
 }

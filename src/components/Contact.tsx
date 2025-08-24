@@ -7,6 +7,9 @@ import { z } from "zod";
 import { Mail, MapPin, Phone, Send } from "lucide-react";
 import { socialLinks } from "@/lib/data";
 import { useState } from "react";
+import LightsaberButton from "@/components/LightsaberButton";
+import HologramCard from "@/components/HologramCard";
+import { useTheme } from "@/components/ThemeProvider";
 
 const contactFormSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -19,6 +22,7 @@ type ContactFormData = z.infer<typeof contactFormSchema>;
 
 const Contact = () => {
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const { effectiveTheme } = useTheme();
 
   const {
     register,
@@ -83,7 +87,12 @@ const Contact = () => {
   ];
 
   return (
-    <section id="contact" className="py-20 bg-muted/30">
+    <section
+      id="contact"
+      className={`py-20 ${
+        effectiveTheme === "starwars" ? "bg-transparent" : "bg-muted/30"
+      }`}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -188,7 +197,7 @@ const Contact = () => {
             transition={{ duration: 0.8 }}
             viewport={{ once: true }}
           >
-            <div className="bg-background rounded-lg p-8 shadow-sm border border-border">
+            <HologramCard variant="bordered" animate={false}>
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-6">
                   <div>
@@ -276,14 +285,15 @@ const Contact = () => {
                   )}
                 </div>
 
-                <button
-                  type="submit"
+                <LightsaberButton
+                  variant="blue"
                   disabled={isSubmitting}
-                  className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-primary text-primary-foreground font-semibold hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+                  className="w-full"
+                  type="submit"
                 >
                   {isSubmitting ? (
                     <>
-                      <div className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin"></div>
+                      <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
                       Sending...
                     </>
                   ) : (
@@ -292,7 +302,7 @@ const Contact = () => {
                       Send Message
                     </>
                   )}
-                </button>
+                </LightsaberButton>
 
                 {isSubmitted && (
                   <motion.div
@@ -304,7 +314,7 @@ const Contact = () => {
                   </motion.div>
                 )}
               </form>
-            </div>
+            </HologramCard>
           </motion.div>
         </div>
       </div>

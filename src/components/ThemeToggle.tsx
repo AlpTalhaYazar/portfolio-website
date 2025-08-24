@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sun, Moon, Monitor, Terminal } from "lucide-react";
+import { Sun, Moon, Monitor, Terminal, Zap } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
 
 const ThemeToggle = () => {
@@ -24,6 +24,7 @@ const ThemeToggle = () => {
     { id: "light", label: "Light", icon: Sun },
     { id: "dark", label: "Dark", icon: Moon },
     { id: "matrix", label: "Matrix", icon: Terminal },
+    { id: "starwars", label: "Star Wars", icon: Zap },
     { id: "system", label: "System", icon: Monitor },
   ] as const;
 

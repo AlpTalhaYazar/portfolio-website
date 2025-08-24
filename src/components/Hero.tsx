@@ -5,6 +5,7 @@ import { ArrowDown, Mail } from "lucide-react";
 import { socialLinks } from "@/lib/data";
 import { useTheme } from "@/components/ThemeProvider";
 import { cn } from "@/lib/utils";
+import LightsaberButton from "@/components/LightsaberButton";
 
 const Hero = () => {
   const { effectiveTheme } = useTheme();
@@ -43,6 +44,8 @@ const Hero = () => {
         "relative min-h-screen flex items-center justify-center",
         effectiveTheme === "matrix"
           ? "bg-gradient-to-br from-muted/30 via-muted/30 to-muted/30"
+          : effectiveTheme === "starwars"
+          ? "bg-transparent"
           : "bg-gradient-to-br from-background via-background to-muted/30"
       )}
     >
@@ -112,32 +115,33 @@ const Hero = () => {
             transition={{ duration: 0.8, delay: 0.8 }}
             className="flex flex-col sm:flex-row gap-4 justify-center"
           >
-            <a
-              href="#contact"
-              onClick={(e) => {
-                e.preventDefault();
+            <LightsaberButton
+              variant="blue"
+              onClick={() => {
                 const contactSection = document.querySelector("#contact");
                 if (contactSection) {
                   contactSection.scrollIntoView({ behavior: "smooth" });
                 }
               }}
-              className="inline-flex items-center justify-center px-8 py-3 rounded-lg bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-colors duration-200"
             >
               Get In Touch
-            </a>
-            <a
-              href="#experience"
-              onClick={(e) => {
-                e.preventDefault();
+            </LightsaberButton>
+            <LightsaberButton
+              variant="green"
+              onClick={() => {
                 const experienceSection = document.querySelector("#experience");
                 if (experienceSection) {
                   experienceSection.scrollIntoView({ behavior: "smooth" });
                 }
               }}
-              className="inline-flex items-center justify-center px-8 py-3 rounded-lg border border-border bg-background hover:bg-secondary transition-colors duration-200"
+              className={
+                effectiveTheme !== "starwars"
+                  ? "border border-border bg-background hover:bg-secondary text-foreground"
+                  : ""
+              }
             >
               View My Work
-            </a>
+            </LightsaberButton>
           </motion.div>
         </div>
 

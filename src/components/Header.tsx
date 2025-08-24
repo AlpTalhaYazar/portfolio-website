@@ -43,8 +43,14 @@ const Header = () => {
         isScrolled
           ? [
               "backdrop-blur-md shadow-sm border-b border-border",
-              effectiveTheme === "matrix" ? "bg-muted/30" : "bg-background/95",
+              effectiveTheme === "matrix"
+                ? "bg-muted/30"
+                : effectiveTheme === "starwars"
+                ? "bg-[#263238]/20 border-[#00BCD4]/20"
+                : "bg-background/95",
             ]
+          : effectiveTheme === "starwars"
+          ? "bg-transparent"
           : "bg-transparent"
       )}
     >

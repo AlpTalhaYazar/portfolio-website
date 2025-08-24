@@ -8,11 +8,13 @@ import Contact from "@/components/Contact";
 import Footer from "@/components/Footer";
 import ScrollToTop from "@/components/ScrollToTop";
 import MatrixRain from "@/components/MatrixRain";
+import StarField from "@/components/StarField";
 
 export default function Home() {
   return (
     <div className="min-h-screen relative">
       <MatrixRain />
+      <StarField />
       <div className="relative z-10">
         <Header />
         <main>

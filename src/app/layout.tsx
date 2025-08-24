@@ -91,6 +91,8 @@ export default function RootLayout({
                   document.documentElement.classList.add('dark');
                 } else if (theme === 'matrix') {
                   document.documentElement.classList.add('matrix');
+                } else if (theme === 'starwars') {
+                  document.documentElement.classList.add('starwars');
                 } else {
                   document.documentElement.classList.add('light');
                 }

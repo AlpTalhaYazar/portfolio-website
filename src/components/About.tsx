@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { Code, Database, Server, Users } from "lucide-react";
+import HologramCard from "@/components/HologramCard";
 
 const About = () => {
   const highlights = [
@@ -127,26 +128,30 @@ const About = () => {
             className="grid grid-cols-1 sm:grid-cols-2 gap-6"
           >
             {highlights.map((highlight, index) => (
-              <motion.div
+              <HologramCard
                 key={highlight.title}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
-                viewport={{ once: true }}
-                className="bg-background rounded-lg p-6 shadow-sm border border-border hover:shadow-md transition-shadow duration-300"
+                variant="bordered"
+                className="p-6"
               >
-                <div className="flex items-center mb-3">
-                  <div className="p-2 bg-primary/10 text-primary rounded-lg">
-                    {highlight.icon}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: index * 0.1 }}
+                  viewport={{ once: true }}
+                >
+                  <div className="flex items-center mb-3">
+                    <div className="p-2 bg-primary/10 text-primary rounded-lg">
+                      {highlight.icon}
+                    </div>
                   </div>
-                </div>
-                <h4 className="font-semibold text-foreground mb-2">
-                  {highlight.title}
-                </h4>
-                <p className="text-sm text-muted-foreground">
-                  {highlight.description}
-                </p>
-              </motion.div>
+                  <h4 className="font-semibold text-foreground mb-2">
+                    {highlight.title}
+                  </h4>
+                  <p className="text-sm text-muted-foreground">
+                    {highlight.description}
+                  </p>
+                </motion.div>
+              </HologramCard>
             ))}
           </motion.div>
         </div>
