@@ -22,8 +22,6 @@ const ForceGlow = ({
   const { effectiveTheme } = useTheme();
 
   const getGlowClasses = () => {
-    if (effectiveTheme !== "starwars") return "";
-
     const colors = {
       blue: "rgba(79, 195, 247, 0.8)",
       green: "rgba(102, 187, 106, 0.8)",
@@ -37,6 +35,13 @@ const ForceGlow = ({
       medium: "0 0 20px",
       strong: "0 0 30px",
     };
+
+    if (effectiveTheme !== "starwars") {
+      return {
+        textShadow: "none",
+        color: "inherit",
+      };
+    }
 
     return {
       textShadow: `${intensityMap[intensity]} ${colors[color]}, ${intensityMap[intensity]} ${colors[color]}`,
