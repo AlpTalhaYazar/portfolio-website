@@ -4,11 +4,13 @@ import { motion } from "framer-motion";
 import { Building2, Calendar, MapPin, ChevronRight } from "lucide-react";
 import { experiences } from "@/lib/data";
 import { useTheme } from "@/components/theme/ThemeProvider";
+import { useTranslation } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import HologramCard from "@/components/ui/HologramCard";
 
 const Experience = () => {
   const { effectiveTheme } = useTheme();
+  const { t } = useTranslation();
 
   return (
     <section
@@ -31,11 +33,10 @@ const Experience = () => {
           className="text-center mb-16"
         >
           <h2 className="text-3xl md:text-4xl font-bold mb-4">
-            Professional <span className="gradient-text">Experience</span>
+            {t.experience.title}
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            My journey through different companies and the evolution of my
-            technical expertise
+            {t.experience.subtitle}
           </p>
         </motion.div>
 
@@ -82,7 +83,7 @@ const Experience = () => {
                       </h3>
                       {experience.type === "current" && (
                         <span className="px-2 py-1 text-xs bg-primary/10 text-primary rounded-full font-medium">
-                          Current
+                          {t.experience.current}
                         </span>
                       )}
                     </div>
@@ -109,7 +110,7 @@ const Experience = () => {
                   {/* Key Achievements */}
                   <div className="mb-4">
                     <h5 className="font-semibold text-foreground mb-2">
-                      Key Achievements:
+                      {t.experience.achievements}:
                     </h5>
                     <ul className="space-y-2">
                       {experience.achievements.map((achievement) => (
@@ -130,7 +131,7 @@ const Experience = () => {
                   {/* Technologies */}
                   <div>
                     <h5 className="font-semibold text-foreground mb-2">
-                      Technologies Used:
+                      {t.experience.technologies}:
                     </h5>
                     <div className="flex flex-wrap gap-2">
                       {experience.technologies.map((tech) => (

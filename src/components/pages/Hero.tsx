@@ -4,11 +4,13 @@ import { motion } from "framer-motion";
 import { ArrowDown, Mail } from "lucide-react";
 import { socialLinks } from "@/lib/data";
 import { useTheme } from "@/components/theme/ThemeProvider";
+import { useTranslation } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import LightsaberButton from "@/components/ui/LightsaberButton";
 
 const Hero = () => {
   const { effectiveTheme } = useTheme();
+  const { t } = useTranslation();
 
   const scrollToNextSection = () => {
     const aboutSection = document.querySelector("#about");
@@ -57,8 +59,8 @@ const Hero = () => {
             transition={{ duration: 0.8 }}
           >
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6">
-              <span className="text-foreground">Hi, I'm </span>
-              <span className="gradient-text">Alp Talha</span>
+              <span className="text-foreground">{t.hero.greeting} </span>
+              <span className="gradient-text">{t.hero.name}</span>
             </h1>
           </motion.div>
 
@@ -68,7 +70,7 @@ const Hero = () => {
             transition={{ duration: 0.8, delay: 0.2 }}
           >
             <h2 className="text-xl md:text-2xl lg:text-3xl text-muted-foreground mb-8">
-              Backend Developer & Full Stack Engineer
+              {t.hero.title}
             </h2>
           </motion.div>
 
@@ -78,14 +80,7 @@ const Hero = () => {
             transition={{ duration: 0.8, delay: 0.4 }}
           >
             <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto mb-12 leading-relaxed">
-              Passionate about building scalable{" "}
-              <span className="text-primary font-semibold">.NET</span>{" "}
-              applications, microservices architecture, and modern web
-              technologies. Experienced in{" "}
-              <span className="text-primary font-semibold">
-                B2B enterprise solutions
-              </span>{" "}
-              with a focus on performance and reliability.
+              {t.hero.description}
             </p>
           </motion.div>
 
@@ -124,7 +119,7 @@ const Hero = () => {
                 }
               }}
             >
-              Get In Touch
+              {t.hero.cta.contact}
             </LightsaberButton>
             <LightsaberButton
               variant="green"
@@ -140,7 +135,7 @@ const Hero = () => {
                   : ""
               }
             >
-              View My Work
+              {t.hero.cta.viewWork}
             </LightsaberButton>
           </motion.div>
         </div>
@@ -155,9 +150,9 @@ const Hero = () => {
           <button
             onClick={scrollToNextSection}
             className="flex flex-col items-center text-muted-foreground hover:text-foreground transition-colors duration-200"
-            aria-label="Scroll to next section"
+            aria-label={t.a11y.scrollToTop}
           >
-            <span className="text-sm mb-2">Scroll down</span>
+            <span className="text-sm mb-2">{t.common.next}</span>
             <motion.div
               animate={{ y: [0, 8, 0] }}
               transition={{ repeat: Infinity, duration: 2 }}

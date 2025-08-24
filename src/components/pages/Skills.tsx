@@ -3,27 +3,41 @@
 import { motion } from "framer-motion";
 import { skills } from "@/lib/data";
 import { useTheme } from "@/components/theme/ThemeProvider";
+import { useTranslation } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 const Skills = () => {
   const { effectiveTheme } = useTheme();
+  const { t } = useTranslation();
 
   const skillCategories = {
-    backend: { name: "Backend", color: "bg-blue-500" },
-    frontend: { name: "Frontend", color: "bg-green-500" },
-    database: { name: "Database", color: "bg-purple-500" },
-    tools: { name: "Tools & DevOps", color: "bg-orange-500" },
+    backend: { name: t.skills.categories.backend, color: "bg-blue-500" },
+    frontend: { name: t.skills.categories.frontend, color: "bg-green-500" },
+    database: { name: t.skills.categories.database, color: "bg-purple-500" },
+    tools: { name: t.skills.categories.tools, color: "bg-orange-500" },
   };
 
   const proficiencyLevels = {
-    expert: { name: "Expert", percentage: 90, color: "bg-green-500" },
-    proficient: { name: "Proficient", percentage: 75, color: "bg-blue-500" },
+    expert: {
+      name: t.skills.proficiency.expert,
+      percentage: 90,
+      color: "bg-green-500",
+    },
+    proficient: {
+      name: t.skills.proficiency.proficient,
+      percentage: 75,
+      color: "bg-blue-500",
+    },
     intermediate: {
-      name: "Intermediate",
+      name: t.skills.proficiency.intermediate,
       percentage: 60,
       color: "bg-yellow-500",
     },
-    basic: { name: "Basic", percentage: 40, color: "bg-gray-500" },
+    basic: {
+      name: t.skills.proficiency.basic,
+      percentage: 40,
+      color: "bg-gray-500",
+    },
   };
 
   const groupedSkills = skills.reduce((acc, skill) => {
@@ -51,11 +65,10 @@ const Skills = () => {
           className="text-center mb-16"
         >
           <h2 className="text-3xl md:text-4xl font-bold mb-4">
-            Technical <span className="gradient-text">Skills</span>
+            {t.skills.title}
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            A comprehensive overview of my technical expertise and proficiency
-            levels
+            {t.skills.subtitle}
           </p>
         </motion.div>
 

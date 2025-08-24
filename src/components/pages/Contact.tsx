@@ -7,22 +7,24 @@ import { z } from "zod";
 import { Mail, MapPin, Phone, Send } from "lucide-react";
 import { socialLinks } from "@/lib/data";
 import { useState } from "react";
+import { useTranslation } from "@/lib/i18n";
 import LightsaberButton from "@/components/ui/LightsaberButton";
 import HologramCard from "@/components/ui/HologramCard";
 import { useTheme } from "@/components/theme/ThemeProvider";
 
-const contactFormSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
-  email: z.string().email("Please enter a valid email address"),
-  subject: z.string().min(5, "Subject must be at least 5 characters"),
-  message: z.string().min(10, "Message must be at least 10 characters"),
-});
-
-type ContactFormData = z.infer<typeof contactFormSchema>;
-
 const Contact = () => {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const { effectiveTheme } = useTheme();
+  const { t } = useTranslation();
+
+  const contactFormSchema = z.object({
+    name: z.string().min(2, t.contact.validation.nameRequired),
+    email: z.string().email(t.contact.validation.emailInvalid),
+    subject: z.string().min(5, t.contact.validation.subjectRequired),
+    message: z.string().min(10, t.contact.validation.messageMinLength),
+  });
+
+  type ContactFormData = z.infer<typeof contactFormSchema>;
 
   const {
     register,
@@ -68,19 +70,19 @@ const Contact = () => {
   const contactInfo = [
     {
       icon: <Mail size={20} />,
-      title: "Email",
+      title: t.contact.contactInfo.email,
       content: "alptalhayazar@gmail.com",
       href: "mailto:alptalhayazar@gmail.com",
     },
     {
       icon: <MapPin size={20} />,
-      title: "Location",
+      title: t.contact.contactInfo.location,
       content: "Turkey",
       href: null,
     },
     {
       icon: <Phone size={20} />,
-      title: "Phone",
+      title: t.contact.contactInfo.phone,
       content: "+90 555 067 35 96",
       href: "tel:+905550673596",
     },
@@ -102,11 +104,10 @@ const Contact = () => {
           className="text-center mb-16"
         >
           <h2 className="text-3xl md:text-4xl font-bold mb-4">
-            Get In <span className="gradient-text">Touch</span>
+            {t.contact.title}
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Ready to discuss your next project or opportunity? I'd love to hear
-            from you.
+            {t.contact.description}
           </p>
         </motion.div>
 
@@ -121,14 +122,10 @@ const Contact = () => {
             <div className="space-y-8">
               <div>
                 <h3 className="text-2xl font-bold text-foreground mb-6">
-                  Let's Start a Conversation
+                  {t.contact.conversationTitle}
                 </h3>
                 <p className="text-muted-foreground mb-8 leading-relaxed">
-                  I'm always interested in new opportunities, whether it's a
-                  challenging backend project, a full-stack application, or
-                  consulting on enterprise architecture. Feel free to reach out
-                  if you'd like to discuss how I can help bring your ideas to
-                  life.
+                  {t.contact.conversationDescription}
                 </p>
               </div>
 
@@ -168,7 +165,7 @@ const Contact = () => {
               {/* Social Links */}
               <div>
                 <h4 className="font-semibold text-foreground mb-4">
-                  Connect with me
+                  {t.contact.connectTitle}
                 </h4>
                 <div className="flex gap-4">
                   {socialLinks.map((link) => (
@@ -205,14 +202,14 @@ const Contact = () => {
                       htmlFor="name"
                       className="block text-sm font-medium text-foreground mb-2"
                     >
-                      Name *
+                      {t.contact.form.name} *
                     </label>
                     <input
                       {...register("name")}
                       type="text"
                       id="name"
                       className="w-full px-4 py-3 rounded-lg border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-colors duration-200"
-                      placeholder="Your full name"
+                      placeholder={t.contact.form.placeholders.name}
                     />
                     {errors.name && (
                       <p className="mt-1 text-sm text-red-500">
@@ -226,14 +223,14 @@ const Contact = () => {
                       htmlFor="email"
                       className="block text-sm font-medium text-foreground mb-2"
                     >
-                      Email *
+                      {t.contact.form.email} *
                     </label>
                     <input
                       {...register("email")}
                       type="email"
                       id="email"
                       className="w-full px-4 py-3 rounded-lg border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-colors duration-200"
-                      placeholder="your.email@example.com"
+                      placeholder={t.contact.form.placeholders.email}
                     />
                     {errors.email && (
                       <p className="mt-1 text-sm text-red-500">
@@ -248,14 +245,14 @@ const Contact = () => {
                     htmlFor="subject"
                     className="block text-sm font-medium text-foreground mb-2"
                   >
-                    Subject *
+                    {t.contact.form.subject} *
                   </label>
                   <input
                     {...register("subject")}
                     type="text"
                     id="subject"
                     className="w-full px-4 py-3 rounded-lg border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-colors duration-200"
-                    placeholder="What's this about?"
+                    placeholder={t.contact.form.placeholders.subject}
                   />
                   {errors.subject && (
                     <p className="mt-1 text-sm text-red-500">
@@ -269,14 +266,14 @@ const Contact = () => {
                     htmlFor="message"
                     className="block text-sm font-medium text-foreground mb-2"
                   >
-                    Message *
+                    {t.contact.form.message} *
                   </label>
                   <textarea
                     {...register("message")}
                     id="message"
                     rows={6}
                     className="w-full px-4 py-3 rounded-lg border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-colors duration-200 resize-vertical"
-                    placeholder="Tell me about your project or how I can help..."
+                    placeholder={t.contact.form.placeholders.message}
                   />
                   {errors.message && (
                     <p className="mt-1 text-sm text-red-500">
@@ -294,12 +291,12 @@ const Contact = () => {
                   {isSubmitting ? (
                     <>
                       <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-                      Sending...
+                      {t.contact.form.sending}
                     </>
                   ) : (
                     <>
                       <Send size={18} />
-                      Send Message
+                      {t.contact.form.send}
                     </>
                   )}
                 </LightsaberButton>
@@ -310,7 +307,7 @@ const Contact = () => {
                     animate={{ opacity: 1, y: 0 }}
                     className="p-4 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm"
                   >
-                    ✅ Thank you for your message! I'll get back to you soon.
+                    ✅ {t.contact.success}
                   </motion.div>
                 )}
               </form>

@@ -10,12 +10,14 @@ import {
 } from "lucide-react";
 import { projects } from "@/lib/data";
 import { useTheme } from "@/components/theme/ThemeProvider";
+import { useTranslation } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import HologramCard from "@/components/ui/HologramCard";
 import LightsaberButton from "@/components/ui/LightsaberButton";
 
 const Projects = () => {
   const { effectiveTheme } = useTheme();
+  const { t } = useTranslation();
 
   const getStatusIcon = (status: string) => {
     return status === "active" ? (
@@ -26,7 +28,9 @@ const Projects = () => {
   };
 
   const getStatusText = (status: string) => {
-    return status === "active" ? "Active Development" : "Completed";
+    return status === "active"
+      ? t.projects.status.active
+      : t.projects.status.completed;
   };
 
   const getStatusColor = (status: string) => {
@@ -56,11 +60,10 @@ const Projects = () => {
           className="text-center mb-16"
         >
           <h2 className="text-3xl md:text-4xl font-bold mb-4">
-            Featured <span className="gradient-text">Projects</span>
+            {t.projects.title}
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Key projects that showcase my expertise in building enterprise-level
-            applications
+            {t.projects.subtitle}
           </p>
         </motion.div>
 
@@ -114,7 +117,7 @@ const Projects = () => {
                   {/* Key Features */}
                   <div className="mb-6">
                     <h4 className="font-semibold text-foreground mb-3">
-                      Key Features:
+                      {t.projects.features}:
                     </h4>
                     <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {project.features.map((feature) => (
@@ -135,7 +138,7 @@ const Projects = () => {
                   {/* Technologies */}
                   <div>
                     <h4 className="font-semibold text-foreground mb-3">
-                      Technologies:
+                      {t.projects.technologies}:
                     </h4>
                     <div className="flex flex-wrap gap-2">
                       {project.technologies.map((tech) => (
@@ -155,7 +158,13 @@ const Projects = () => {
                   <div className="border-t border-border pt-4">
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-muted-foreground">
-                        Enterprise {project.type} Application
+                        Enterprise{" "}
+                        {
+                          t.projects.type[
+                            project.type.toLowerCase() as keyof typeof t.projects.type
+                          ]
+                        }{" "}
+                        Application
                       </span>
                       {project.status === "completed" && (
                         <div className="flex items-center gap-1 text-sm text-muted-foreground">
@@ -180,7 +189,7 @@ const Projects = () => {
           className="text-center mt-12"
         >
           <p className="text-muted-foreground mb-6">
-            Interested in learning more about any of these projects?
+            {t.contact.projectsQuestion}
           </p>
           <LightsaberButton
             variant="purple"
@@ -191,7 +200,7 @@ const Projects = () => {
               }
             }}
           >
-            Let's Discuss My Work
+            {t.projects.viewDetails}
           </LightsaberButton>
         </motion.div>
       </div>
