@@ -16,13 +16,14 @@ const ThemeToggle = memo(() => {
 
   // Memoize static themes array to prevent recreation on every render
   const themes = useMemo(
-    () => [
-      { id: "light", label: "Light", icon: Sun },
-      { id: "dark", label: "Dark", icon: Moon },
-      { id: "matrix", label: "Matrix", icon: Terminal },
-      { id: "starwars", label: "Star Wars", icon: Zap },
-      { id: "system", label: "System", icon: Monitor },
-    ] as const,
+    () =>
+      [
+        { id: "light", label: "Light", icon: Sun },
+        { id: "dark", label: "Dark", icon: Moon },
+        { id: "matrix", label: "Matrix", icon: Terminal },
+        { id: "starwars", label: "Star Wars", icon: Zap },
+        { id: "system", label: "System", icon: Monitor },
+      ] as const,
     []
   );
 
@@ -31,7 +32,7 @@ const ThemeToggle = memo(() => {
     () => themes.find((t) => t.id === theme),
     [themes, theme]
   );
-  
+
   const CurrentIcon = useMemo(
     () => currentTheme?.icon || Monitor,
     [currentTheme]
