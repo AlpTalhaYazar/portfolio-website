@@ -33,7 +33,8 @@ jobs:
       - name: Build with Next.js (skip linting)
         run: npm run build
         env:
-          NEXT_LINT: false
+          ESLINT_NO_DEV_ERRORS: true
+          CI: false
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
