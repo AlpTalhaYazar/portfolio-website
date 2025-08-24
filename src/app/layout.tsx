@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { StructuredData } from "@/components/utils";
 import { ThemeProvider } from "@/components/theme";
+import { themeScript } from "@/lib/theme-script";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -82,26 +83,7 @@ export default function RootLayout({
     <html lang="en" className="scroll-smooth" suppressHydrationWarning>
       <head>
         <StructuredData />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              try {
-                const theme = localStorage.getItem('theme');
-                if (theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches) || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                  document.documentElement.classList.add('dark');
-                } else if (theme === 'matrix') {
-                  document.documentElement.classList.add('matrix');
-                } else if (theme === 'starwars') {
-                  document.documentElement.classList.add('starwars');
-                } else {
-                  document.documentElement.classList.add('light');
-                }
-              } catch (_) {
-                document.documentElement.classList.add('light');
-              }
-            `,
-          }}
-        />
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
