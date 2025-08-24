@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { StructuredData } from "@/components/utils";
 import { ThemeProvider } from "@/components/theme";
+import { I18nProvider } from "@/lib/i18n";
 import { themeScript } from "@/lib/theme-script";
 import "./globals.css";
 
@@ -93,7 +94,9 @@ export default function RootLayout({
           Skip to main content
         </a>
 
-        <ThemeProvider>{children}</ThemeProvider>
+        <I18nProvider>
+          <ThemeProvider>{children}</ThemeProvider>
+        </I18nProvider>
       </body>
     </html>
   );

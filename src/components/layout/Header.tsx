@@ -3,11 +3,14 @@
 import { useState, useEffect } from "react";
 import { Menu, X } from "lucide-react";
 import ThemeToggle from "@/components/ui/ThemeToggle";
+import LanguageToggle from "@/components/ui/LanguageToggle";
 import { useTheme } from "@/components/theme/ThemeProvider";
+import { useTranslation } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 const Header = () => {
   const { effectiveTheme } = useTheme();
+  const { t } = useTranslation();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -21,11 +24,11 @@ const Header = () => {
   }, []);
 
   const navItems = [
-    { name: "About", href: "#about" },
-    { name: "Experience", href: "#experience" },
-    { name: "Skills", href: "#skills" },
-    { name: "Projects", href: "#projects" },
-    { name: "Contact", href: "#contact" },
+    { name: t.nav.about, href: "#about" },
+    { name: t.nav.experience, href: "#experience" },
+    { name: t.nav.skills, href: "#skills" },
+    { name: t.nav.projects, href: "#projects" },
+    { name: t.nav.contact, href: "#contact" },
   ];
 
   const scrollToSection = (href: string) => {
@@ -69,7 +72,7 @@ const Header = () => {
           </div>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8">
+          <div className="hidden md:flex items-center space-x-6">
             <nav className="flex space-x-8">
               {navItems.map((item) => (
                 <a
@@ -85,16 +88,20 @@ const Header = () => {
                 </a>
               ))}
             </nav>
-            <ThemeToggle />
+            <div className="flex items-center space-x-3">
+              <LanguageToggle />
+              <ThemeToggle />
+            </div>
           </div>
 
           {/* Mobile controls */}
           <div className="md:hidden flex items-center space-x-3">
+            <LanguageToggle />
             <ThemeToggle />
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               className="text-foreground hover:text-primary transition-colors duration-200"
-              aria-label="Toggle mobile menu"
+              aria-label={t.a11y.menuToggle}
             >
               {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>

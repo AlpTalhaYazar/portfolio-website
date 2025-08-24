@@ -3,10 +3,12 @@
 import { Mail, Heart } from "lucide-react";
 import { socialLinks } from "@/lib/data";
 import { useTheme } from "@/components/theme/ThemeProvider";
+import { useTranslation } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 const Footer = () => {
   const { effectiveTheme } = useTheme();
+  const { t } = useTranslation();
 
   const getIcon = (iconName: string) => {
     switch (iconName) {
@@ -51,21 +53,22 @@ const Footer = () => {
               Alp Talha Yazar
             </button>
             <p className="text-muted-foreground mt-2 leading-relaxed">
-              Backend Developer passionate about building scalable applications
-              and modern web technologies.
+              {t.footer.description}
             </p>
           </div>
 
           {/* Quick Links */}
           <div>
-            <h3 className="font-semibold text-foreground mb-4">Quick Links</h3>
+            <h3 className="font-semibold text-foreground mb-4">
+              {t.footer.quickLinks}
+            </h3>
             <ul className="space-y-2">
               {[
-                { name: "About", href: "#about" },
-                { name: "Experience", href: "#experience" },
-                { name: "Skills", href: "#skills" },
-                { name: "Projects", href: "#projects" },
-                { name: "Contact", href: "#contact" },
+                { name: t.nav.about, href: "#about" },
+                { name: t.nav.experience, href: "#experience" },
+                { name: t.nav.skills, href: "#skills" },
+                { name: t.nav.projects, href: "#projects" },
+                { name: t.nav.contact, href: "#contact" },
               ].map((link) => (
                 <li key={link.name}>
                   <a
@@ -88,7 +91,9 @@ const Footer = () => {
 
           {/* Social & Contact */}
           <div>
-            <h3 className="font-semibold text-foreground mb-4">Connect</h3>
+            <h3 className="font-semibold text-foreground mb-4">
+              {t.footer.connect}
+            </h3>
             <div className="flex gap-3 mb-4">
               {socialLinks.map((link) => (
                 <a
@@ -104,7 +109,7 @@ const Footer = () => {
               ))}
             </div>
             <p className="text-sm text-muted-foreground">
-              Open to new opportunities and collaborations.
+              {t.contact.opportunities}
             </p>
           </div>
         </div>
@@ -112,11 +117,12 @@ const Footer = () => {
         {/* Bottom */}
         <div className="border-t border-border mt-8 pt-8 flex flex-col md:flex-row justify-between items-center">
           <p className="text-sm text-muted-foreground flex items-center gap-1">
-            Made with <Heart size={16} className="text-red-500" /> using
+            {t.footer.madeWith} <Heart size={16} className="text-red-500" />{" "}
+            {t.footer.and}
             Next.js, TypeScript & Tailwind CSS
           </p>
           <p className="text-sm text-muted-foreground mt-2 md:mt-0">
-            © {new Date().getFullYear()} Alp Talha Yazar. All rights reserved.
+            © {new Date().getFullYear()} Alp Talha Yazar. {t.footer.copyright}
           </p>
         </div>
       </div>
