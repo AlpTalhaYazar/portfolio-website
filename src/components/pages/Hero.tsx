@@ -3,9 +3,9 @@
 import { motion } from "framer-motion";
 import { ArrowDown, Mail } from "lucide-react";
 import { socialLinks } from "@/lib/data";
-import { useTheme } from "@/components/ThemeProvider";
+import { useTheme } from "@/components/theme/ThemeProvider";
 import { cn } from "@/lib/utils";
-import LightsaberButton from "@/components/LightsaberButton";
+import LightsaberButton from "@/components/ui/LightsaberButton";
 
 const Hero = () => {
   const { effectiveTheme } = useTheme();

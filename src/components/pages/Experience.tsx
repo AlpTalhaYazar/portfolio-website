@@ -3,9 +3,9 @@
 import { motion } from "framer-motion";
 import { Building2, Calendar, MapPin, ChevronRight } from "lucide-react";
 import { experiences } from "@/lib/data";
-import { useTheme } from "@/components/ThemeProvider";
+import { useTheme } from "@/components/theme/ThemeProvider";
 import { cn } from "@/lib/utils";
-import HologramCard from "@/components/HologramCard";
+import HologramCard from "@/components/ui/HologramCard";
 
 const Experience = () => {
   const { effectiveTheme } = useTheme();

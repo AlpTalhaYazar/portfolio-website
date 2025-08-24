@@ -7,9 +7,9 @@ import { z } from "zod";
 import { Mail, MapPin, Phone, Send } from "lucide-react";
 import { socialLinks } from "@/lib/data";
 import { useState } from "react";
-import LightsaberButton from "@/components/LightsaberButton";
-import HologramCard from "@/components/HologramCard";
-import { useTheme } from "@/components/ThemeProvider";
+import LightsaberButton from "@/components/ui/LightsaberButton";
+import HologramCard from "@/components/ui/HologramCard";
+import { useTheme } from "@/components/theme/ThemeProvider";
 
 const contactFormSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),

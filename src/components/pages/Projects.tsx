@@ -9,10 +9,10 @@ import {
   Clock,
 } from "lucide-react";
 import { projects } from "@/lib/data";
-import { useTheme } from "@/components/ThemeProvider";
+import { useTheme } from "@/components/theme/ThemeProvider";
 import { cn } from "@/lib/utils";
-import HologramCard from "@/components/HologramCard";
-import LightsaberButton from "@/components/LightsaberButton";
+import HologramCard from "@/components/ui/HologramCard";
+import LightsaberButton from "@/components/ui/LightsaberButton";
 
 const Projects = () => {
   const { effectiveTheme } = useTheme();

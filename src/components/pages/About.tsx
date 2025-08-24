@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { Code, Database, Server, Users } from "lucide-react";
-import HologramCard from "@/components/HologramCard";
+import HologramCard from "@/components/ui/HologramCard";
 
 const About = () => {
   const highlights = [

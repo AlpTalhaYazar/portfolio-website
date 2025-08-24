@@ -2,7 +2,7 @@
 
 import { Mail, Heart } from "lucide-react";
 import { socialLinks } from "@/lib/data";
-import { useTheme } from "@/components/ThemeProvider";
+import { useTheme } from "@/components/theme/ThemeProvider";
 import { cn } from "@/lib/utils";
 
 const Footer = () => {

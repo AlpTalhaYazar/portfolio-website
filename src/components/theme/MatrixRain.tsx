@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useTheme } from "./ThemeProvider";
-import StructuredData from "./StructuredData";
+import { useTheme } from "@/components/theme/ThemeProvider";
+import StructuredData from "@/components/utils/StructuredData";
 
 const MatrixRain = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);

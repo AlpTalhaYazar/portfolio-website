@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { Menu, X } from "lucide-react";
-import ThemeToggle from "./ThemeToggle";
-import { useTheme } from "@/components/ThemeProvider";
+import ThemeToggle from "@/components/ui/ThemeToggle";
+import { useTheme } from "@/components/theme/ThemeProvider";
 import { cn } from "@/lib/utils";
 
 const Header = () => {

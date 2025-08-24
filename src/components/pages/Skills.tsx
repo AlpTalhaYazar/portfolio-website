@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { skills } from "@/lib/data";
-import { useTheme } from "@/components/ThemeProvider";
+import { useTheme } from "@/components/theme/ThemeProvider";
 import { cn } from "@/lib/utils";
 
 const Skills = () => {
