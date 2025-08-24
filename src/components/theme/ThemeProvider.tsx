@@ -8,18 +8,11 @@ import {
   useMemo,
   useCallback,
 } from "react";
+import { Theme, EffectiveTheme, ThemeContextValue, isTheme } from "@/types";
 
-type Theme = "light" | "dark" | "matrix" | "starwars" | "system";
-
-type ThemeProviderContextType = {
-  theme: Theme;
-  setTheme: (theme: Theme) => void;
-  effectiveTheme: "light" | "dark" | "matrix" | "starwars";
-};
-
-const ThemeProviderContext = createContext<
-  ThemeProviderContextType | undefined
->(undefined);
+const ThemeProviderContext = createContext<ThemeContextValue | undefined>(
+  undefined
+);
 
 export function useTheme() {
   const context = useContext(ThemeProviderContext);
@@ -39,14 +32,12 @@ export function ThemeProvider({
   defaultTheme = "system",
 }: ThemeProviderProps) {
   const [theme, setTheme] = useState<Theme>(defaultTheme);
-  const [effectiveTheme, setEffectiveTheme] = useState<
-    "light" | "dark" | "matrix" | "starwars"
-  >("light");
+  const [effectiveTheme, setEffectiveTheme] = useState<EffectiveTheme>("light");
 
   useEffect(() => {
-    // Get theme from localStorage on mount
-    const storedTheme = localStorage.getItem("theme") as Theme;
-    if (storedTheme) {
+    // Get theme from localStorage on mount with validation
+    const storedTheme = localStorage.getItem("theme");
+    if (storedTheme && isTheme(storedTheme)) {
       setTheme(storedTheme);
     }
   }, []);

@@ -7,6 +7,7 @@ import {
   Projects,
   Contact,
 } from "@/components/pages";
+import { SectionErrorBoundary, ThemeErrorBoundary } from "@/components/utils";
 import { lazy, Suspense } from "react";
 
 // Lazy load heavy theme components
@@ -16,26 +17,56 @@ const StarField = lazy(() => import("@/components/theme/StarField"));
 export default function Home() {
   return (
     <div className="min-h-screen relative">
-      {/* Lazy-loaded theme components with fallbacks */}
-      <Suspense fallback={null}>
-        <MatrixRain />
-      </Suspense>
-      <Suspense fallback={null}>
-        <StarField />
-      </Suspense>
+      {/* Lazy-loaded theme components with error boundaries */}
+      <ThemeErrorBoundary componentName="MatrixRain">
+        <Suspense fallback={null}>
+          <MatrixRain />
+        </Suspense>
+      </ThemeErrorBoundary>
+      <ThemeErrorBoundary componentName="StarField">
+        <Suspense fallback={null}>
+          <StarField />
+        </Suspense>
+      </ThemeErrorBoundary>
 
       <div className="relative z-10">
-        <Header />
+        <SectionErrorBoundary sectionName="Header">
+          <Header />
+        </SectionErrorBoundary>
+
         <main id="main-content" tabIndex={-1}>
-          <Hero />
-          <About />
-          <Experience />
-          <Skills />
-          <Projects />
-          <Contact />
+          <SectionErrorBoundary sectionName="Hero">
+            <Hero />
+          </SectionErrorBoundary>
+
+          <SectionErrorBoundary sectionName="About">
+            <About />
+          </SectionErrorBoundary>
+
+          <SectionErrorBoundary sectionName="Experience">
+            <Experience />
+          </SectionErrorBoundary>
+
+          <SectionErrorBoundary sectionName="Skills">
+            <Skills />
+          </SectionErrorBoundary>
+
+          <SectionErrorBoundary sectionName="Projects">
+            <Projects />
+          </SectionErrorBoundary>
+
+          <SectionErrorBoundary sectionName="Contact">
+            <Contact />
+          </SectionErrorBoundary>
         </main>
-        <Footer />
-        <ScrollToTop />
+
+        <SectionErrorBoundary sectionName="Footer">
+          <Footer />
+        </SectionErrorBoundary>
+
+        <SectionErrorBoundary sectionName="ScrollToTop">
+          <ScrollToTop />
+        </SectionErrorBoundary>
       </div>
     </div>
   );
