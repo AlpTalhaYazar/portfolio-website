@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { useTheme } from "@/components/theme/ThemeProvider";
 import { cn } from "@/lib/utils";
+import { useMemo, memo } from "react";
 
 interface LightsaberButtonProps {
   children: React.ReactNode;
@@ -14,7 +15,7 @@ interface LightsaberButtonProps {
   type?: "button" | "submit" | "reset";
 }
 
-const LightsaberButton = ({
+const LightsaberButton = memo(({
   children,
   onClick,
   href,
@@ -25,7 +26,8 @@ const LightsaberButton = ({
 }: LightsaberButtonProps) => {
   const { effectiveTheme } = useTheme();
 
-  const getVariantClasses = () => {
+  // Memoize variant classes calculation
+  const variantClasses = useMemo(() => {
     if (effectiveTheme !== "starwars") {
       return "bg-primary text-primary-foreground hover:bg-primary/90";
     }
@@ -42,25 +44,42 @@ const LightsaberButton = ({
       default:
         return "bg-[#4FC3F7] text-black hover:bg-[#29B6F6] shadow-[0_0_20px_rgba(79,195,247,0.4)] hover:shadow-[0_0_30px_rgba(79,195,247,0.6)] border border-[#4FC3F7]/30";
     }
-  };
+  }, [effectiveTheme, variant]);
 
-  const baseClasses =
-    "inline-flex items-center justify-center px-8 py-3 rounded-lg font-semibold transition-all duration-300 transform";
-
-  const lightsaberClasses =
-    effectiveTheme === "starwars"
-      ? "relative overflow-hidden before:absolute before:inset-0 before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent before:translate-x-[-100%] hover:before:translate-x-[100%] before:transition-transform before:duration-700"
-      : "";
-
-  const combinedClasses = cn(
-    baseClasses,
-    getVariantClasses(),
-    lightsaberClasses,
-    disabled && "opacity-50 cursor-not-allowed",
-    className
+  // Memoize static base classes
+  const baseClasses = useMemo(
+    () =>
+      "inline-flex items-center justify-center px-8 py-3 rounded-lg font-semibold transition-all duration-300 transform",
+    []
   );
 
-  const MotionComponent = href ? motion.a : motion.button;
+  // Memoize lightsaber effect classes
+  const lightsaberClasses = useMemo(
+    () =>
+      effectiveTheme === "starwars"
+        ? "relative overflow-hidden before:absolute before:inset-0 before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent before:translate-x-[-100%] hover:before:translate-x-[100%] before:transition-transform before:duration-700"
+        : "",
+    [effectiveTheme]
+  );
+
+  // Memoize combined classes
+  const combinedClasses = useMemo(
+    () =>
+      cn(
+        baseClasses,
+        variantClasses,
+        lightsaberClasses,
+        disabled && "opacity-50 cursor-not-allowed",
+        className
+      ),
+    [baseClasses, variantClasses, lightsaberClasses, disabled, className]
+  );
+
+  // Memoize motion component selection
+  const MotionComponent = useMemo(
+    () => (href ? motion.a : motion.button),
+    [href]
+  );
 
   return (
     <MotionComponent
@@ -106,6 +125,8 @@ const LightsaberButton = ({
       <span className="relative z-10 flex items-center gap-2">{children}</span>
     </MotionComponent>
   );
-};
+});
+
+LightsaberButton.displayName = "LightsaberButton";
 
 export default LightsaberButton;

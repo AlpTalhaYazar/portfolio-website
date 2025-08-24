@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, memo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sun, Moon, Monitor, Terminal, Zap } from "lucide-react";
 import { useTheme } from "@/components/theme/ThemeProvider";
 
-const ThemeToggle = () => {
+const ThemeToggle = memo(() => {
   const { theme, setTheme } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -14,22 +14,34 @@ const ThemeToggle = () => {
     setMounted(true);
   }, []);
 
+  // Memoize static themes array to prevent recreation on every render
+  const themes = useMemo(
+    () => [
+      { id: "light", label: "Light", icon: Sun },
+      { id: "dark", label: "Dark", icon: Moon },
+      { id: "matrix", label: "Matrix", icon: Terminal },
+      { id: "starwars", label: "Star Wars", icon: Zap },
+      { id: "system", label: "System", icon: Monitor },
+    ] as const,
+    []
+  );
+
+  // Memoize current theme calculation
+  const currentTheme = useMemo(
+    () => themes.find((t) => t.id === theme),
+    [themes, theme]
+  );
+  
+  const CurrentIcon = useMemo(
+    () => currentTheme?.icon || Monitor,
+    [currentTheme]
+  );
+
   if (!mounted) {
     return (
       <div className="w-10 h-10 rounded-lg bg-secondary animate-pulse"></div>
     );
   }
-
-  const themes = [
-    { id: "light", label: "Light", icon: Sun },
-    { id: "dark", label: "Dark", icon: Moon },
-    { id: "matrix", label: "Matrix", icon: Terminal },
-    { id: "starwars", label: "Star Wars", icon: Zap },
-    { id: "system", label: "System", icon: Monitor },
-  ] as const;
-
-  const currentTheme = themes.find((t) => t.id === theme);
-  const CurrentIcon = currentTheme?.icon || Monitor;
 
   return (
     <div className="relative">
@@ -97,6 +109,8 @@ const ThemeToggle = () => {
       </AnimatePresence>
     </div>
   );
-};
+});
+
+ThemeToggle.displayName = "ThemeToggle";
 
 export default ThemeToggle;

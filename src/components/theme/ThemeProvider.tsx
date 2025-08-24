@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, useMemo, useCallback } from "react";
 
 type Theme = "light" | "dark" | "matrix" | "starwars" | "system";
 
@@ -80,19 +80,23 @@ export function ThemeProvider({
     root.classList.add(effectiveTheme);
   }, [effectiveTheme]);
 
-  const handleSetTheme = (newTheme: Theme) => {
+  const handleSetTheme = useCallback((newTheme: Theme) => {
     setTheme(newTheme);
     localStorage.setItem("theme", newTheme);
-  };
+  }, []);
+
+  // Memoize context value to prevent unnecessary re-renders
+  const contextValue = useMemo(
+    () => ({
+      theme,
+      setTheme: handleSetTheme,
+      effectiveTheme,
+    }),
+    [theme, handleSetTheme, effectiveTheme]
+  );
 
   return (
-    <ThemeProviderContext.Provider
-      value={{
-        theme,
-        setTheme: handleSetTheme,
-        effectiveTheme,
-      }}
-    >
+    <ThemeProviderContext.Provider value={contextValue}>
       {children}
     </ThemeProviderContext.Provider>
   );

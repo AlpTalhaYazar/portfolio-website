@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { useTheme } from "@/components/theme/ThemeProvider";
 import { cn } from "@/lib/utils";
+import { useMemo, memo } from "react";
 
 interface HologramCardProps {
   children: React.ReactNode;
@@ -11,7 +12,7 @@ interface HologramCardProps {
   animate?: boolean;
 }
 
-const HologramCard = ({
+const HologramCard = memo(({
   children,
   className,
   variant = "default",
@@ -19,7 +20,8 @@ const HologramCard = ({
 }: HologramCardProps) => {
   const { effectiveTheme } = useTheme();
 
-  const getVariantClasses = () => {
+  // Memoize expensive variant class calculation
+  const variantClasses = useMemo(() => {
     if (effectiveTheme !== "starwars") {
       return "bg-card text-card-foreground border border-border";
     }
@@ -35,18 +37,27 @@ const HologramCard = ({
       default:
         return `${baseStarWars} border border-[#455A64]/30 shadow-[0_0_15px_rgba(0,188,212,0.05)]`;
     }
-  };
+  }, [effectiveTheme, variant]);
 
-  const hologramEffect =
-    effectiveTheme === "starwars"
-      ? "relative before:absolute before:inset-0 before:bg-gradient-to-r before:from-transparent before:via-[#00BCD4]/5 before:to-transparent before:animate-pulse"
-      : "";
+  // Memoize hologram effect calculation
+  const hologramEffect = useMemo(
+    () =>
+      effectiveTheme === "starwars"
+        ? "relative before:absolute before:inset-0 before:bg-gradient-to-r before:from-transparent before:via-[#00BCD4]/5 before:to-transparent before:animate-pulse"
+        : "",
+    [effectiveTheme]
+  );
 
-  const combinedClasses = cn(
-    "rounded-lg p-6 transition-all duration-300",
-    getVariantClasses(),
-    hologramEffect,
-    className
+  // Memoize combined classes
+  const combinedClasses = useMemo(
+    () =>
+      cn(
+        "rounded-lg p-6 transition-all duration-300",
+        variantClasses,
+        hologramEffect,
+        className
+      ),
+    [variantClasses, hologramEffect, className]
   );
 
   if (!animate) {
@@ -146,6 +157,8 @@ const HologramCard = ({
       <div className="relative z-10">{children}</div>
     </motion.div>
   );
-};
+});
+
+HologramCard.displayName = "HologramCard";
 
 export default HologramCard;
