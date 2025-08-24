@@ -1,7 +1,11 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, memo } from "react";
 import { useTheme } from "./ThemeProvider";
+import {
+  usePerformancePreferences,
+  useElementVisibility,
+} from "@/lib/performance";
 
 interface TrailPoint {
   x: number;
@@ -22,14 +26,20 @@ interface Star {
   trail: TrailPoint[];
 }
 
-const StarField = () => {
+const StarField = memo(() => {
   const { effectiveTheme } = useTheme();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number>(0);
   const starsRef = useRef<Star[]>([]);
+  const lastFrameTimeRef = useRef(0);
+
+  // Performance optimizations
+  const { shouldAnimate, particleCount, frameRate } =
+    usePerformancePreferences();
+  const isVisible = useElementVisibility(canvasRef);
 
   useEffect(() => {
-    if (effectiveTheme !== "starwars") return;
+    if (effectiveTheme !== "starwars" || !shouldAnimate || !isVisible) return;
 
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -57,7 +67,7 @@ const StarField = () => {
         { name: "ice-blue", color: "173, 216, 230" }, // Ice planet blue
       ];
 
-      for (let i = 0; i < 300; i++) {
+      for (let i = 0; i < particleCount; i++) {
         // Random color from palette
         const colorData =
           starColors[Math.floor(Math.random() * starColors.length)];
@@ -234,14 +244,18 @@ const StarField = () => {
       });
     };
 
-    const animate = () => {
-      moveStars();
+    const animate = (currentTime: number) => {
+      // Throttle to target frame rate
+      if (currentTime - lastFrameTimeRef.current >= 1000 / frameRate) {
+        moveStars();
+        lastFrameTimeRef.current = currentTime;
+      }
       animationRef.current = requestAnimationFrame(animate);
     };
 
     resize();
     initStars();
-    animate();
+    animationRef.current = requestAnimationFrame(animate);
 
     window.addEventListener("resize", resize);
 
@@ -251,9 +265,22 @@ const StarField = () => {
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [effectiveTheme]);
+  }, [effectiveTheme, shouldAnimate, isVisible, particleCount, frameRate]);
 
   if (effectiveTheme !== "starwars") return null;
+
+  // Show static background if animations are disabled
+  if (!shouldAnimate) {
+    return (
+      <div
+        className="fixed inset-0 pointer-events-none z-0"
+        style={{
+          background:
+            "radial-gradient(ellipse at center, #001122 0%, #000000 70%)",
+        }}
+      />
+    );
+  }
 
   return (
     <canvas
@@ -265,6 +292,8 @@ const StarField = () => {
       }}
     />
   );
-};
+});
+
+StarField.displayName = "StarField";
 
 export default StarField;

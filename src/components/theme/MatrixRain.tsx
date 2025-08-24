@@ -1,15 +1,25 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, memo } from "react";
 import { useTheme } from "@/components/theme/ThemeProvider";
 import StructuredData from "@/components/utils/StructuredData";
+import {
+  usePerformancePreferences,
+  useElementVisibility,
+} from "@/lib/performance";
 
-const MatrixRain = () => {
+const MatrixRain = memo(() => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { effectiveTheme } = useTheme();
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Performance optimizations
+  const { shouldAnimate, frameRate, isLowEndDevice } =
+    usePerformancePreferences();
+  const isVisible = useElementVisibility(canvasRef);
 
   useEffect(() => {
-    if (effectiveTheme !== "matrix") return;
+    if (effectiveTheme !== "matrix" || !shouldAnimate || !isVisible) return;
 
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -30,7 +40,8 @@ const MatrixRain = () => {
     const matrix = StructuredData.name;
     const matrixArray = matrix.split("");
 
-    const fontSize = 10;
+    // Adjust font size and density based on device performance
+    const fontSize = isLowEndDevice ? 14 : 10;
     const columns = canvas.width / fontSize;
     const drops: number[] = [];
 
@@ -63,15 +74,33 @@ const MatrixRain = () => {
       }
     };
 
-    const intervalId = setInterval(draw, 35);
+    // Calculate interval based on target frame rate
+    const animationInterval = frameRate > 0 ? 1000 / frameRate : 50;
+    intervalRef.current = setInterval(draw, animationInterval);
 
     return () => {
-      clearInterval(intervalId);
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
       window.removeEventListener("resize", resizeCanvas);
     };
-  }, [effectiveTheme]);
+  }, [effectiveTheme, shouldAnimate, isVisible, frameRate, isLowEndDevice]);
 
   if (effectiveTheme !== "matrix") return null;
+
+  // Show static background if animations are disabled
+  if (!shouldAnimate) {
+    return (
+      <div
+        className="fixed inset-0 pointer-events-none z-0 opacity-20"
+        style={{
+          background: "linear-gradient(to bottom, #001100, #000800)",
+          mixBlendMode: "screen",
+        }}
+      />
+    );
+  }
 
   return (
     <canvas
@@ -80,6 +109,8 @@ const MatrixRain = () => {
       style={{ mixBlendMode: "screen" }}
     />
   );
-};
+});
+
+MatrixRain.displayName = "MatrixRain";
 
 export default MatrixRain;
