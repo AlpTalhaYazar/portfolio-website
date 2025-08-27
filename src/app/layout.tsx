@@ -39,7 +39,7 @@ export const metadata: Metadata = {
   authors: [{ name: "Alp Talha Yazar" }],
   creator: "Alp Talha Yazar",
   publisher: "Alp Talha Yazar",
-  metadataBase: new URL("https://your-domain.com"), // TODO: Update with actual domain
+  metadataBase: new URL("https://alptalha.dev"),
   alternates: {
     canonical: "/",
   },
@@ -49,7 +49,7 @@ export const metadata: Metadata = {
       "Experienced Backend Developer specializing in .NET, microservices, and B2B/B2G applications.",
     type: "website",
     locale: "en_US",
-    url: "https://your-domain.com", // TODO: Update with actual domain
+    url: "https://alptalha.dev",
     siteName: "Alp Talha Yazar Portfolio",
   },
   twitter: {

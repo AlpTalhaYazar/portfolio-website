@@ -6,7 +6,7 @@ export default function StructuredData() {
     jobTitle: "Backend Developer",
     description:
       "Experienced Backend Developer specializing in .NET, microservices, and B2B/B2G applications",
-    url: "https://your-domain.com",
+    url: "https://alptalha.dev",
     sameAs: [
       "https://github.com/alptalhayazar",
       "https://linkedin.com/in/alptalhayazar",
