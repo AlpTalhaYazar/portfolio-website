@@ -7,8 +7,8 @@
     "build": "next build --turbopack",
     "start": "next start",
     "lint": "eslint",
-    "export": "next build && next export",
-    "deploy": "npm run export && touch out/.nojekyll"
+    "export": "next build",
+    "deploy": "npm run export && touch out/.nojekyll && cp CNAME out/"
   },
   "dependencies": {
     "react": "19.1.0",

@@ -4,8 +4,6 @@ const nextConfig: NextConfig = {
   /* config options here */
   output: "export",
   trailingSlash: true,
-  basePath: "/portfolio-website",
-  assetPrefix: "/portfolio-website/",
   experimental: {
     optimizePackageImports: ["lucide-react", "framer-motion"],
   },
