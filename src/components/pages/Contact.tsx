@@ -19,10 +19,23 @@ const Contact = () => {
   const { t } = useTranslation();
 
   const contactFormSchema = z.object({
-    name: z.string().min(2, t.contact.validation.nameRequired),
-    email: z.string().email(t.contact.validation.emailInvalid),
-    subject: z.string().min(5, t.contact.validation.subjectRequired),
-    message: z.string().min(10, t.contact.validation.messageMinLength),
+    name: z
+      .string()
+      .min(2, t.contact.validation.nameRequired)
+      .max(100, "Name too long"),
+    email: z
+      .string()
+      .email(t.contact.validation.emailInvalid)
+      .max(255, "Email too long"),
+    subject: z
+      .string()
+      .min(5, t.contact.validation.subjectRequired)
+      .max(200, "Subject too long"),
+    message: z
+      .string()
+      .min(10, t.contact.validation.messageMinLength)
+      .max(5000, "Message too long"),
+    honeypot: z.string().optional(), // Hidden field for bot detection
   });
 
   type ContactFormData = z.infer<typeof contactFormSchema>;
@@ -51,6 +64,15 @@ const Contact = () => {
       const result = await response.json();
 
       if (!response.ok) {
+        if (response.status === 429) {
+          const retryAfter = response.headers.get("retry-after");
+          const minutes = retryAfter
+            ? Math.ceil(parseInt(retryAfter) / 60)
+            : 15;
+          throw new Error(
+            `Too many requests. Please wait ${minutes} minutes before trying again.`
+          );
+        }
         throw new Error(result.error || "Failed to send message");
       }
 
@@ -223,6 +245,23 @@ const Contact = () => {
           >
             <HologramCard variant="bordered" animate={false}>
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                {/* Honeypot field - hidden from users, should remain empty */}
+                <input
+                  {...register("honeypot")}
+                  type="text"
+                  name="honeypot"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  style={{
+                    position: "absolute",
+                    left: "-9999px",
+                    width: "1px",
+                    height: "1px",
+                    opacity: 0,
+                    overflow: "hidden",
+                  }}
+                  aria-hidden="true"
+                />
                 <div className="grid md:grid-cols-2 gap-6">
                   <div>
                     <label
