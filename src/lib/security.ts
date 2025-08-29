@@ -134,7 +134,7 @@ export function detectSpam(data: {
   subject: string;
   message: string;
 }): boolean {
-  const { name, email, subject, message } = data;
+  const { name, subject, message } = data;
 
   // Check for common spam patterns
   const spamKeywords = [
@@ -186,7 +186,7 @@ export function logSecurityEvent(event: {
   type: "rate_limit" | "csrf_violation" | "spam_detected" | "origin_violation";
   ip: string;
   userAgent?: string;
-  details?: any;
+  details?: Record<string, unknown>;
 }) {
   console.warn(`[SECURITY] ${event.type}:`, {
     timestamp: new Date().toISOString(),
