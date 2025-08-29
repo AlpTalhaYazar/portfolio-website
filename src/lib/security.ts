@@ -1,196 +1,200 @@
-/**
- * Security utilities for runtime protection
- */
+import { NextRequest } from "next/server";
+import crypto from "crypto";
+
+// Rate limiting store (use Redis in production)
+const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
+
+// CSRF token store (use Redis in production)
+const csrfTokenStore = new Map<string, { token: string; expires: number }>();
 
 /**
- * Sanitize user input to prevent XSS attacks
+ * Rate limiting middleware
+ * Limits requests per IP address
+ */
+export function checkRateLimit(
+  request: NextRequest,
+  windowMs: number = 15 * 60 * 1000, // 15 minutes
+  maxRequests: number = 5 // max 5 requests per window
+): { allowed: boolean; resetTime?: number } {
+  const clientIP = getClientIP(request);
+  const now = Date.now();
+
+  const key = `rate_limit:${clientIP}`;
+  const existing = rateLimitStore.get(key);
+
+  if (!existing || now > existing.resetTime) {
+    // Reset or create new rate limit window
+    const resetTime = now + windowMs;
+    rateLimitStore.set(key, { count: 1, resetTime });
+    return { allowed: true, resetTime };
+  }
+
+  if (existing.count >= maxRequests) {
+    return { allowed: false, resetTime: existing.resetTime };
+  }
+
+  // Increment counter
+  rateLimitStore.set(key, { ...existing, count: existing.count + 1 });
+  return { allowed: true, resetTime: existing.resetTime };
+}
+
+/**
+ * Get client IP address from various headers
+ */
+export function getClientIP(request: NextRequest): string {
+  const forwarded = request.headers.get("x-forwarded-for");
+  const realIP = request.headers.get("x-real-ip");
+  const cfIP = request.headers.get("cf-connecting-ip"); // Cloudflare
+
+  if (forwarded) {
+    return forwarded.split(",")[0].trim();
+  }
+  if (realIP) {
+    return realIP;
+  }
+  if (cfIP) {
+    return cfIP;
+  }
+
+  // Fallback for unknown IP
+  return "unknown";
+}
+
+/**
+ * Generate CSRF token for forms
+ */
+export function generateCSRFToken(): string {
+  return crypto.randomBytes(32).toString("hex");
+}
+
+/**
+ * Verify CSRF token
+ */
+export function verifyCSRFToken(token: string, sessionId: string): boolean {
+  const stored = csrfTokenStore.get(sessionId);
+  if (!stored || stored.expires < Date.now()) {
+    return false;
+  }
+  return stored.token === token;
+}
+
+/**
+ * Store CSRF token for session
+ */
+export function storeCSRFToken(token: string, sessionId: string): void {
+  const expires = Date.now() + 60 * 60 * 1000; // 1 hour
+  csrfTokenStore.set(sessionId, { token, expires });
+}
+
+/**
+ * Check if request is from same origin
+ */
+export function verifyOrigin(
+  request: NextRequest,
+  allowedOrigins: string[]
+): boolean {
+  const origin = request.headers.get("origin");
+  const referer = request.headers.get("referer");
+
+  if (!origin && !referer) {
+    return false; // Require either origin or referer
+  }
+
+  const requestOrigin = origin || (referer ? new URL(referer).origin : "");
+  return allowedOrigins.includes(requestOrigin);
+}
+
+/**
+ * Validate honeypot field (invisible to users, should be empty)
+ */
+export function validateHoneypot(
+  honeypotValue: string | null | undefined
+): boolean {
+  return !honeypotValue || honeypotValue.trim() === "";
+}
+
+/**
+ * Clean and validate input data
  */
 export function sanitizeInput(input: string): string {
   return input
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#x27;")
-    .replace(/\//g, "&#x2F;");
+    .trim()
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "") // Remove script tags
+    .replace(/javascript:/gi, "") // Remove javascript: protocol
+    .replace(/on\w+\s*=/gi, "") // Remove event handlers
+    .substring(0, 5000); // Limit length
 }
 
 /**
- * Validate email format with security considerations
+ * Check for suspicious patterns in form data
  */
-export function isValidEmail(email: string): boolean {
-  // More strict email validation to prevent injection
-  const emailRegex =
-    /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+export function detectSpam(data: {
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+}): boolean {
+  const { name, email, subject, message } = data;
 
-  // Additional security checks
-  if (email.length > 254) return false; // RFC 5321 limit
-  if (email.includes("..")) return false; // Consecutive dots not allowed
-  if (email.startsWith(".") || email.endsWith(".")) return false;
+  // Check for common spam patterns
+  const spamKeywords = [
+    "viagra",
+    "casino",
+    "bitcoin",
+    "crypto",
+    "investment",
+    "loan",
+    "debt",
+    "credit",
+    "mortgage",
+    "insurance",
+    "seo services",
+    "web design",
+    "marketing services",
+  ];
 
-  return emailRegex.test(email);
-}
+  const content = `${name} ${subject} ${message}`.toLowerCase();
 
-/**
- * Validate URL format and prevent malicious URLs
- */
-export function isValidUrl(url: string): boolean {
-  try {
-    const urlObj = new URL(url);
-    // Only allow http and https protocols
-    return ["http:", "https:"].includes(urlObj.protocol);
-  } catch {
-    return false;
-  }
-}
-
-/**
- * Rate limiting utility for form submissions
- */
-class RateLimiter {
-  private attempts: Map<string, number[]> = new Map();
-  private readonly maxAttempts: number;
-  private readonly windowMs: number;
-
-  constructor(maxAttempts: number = 5, windowMs: number = 60000) {
-    this.maxAttempts = maxAttempts;
-    this.windowMs = windowMs;
-  }
-
-  isAllowed(identifier: string): boolean {
-    const now = Date.now();
-    const attempts = this.attempts.get(identifier) || [];
-
-    // Remove old attempts outside the window
-    const validAttempts = attempts.filter((time) => now - time < this.windowMs);
-
-    if (validAttempts.length >= this.maxAttempts) {
-      return false;
-    }
-
-    // Add current attempt
-    validAttempts.push(now);
-    this.attempts.set(identifier, validAttempts);
-
+  // Check for spam keywords
+  if (spamKeywords.some((keyword) => content.includes(keyword))) {
     return true;
   }
 
-  reset(identifier: string): void {
-    this.attempts.delete(identifier);
-  }
-}
-
-export const formRateLimiter = new RateLimiter();
-
-/**
- * Generate secure random string for tokens/IDs
- */
-export function generateSecureToken(length: number = 32): string {
-  const array = new Uint8Array(length);
-  if (typeof window !== "undefined" && window.crypto) {
-    window.crypto.getRandomValues(array);
-  } else {
-    // Fallback for environments without crypto
-    for (let i = 0; i < length; i++) {
-      array[i] = Math.floor(Math.random() * 256);
-    }
+  // Check for excessive links
+  const linkCount = (content.match(/https?:\/\//g) || []).length;
+  if (linkCount > 2) {
+    return true;
   }
 
-  return Array.from(array, (byte) => byte.toString(16).padStart(2, "0")).join(
-    ""
-  );
+  // Check for repeated characters (typical spam pattern)
+  if (/(.)\1{10,}/.test(content)) {
+    return true;
+  }
+
+  // Check for all caps message (typical spam)
+  if (message.length > 50 && message === message.toUpperCase()) {
+    return true;
+  }
+
+  return false;
 }
 
 /**
- * Secure content validation for user-generated content
+ * Log security events
  */
-export function validateContent(content: string): {
-  isValid: boolean;
-  errors: string[];
-} {
-  const errors: string[] = [];
-
-  // Check for potential XSS attempts
-  if (/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi.test(content)) {
-    errors.push("Script tags are not allowed");
-  }
-
-  if (/javascript:/i.test(content)) {
-    errors.push("JavaScript URLs are not allowed");
-  }
-
-  if (/on\w+\s*=/i.test(content)) {
-    errors.push("Event handlers are not allowed");
-  }
-
-  // Check content length
-  if (content.length > 10000) {
-    errors.push("Content too long (max 10,000 characters)");
-  }
-
-  return {
-    isValid: errors.length === 0,
-    errors,
-  };
-}
-
-/**
- * Security headers validation for client-side
- */
-export function validateSecurityHeaders(): {
-  csp: boolean;
-  xFrameOptions: boolean;
-  xContentTypeOptions: boolean;
-} {
-  const meta = document.querySelector(
-    'meta[http-equiv="Content-Security-Policy"]'
-  );
-
-  return {
-    csp: !!meta,
-    xFrameOptions: true, // Set in Next.js config
-    xContentTypeOptions: true, // Set in Next.js config
-  };
-}
-
-/**
- * Environment-specific security configuration
- */
-export const securityConfig = {
-  isDevelopment: process.env.NODE_ENV === "development",
-  isProduction: process.env.NODE_ENV === "production",
-  allowDevTools: process.env.NODE_ENV !== "production",
-
-  // Security settings
-  maxFileSize: 5 * 1024 * 1024, // 5MB
-  allowedFileTypes: ["image/jpeg", "image/png", "image/webp", "image/gif"],
-  maxFormSubmissions: 5,
-  rateLimitWindow: 60000, // 1 minute
-};
-
-/**
- * Initialize security measures on client
- */
-export function initializeSecurity(): void {
-  if (typeof window === "undefined") return;
-
-  // Disable console in production
-  if (securityConfig.isProduction && !securityConfig.allowDevTools) {
-    Object.defineProperty(window, "console", {
-      value: {},
-      writable: false,
-      configurable: false,
-    });
-  }
-
-  // Add security event listeners
-  window.addEventListener("error", (event) => {
-    // Log security-related errors (in production, send to monitoring service)
-    if (securityConfig.isDevelopment) {
-      console.warn("Security warning:", event.error);
-    }
+export function logSecurityEvent(event: {
+  type: "rate_limit" | "csrf_violation" | "spam_detected" | "origin_violation";
+  ip: string;
+  userAgent?: string;
+  details?: any;
+}) {
+  console.warn(`[SECURITY] ${event.type}:`, {
+    timestamp: new Date().toISOString(),
+    ip: event.ip,
+    userAgent: event.userAgent,
+    details: event.details,
   });
 
-  // Prevent drag and drop of files to avoid potential security issues
-  window.addEventListener("dragover", (e) => e.preventDefault());
-  window.addEventListener("drop", (e) => e.preventDefault());
+  // In production, send to monitoring service
+  // Example: Sentry, DataDog, CloudWatch, etc.
 }
