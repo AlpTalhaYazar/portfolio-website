@@ -14,6 +14,7 @@ import { useTheme } from "@/components/theme/ThemeProvider";
 
 const Contact = () => {
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const { effectiveTheme } = useTheme();
   const { t } = useTranslation();
 
@@ -36,14 +37,40 @@ const Contact = () => {
   });
 
   const onSubmit = async (data: ContactFormData) => {
-    // Simulate form submission
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    console.log("Form submitted:", data);
-    setIsSubmitted(true);
-    reset();
+    try {
+      setSubmitError(null);
 
-    // Reset success message after 3 seconds
-    setTimeout(() => setIsSubmitted(false), 3000);
+      const response = await fetch("/api/contact/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to send message");
+      }
+
+      console.log("Email sent successfully:", result);
+      setIsSubmitted(true);
+      reset();
+
+      // Reset success message after 5 seconds
+      setTimeout(() => setIsSubmitted(false), 5000);
+    } catch (error) {
+      console.error("Error sending email:", error);
+      setSubmitError(
+        error instanceof Error
+          ? error.message
+          : "Failed to send message. Please try again."
+      );
+
+      // Reset error message after 5 seconds
+      setTimeout(() => setSubmitError(null), 5000);
+    }
   };
 
   const getIcon = (iconName: string) => {
@@ -308,6 +335,16 @@ const Contact = () => {
                     className="p-4 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm"
                   >
                     ✅ {t.contact.success}
+                  </motion.div>
+                )}
+
+                {submitError && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm"
+                  >
+                    ❌ {submitError}
                   </motion.div>
                 )}
               </form>
