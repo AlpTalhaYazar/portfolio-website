@@ -28,9 +28,6 @@ const progressiveBlockStore = new Map<
 // CSRF token store with session management
 const csrfTokenStore = new Map<string, CSRFToken>();
 
-// Session tracking for CSRF tokens (reserved for future use)
-// const sessionStore = new Map<string, string>(); // sessionId -> clientId mapping
-
 // =================================================
 // PROGRESSIVE RATE LIMITING
 // =================================================

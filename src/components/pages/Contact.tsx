@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Mail, MapPin, Phone, Send, Shield, AlertTriangle } from "lucide-react";
 import { socialLinks } from "@/lib/data";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "@/lib/i18n";
 import LightsaberButton from "@/components/ui/LightsaberButton";
 import HologramCard from "@/components/ui/HologramCard";
@@ -42,6 +42,10 @@ const Contact = () => {
   const [blockInfo, setBlockInfo] = useState<{
     escalationLevel?: number;
   } | null>(null);
+
+  // Refs for cleanup
+  const submitErrorTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const successTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const { effectiveTheme } = useTheme();
   const { t } = useTranslation();
@@ -137,6 +141,18 @@ const Contact = () => {
     }
   }, [isSecurityLoading, isTokenExpired, fetchCSRFToken]);
 
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (submitErrorTimeoutRef.current) {
+        clearTimeout(submitErrorTimeoutRef.current);
+      }
+      if (successTimeoutRef.current) {
+        clearTimeout(successTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const onSubmit = async (data: ContactFormData) => {
     try {
       setSubmitError(null);
@@ -215,8 +231,11 @@ const Contact = () => {
       setIsSubmitted(true);
       reset();
 
-      // Reset success message after 5 seconds
-      setTimeout(() => setIsSubmitted(false), 5000);
+      // Clear previous success timeout and set new one
+      if (successTimeoutRef.current) {
+        clearTimeout(successTimeoutRef.current);
+      }
+      successTimeoutRef.current = setTimeout(() => setIsSubmitted(false), 5000);
     } catch (error) {
       console.error("Error sending email:", error);
       setSubmitError(
@@ -225,8 +244,14 @@ const Contact = () => {
           : "Failed to send message. Please try again."
       );
 
-      // Reset error message after 10 seconds for security errors
-      setTimeout(() => setSubmitError(null), 10000);
+      // Clear previous error timeout and set new one (10 seconds for security errors)
+      if (submitErrorTimeoutRef.current) {
+        clearTimeout(submitErrorTimeoutRef.current);
+      }
+      submitErrorTimeoutRef.current = setTimeout(
+        () => setSubmitError(null),
+        10000
+      );
     }
   };
 
