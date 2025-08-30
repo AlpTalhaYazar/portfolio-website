@@ -153,10 +153,68 @@ const Contact = () => {
 
   // Token expiry logic is now inlined to prevent useCallback dependency issues
 
-  // Initialize security on component mount
+  // Initialize security on component mount - inline logic to avoid dependency issues
   useEffect(() => {
-    fetchCSRFToken();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- fetchCSRFToken uses refs to avoid stale closures, safe to omit
+    const initializeSecurity = async () => {
+      // Prevent multiple simultaneous calls
+      if (isFetchingRef.current) {
+        console.log("Security initialization already in progress, skipping...");
+        return;
+      }
+
+      try {
+        isFetchingRef.current = true;
+        setIsSecurityLoading(true);
+        setSecurityError(null);
+
+        console.log("Initializing security...");
+
+        const headers: Record<string, string> = {};
+        // Use ref to get current sessionId value (avoids stale closure)
+        const currentSessionId = sessionIdRef.current;
+        if (currentSessionId) {
+          headers["x-session-id"] = currentSessionId;
+          console.log("Using existing session ID for initialization");
+        } else {
+          console.log("Generating new session ID");
+        }
+
+        const response = await fetch("/api/csrf-token/", {
+          method: "GET",
+          headers,
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Failed to get security token");
+        }
+
+        const data: CSRFTokenResponse = await response.json();
+
+        console.log(
+          "Security initialized successfully, expires:",
+          new Date(data.expires)
+        );
+
+        setCsrfToken(data.token);
+        setSessionId(data.sessionId);
+        setTokenExpires(data.expires);
+        setIsSecurityLoading(false);
+      } catch (error) {
+        console.error("Failed to initialize security:", error);
+        setSecurityError(
+          error instanceof Error
+            ? error.message
+            : "Security initialization failed"
+        );
+        setIsSecurityLoading(false);
+      } finally {
+        isFetchingRef.current = false;
+      }
+    };
+
+    initializeSecurity();
+  }, []); // No dependencies needed - all dynamic values accessed via refs
 
   // Simplified: Only refresh token manually before form submission
   // Auto-refresh was causing infinite loops, so we'll handle it in the onSubmit function
