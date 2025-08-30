@@ -91,9 +91,9 @@ export async function GET(request: NextRequest) {
 
     logger.security("[CSRF API] Token generated", {
       sessionId,
-      token: csrfToken.token,
       tokenLength: csrfToken.token.length,
       expires: new Date(csrfToken.expires),
+      tokenType: "csrf",
     });
 
     // 4. Log successful token generation (low severity)
@@ -119,10 +119,10 @@ export async function GET(request: NextRequest) {
 
     logger.security("[CSRF API] Sending successful response", {
       success: response.success,
-      token: response.token,
-      sessionId: response.sessionId,
       tokenLength: response.token.length,
+      sessionId: response.sessionId,
       expiresIn: response.expiresIn,
+      tokenGenerated: true,
     });
 
     return NextResponse.json(response);

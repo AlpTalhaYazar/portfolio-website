@@ -150,7 +150,7 @@ const Contact = () => {
     } finally {
       isFetchingRef.current = false;
     }
-  }, []); // Safe to use empty deps since we use refs for dynamic values to avoid infinite loops
+  }, []); // All used values are stable (state setters, logger) or accessed via refs. If you add any new dynamic values, include them in the dependency array.
 
   // Token expiry logic is now inlined to prevent useCallback dependency issues
 
