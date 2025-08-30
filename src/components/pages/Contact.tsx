@@ -11,6 +11,7 @@ import { useTranslation } from "@/lib/i18n";
 import LightsaberButton from "@/components/ui/LightsaberButton";
 import HologramCard from "@/components/ui/HologramCard";
 import { useTheme } from "@/components/theme/ThemeProvider";
+import { logger } from "@/lib/logger";
 
 // Security and API response interfaces
 interface CSRFTokenResponse {
@@ -93,7 +94,7 @@ const Contact = () => {
   const fetchCSRFToken = useCallback(async (): Promise<boolean> => {
     // Prevent multiple simultaneous calls
     if (isFetchingRef.current) {
-      console.log("CSRF token fetch already in progress, skipping...");
+      logger.dev.log("CSRF token fetch already in progress, skipping...");
       return false;
     }
 
@@ -102,16 +103,16 @@ const Contact = () => {
       setIsSecurityLoading(true);
       setSecurityError(null);
 
-      console.log("Fetching CSRF token...");
+      logger.dev.log("Fetching CSRF token...");
 
       const headers: Record<string, string> = {};
       // Use ref to get current sessionId value (avoids stale closure)
       const currentSessionId = sessionIdRef.current;
       if (currentSessionId) {
         headers["x-session-id"] = currentSessionId;
-        console.log("Using existing session ID for token refresh");
+        logger.dev.log("Using existing session ID for token refresh");
       } else {
-        console.log("Generating new session ID");
+        logger.dev.log("Generating new session ID");
       }
 
       const response = await fetch("/api/csrf-token/", {
@@ -126,7 +127,7 @@ const Contact = () => {
 
       const data: CSRFTokenResponse = await response.json();
 
-      console.log(
+      logger.dev.log(
         "CSRF token fetched successfully, expires:",
         new Date(data.expires)
       );
@@ -138,7 +139,7 @@ const Contact = () => {
 
       return true;
     } catch (error) {
-      console.error("Failed to fetch CSRF token:", error);
+      logger.error("Failed to fetch CSRF token:", error);
       setSecurityError(
         error instanceof Error
           ? error.message
@@ -158,7 +159,9 @@ const Contact = () => {
     const initializeSecurity = async () => {
       // Prevent multiple simultaneous calls
       if (isFetchingRef.current) {
-        console.log("Security initialization already in progress, skipping...");
+        logger.dev.log(
+          "Security initialization already in progress, skipping..."
+        );
         return;
       }
 
@@ -167,16 +170,16 @@ const Contact = () => {
         setIsSecurityLoading(true);
         setSecurityError(null);
 
-        console.log("Initializing security...");
+        logger.dev.log("Initializing security...");
 
         const headers: Record<string, string> = {};
         // Use ref to get current sessionId value (avoids stale closure)
         const currentSessionId = sessionIdRef.current;
         if (currentSessionId) {
           headers["x-session-id"] = currentSessionId;
-          console.log("Using existing session ID for initialization");
+          logger.dev.log("Using existing session ID for initialization");
         } else {
-          console.log("Generating new session ID");
+          logger.dev.log("Generating new session ID");
         }
 
         const response = await fetch("/api/csrf-token/", {
@@ -191,7 +194,7 @@ const Contact = () => {
 
         const data: CSRFTokenResponse = await response.json();
 
-        console.log(
+        logger.dev.log(
           "Security initialized successfully, expires:",
           new Date(data.expires)
         );
@@ -201,7 +204,7 @@ const Contact = () => {
         setTokenExpires(data.expires);
         setIsSecurityLoading(false);
       } catch (error) {
-        console.error("Failed to initialize security:", error);
+        logger.error("Failed to initialize security:", error);
         setSecurityError(
           error instanceof Error
             ? error.message
@@ -245,7 +248,7 @@ const Contact = () => {
         : true;
 
       if (!csrfToken || !sessionId || isExpired) {
-        console.log("Refreshing CSRF token before form submission", {
+        logger.dev.log("Refreshing CSRF token before form submission", {
           hasToken: !!csrfToken,
           hasSession: !!sessionId,
           isExpired,
@@ -318,7 +321,7 @@ const Contact = () => {
         throw new Error(result.error || "Failed to send message");
       }
 
-      console.log("Email sent successfully:", result);
+      logger.dev.log("Email sent successfully:", result);
       setIsSubmitted(true);
       reset();
 
@@ -328,7 +331,7 @@ const Contact = () => {
       }
       successTimeoutRef.current = setTimeout(() => setIsSubmitted(false), 5000);
     } catch (error) {
-      console.error("Error sending email:", error);
+      logger.error("Error sending email:", error);
       setSubmitError(
         error instanceof Error
           ? error.message

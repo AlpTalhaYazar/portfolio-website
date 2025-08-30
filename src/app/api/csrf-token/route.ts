@@ -8,6 +8,7 @@ import {
   logSecurityEvent,
   cleanupExpiredTokens,
 } from "@/lib/security";
+import { logger } from "@/lib/logger";
 
 /**
  * CSRF Token API Endpoint
@@ -17,14 +18,11 @@ export async function GET(request: NextRequest) {
   const clientIP = getClientIP(request);
   const userAgent = request.headers.get("user-agent") || "unknown";
 
-  // Log request in development only
-  if (process.env.NODE_ENV === "development") {
-    console.log("[CSRF API] Request received:", {
-      clientIP,
-      origin: request.headers.get("origin"),
-      referer: request.headers.get("referer"),
-    });
-  }
+  logger.security("[CSRF API] Request received", {
+    clientIP,
+    origin: request.headers.get("origin"),
+    referer: request.headers.get("referer"),
+  });
 
   try {
     // 1. Origin verification
@@ -34,8 +32,10 @@ export async function GET(request: NextRequest) {
     ];
 
     const originVerified = verifyOrigin(request, allowedOrigins);
+    logger.dev.log("[CSRF API] Origin verification result:", originVerified);
 
     if (!originVerified) {
+      logger.error("[CSRF API] Origin verification failed");
       logSecurityEvent({
         type: "origin_violation",
         ip: clientIP,
@@ -58,34 +58,40 @@ export async function GET(request: NextRequest) {
 
     // 3. Check for existing session ID from headers
     const existingSessionId = request.headers.get("x-session-id");
-    console.log("[CSRF API] Existing session ID:", existingSessionId);
+    logger.security("[CSRF API] Session check", {
+      hasExistingSession: !!existingSessionId,
+      sessionId: existingSessionId,
+    });
 
     let csrfToken;
     let sessionId;
 
     if (existingSessionId) {
-      console.log("[CSRF API] Attempting to refresh existing token");
+      logger.dev.log("[CSRF API] Attempting to refresh existing token");
       // Try to refresh existing token
       const refreshedToken = refreshCSRFToken(existingSessionId);
       if (refreshedToken) {
-        console.log("[CSRF API] Token refreshed successfully");
+        logger.dev.log("[CSRF API] Token refreshed successfully");
         csrfToken = refreshedToken;
         sessionId = existingSessionId;
       } else {
-        console.log("[CSRF API] Token refresh failed, generating new session");
+        logger.dev.log(
+          "[CSRF API] Token refresh failed, generating new session"
+        );
         // Generate new session if refresh failed
         sessionId = generateSessionId(request);
         csrfToken = generateCSRFToken(sessionId);
       }
     } else {
-      console.log("[CSRF API] No existing session, generating new session");
+      logger.dev.log("[CSRF API] No existing session, generating new session");
       // Generate new session and token
       sessionId = generateSessionId(request);
       csrfToken = generateCSRFToken(sessionId);
     }
 
-    console.log("[CSRF API] Token generated:", {
+    logger.security("[CSRF API] Token generated", {
       sessionId,
+      token: csrfToken.token,
       tokenLength: csrfToken.token.length,
       expires: new Date(csrfToken.expires),
     });
@@ -111,16 +117,17 @@ export async function GET(request: NextRequest) {
       expiresIn: Math.floor((csrfToken.expires - Date.now()) / 1000), // seconds
     };
 
-    console.log("[CSRF API] Sending successful response:", {
+    logger.security("[CSRF API] Sending successful response", {
       success: response.success,
-      tokenLength: response.token.length,
+      token: response.token,
       sessionId: response.sessionId,
+      tokenLength: response.token.length,
       expiresIn: response.expiresIn,
     });
 
     return NextResponse.json(response);
   } catch (error) {
-    console.error("Error generating CSRF token:", error);
+    logger.error("Error generating CSRF token:", error);
 
     logSecurityEvent({
       type: "csrf_violation",

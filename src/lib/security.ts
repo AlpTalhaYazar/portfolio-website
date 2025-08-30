@@ -6,6 +6,7 @@ import {
   SecurityEvent,
   RateLimitResult,
 } from "@/types";
+import { logger } from "@/lib/logger";
 
 // =================================================
 // STORAGE INTERFACES (use Redis in production)
@@ -312,7 +313,7 @@ export function verifyOrigin(
   if (isDevelopment) {
     // If no origin/referer headers, allow it in development
     if (!origin && !referer) {
-      console.log(
+      logger.dev.log(
         "[DEV] No origin/referer headers, allowing request in development"
       );
       return true;
@@ -324,14 +325,17 @@ export function verifyOrigin(
       requestOrigin.includes("localhost") ||
       requestOrigin.includes("127.0.0.1")
     ) {
-      console.log("[DEV] Localhost request detected, allowing:", requestOrigin);
+      logger.dev.log(
+        "[DEV] Localhost request detected, allowing:",
+        requestOrigin
+      );
       return true;
     }
   }
 
   // Production: strict origin checking
   if (!origin && !referer) {
-    console.log("Origin verification failed: no origin or referer header");
+    logger.dev.log("Origin verification failed: no origin or referer header");
     return false;
   }
 
@@ -339,7 +343,7 @@ export function verifyOrigin(
   const isAllowed = allowedOrigins.includes(requestOrigin);
 
   if (!isAllowed) {
-    console.log("Origin verification failed:", {
+    logger.security("Origin verification failed", {
       requestOrigin,
       allowedOrigins,
       origin,
@@ -446,7 +450,7 @@ export function logSecurityEvent(event: Omit<SecurityEvent, "timestamp">) {
       console.warn(`[SECURITY MEDIUM] ${event.type}:`, securityEvent);
       break;
     case "low":
-      console.log(`[SECURITY LOW] ${event.type}:`, securityEvent);
+      logger.info(`[SECURITY LOW] ${event.type}:`, securityEvent);
       break;
     default:
       console.warn(`[SECURITY] ${event.type}:`, securityEvent);
