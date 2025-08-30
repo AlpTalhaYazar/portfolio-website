@@ -43,9 +43,10 @@ const Contact = () => {
     escalationLevel?: number;
   } | null>(null);
 
-  // Refs for cleanup
+  // Refs for cleanup and state management
   const submitErrorTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const successTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isFetchingRef = useRef<boolean>(false);
 
   const { effectiveTheme } = useTheme();
   const { t } = useTranslation();
@@ -84,16 +85,30 @@ const Contact = () => {
 
   // CSRF Token Management
   const fetchCSRFToken = useCallback(async (): Promise<boolean> => {
+    // Prevent multiple simultaneous calls
+    if (isFetchingRef.current) {
+      console.log("CSRF token fetch already in progress, skipping...");
+      return false;
+    }
+
     try {
+      isFetchingRef.current = true;
       setIsSecurityLoading(true);
       setSecurityError(null);
 
+      console.log("Fetching CSRF token...");
+
       const headers: Record<string, string> = {};
-      if (sessionId) {
-        headers["x-session-id"] = sessionId;
+      // Use current sessionId from state, not from dependency
+      const currentSessionId = sessionId;
+      if (currentSessionId) {
+        headers["x-session-id"] = currentSessionId;
+        console.log("Using existing session ID for token refresh");
+      } else {
+        console.log("Generating new session ID");
       }
 
-      const response = await fetch("/api/csrf-token", {
+      const response = await fetch("/api/csrf-token/", {
         method: "GET",
         headers,
       });
@@ -104,6 +119,11 @@ const Contact = () => {
       }
 
       const data: CSRFTokenResponse = await response.json();
+
+      console.log(
+        "CSRF token fetched successfully, expires:",
+        new Date(data.expires)
+      );
 
       setCsrfToken(data.token);
       setSessionId(data.sessionId);
@@ -120,26 +140,20 @@ const Contact = () => {
       );
       setIsSecurityLoading(false);
       return false;
+    } finally {
+      isFetchingRef.current = false;
     }
-  }, [sessionId]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- sessionId intentionally omitted to prevent infinite loop
 
-  // Check if token needs refresh
-  const isTokenExpired = useCallback(() => {
-    if (!tokenExpires) return true;
-    return Date.now() >= tokenExpires - 5 * 60 * 1000; // Refresh 5 minutes before expiry
-  }, [tokenExpires]);
+  // Token expiry logic is now inlined to prevent useCallback dependency issues
 
   // Initialize security on component mount
   useEffect(() => {
     fetchCSRFToken();
-  }, [fetchCSRFToken]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- fetchCSRFToken intentionally omitted to prevent infinite loop
 
-  // Auto-refresh token when needed
-  useEffect(() => {
-    if (!isSecurityLoading && isTokenExpired()) {
-      fetchCSRFToken();
-    }
-  }, [isSecurityLoading, isTokenExpired, fetchCSRFToken]);
+  // Simplified: Only refresh token manually before form submission
+  // Auto-refresh was causing infinite loops, so we'll handle it in the onSubmit function
 
   // Cleanup timeouts on unmount
   useEffect(() => {
@@ -160,7 +174,19 @@ const Contact = () => {
       setIsBlocked(false);
 
       // Ensure we have a valid CSRF token
-      if (!csrfToken || !sessionId || isTokenExpired()) {
+      const now = Date.now();
+      const isExpired = tokenExpires
+        ? now >= tokenExpires - 5 * 60 * 1000
+        : true;
+
+      if (!csrfToken || !sessionId || isExpired) {
+        console.log("Refreshing CSRF token before form submission", {
+          hasToken: !!csrfToken,
+          hasSession: !!sessionId,
+          isExpired,
+          tokenExpires: tokenExpires ? new Date(tokenExpires) : null,
+        });
+
         const tokenRefreshed = await fetchCSRFToken();
         if (!tokenRefreshed) {
           throw new Error(

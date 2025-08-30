@@ -306,13 +306,48 @@ export function verifyOrigin(
 ): boolean {
   const origin = request.headers.get("origin");
   const referer = request.headers.get("referer");
+  const isDevelopment = process.env.NODE_ENV === "development";
 
+  // In development, be more lenient with origin checking
+  if (isDevelopment) {
+    // If no origin/referer headers, allow it in development
+    if (!origin && !referer) {
+      console.log(
+        "[DEV] No origin/referer headers, allowing request in development"
+      );
+      return true;
+    }
+
+    // Check if it's from localhost (any port)
+    const requestOrigin = origin || (referer ? new URL(referer).origin : "");
+    if (
+      requestOrigin.includes("localhost") ||
+      requestOrigin.includes("127.0.0.1")
+    ) {
+      console.log("[DEV] Localhost request detected, allowing:", requestOrigin);
+      return true;
+    }
+  }
+
+  // Production: strict origin checking
   if (!origin && !referer) {
-    return false; // Require either origin or referer
+    console.log("Origin verification failed: no origin or referer header");
+    return false;
   }
 
   const requestOrigin = origin || (referer ? new URL(referer).origin : "");
-  return allowedOrigins.includes(requestOrigin);
+  const isAllowed = allowedOrigins.includes(requestOrigin);
+
+  if (!isAllowed) {
+    console.log("Origin verification failed:", {
+      requestOrigin,
+      allowedOrigins,
+      origin,
+      referer,
+    });
+  }
+
+  return isAllowed;
 }
 
 /**
