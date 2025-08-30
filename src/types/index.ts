@@ -43,6 +43,8 @@ export interface ContactForm {
   email: string;
   subject: string;
   message: string;
+  honeypot?: string;
+  csrfToken?: string;
 }
 
 export interface SocialLink {
@@ -107,6 +109,49 @@ export interface SecurityConfig {
   readonly allowedFileTypes: readonly string[];
   readonly maxFormSubmissions: number;
   readonly rateLimitWindow: number;
+}
+
+// =================================================
+// SECURITY-SPECIFIC TYPES
+// =================================================
+
+export interface CSRFToken {
+  readonly token: string;
+  readonly expires: number;
+  readonly sessionId: string;
+}
+
+export interface RateLimitInfo {
+  readonly count: number;
+  readonly resetTime: number;
+  readonly windowMs: number;
+  readonly isBlocked?: boolean;
+  readonly blockUntil?: number;
+}
+
+export interface SecurityEvent {
+  readonly type:
+    | "rate_limit"
+    | "csrf_violation"
+    | "spam_detected"
+    | "origin_violation"
+    | "progressive_block";
+  readonly ip: string;
+  readonly userAgent?: string;
+  readonly timestamp: string;
+  readonly details?: Record<string, unknown>;
+  readonly severity: "low" | "medium" | "high" | "critical";
+}
+
+export interface RateLimitResult {
+  readonly allowed: boolean;
+  readonly resetTime?: number;
+  readonly remainingRequests?: number;
+  readonly blockInfo?: {
+    readonly isBlocked: boolean;
+    readonly blockUntil?: number;
+    readonly escalationLevel: number;
+  };
 }
 
 // =================================================
