@@ -9,6 +9,8 @@ import {
   sanitizeInput,
   detectSpam,
   logSecurityEvent,
+  verifyCSRFToken,
+  cleanupExpiredTokens,
 } from "@/lib/security";
 
 // Validation schema
@@ -24,6 +26,7 @@ const contactSchema = z.object({
     .min(10, "Message must be at least 10 characters")
     .max(5000, "Message too long"),
   honeypot: z.string().optional(), // Hidden field for bot detection
+  csrfToken: z.string().min(1, "Security token is required"), // CSRF protection
 });
 
 export async function POST(request: NextRequest) {
@@ -31,6 +34,9 @@ export async function POST(request: NextRequest) {
   const userAgent = request.headers.get("user-agent") || "unknown";
 
   try {
+    // 0. Clean up expired tokens periodically
+    cleanupExpiredTokens();
+
     // 1. Origin verification
     const allowedOrigins = [
       process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
@@ -99,9 +105,48 @@ export async function POST(request: NextRequest) {
 
     // Validate input data
     const validatedData = contactSchema.parse(body);
-    const { name, email, subject, message, honeypot } = validatedData;
+    const { name, email, subject, message, honeypot, csrfToken } =
+      validatedData;
 
-    // 3. Honeypot validation (bot detection)
+    // 3. CSRF Token verification
+    const sessionId = request.headers.get("x-session-id");
+    if (!sessionId) {
+      logSecurityEvent({
+        type: "csrf_violation",
+        ip: clientIP,
+        userAgent,
+        severity: "high",
+        details: { reason: "missing_session_id" },
+      });
+      return NextResponse.json(
+        { error: "Invalid request. Missing session information." },
+        { status: 403 }
+      );
+    }
+
+    const csrfVerification = verifyCSRFToken(csrfToken, sessionId);
+    if (!csrfVerification.valid) {
+      logSecurityEvent({
+        type: "csrf_violation",
+        ip: clientIP,
+        userAgent,
+        severity: "high",
+        details: {
+          reason: csrfVerification.reason,
+          sessionId,
+          providedToken: csrfToken ? "present" : "missing",
+        },
+      });
+      return NextResponse.json(
+        {
+          error:
+            "Security validation failed. Please refresh the page and try again.",
+        },
+        { status: 403 }
+      );
+    }
+
+    // 4. Honeypot validation (bot detection)
     if (!validateHoneypot(honeypot)) {
       logSecurityEvent({
         type: "spam_detected",
@@ -117,7 +162,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 4. Sanitize inputs
+    // 5. Sanitize inputs
     const sanitizedData = {
       name: sanitizeInput(name),
       email: sanitizeInput(email),
@@ -125,7 +170,7 @@ export async function POST(request: NextRequest) {
       message: sanitizeInput(message),
     };
 
-    // 5. Spam detection
+    // 6. Spam detection
     if (detectSpam(sanitizedData)) {
       logSecurityEvent({
         type: "spam_detected",
