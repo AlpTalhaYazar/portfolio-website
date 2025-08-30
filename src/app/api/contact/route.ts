@@ -34,8 +34,7 @@ export async function POST(request: NextRequest) {
     // 1. Origin verification
     const allowedOrigins = [
       process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
-      "https://your-domain.com", // Add your production domain
-      "https://www.your-domain.com",
+      "https://www.alptalha.dev",
     ];
 
     if (!verifyOrigin(request, allowedOrigins)) {
