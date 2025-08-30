@@ -17,13 +17,14 @@ export async function GET(request: NextRequest) {
   const clientIP = getClientIP(request);
   const userAgent = request.headers.get("user-agent") || "unknown";
 
-  console.log("[CSRF API] Request received:", {
-    clientIP,
-    userAgent: userAgent.substring(0, 50),
-    origin: request.headers.get("origin"),
-    referer: request.headers.get("referer"),
-    method: request.method,
-  });
+  // Log request in development only
+  if (process.env.NODE_ENV === "development") {
+    console.log("[CSRF API] Request received:", {
+      clientIP,
+      origin: request.headers.get("origin"),
+      referer: request.headers.get("referer"),
+    });
+  }
 
   try {
     // 1. Origin verification
@@ -33,10 +34,8 @@ export async function GET(request: NextRequest) {
     ];
 
     const originVerified = verifyOrigin(request, allowedOrigins);
-    console.log("[CSRF API] Origin verification result:", originVerified);
 
     if (!originVerified) {
-      console.error("[CSRF API] Origin verification failed");
       logSecurityEvent({
         type: "origin_violation",
         ip: clientIP,

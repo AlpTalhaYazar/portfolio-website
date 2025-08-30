@@ -47,9 +47,15 @@ const Contact = () => {
   const submitErrorTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const successTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isFetchingRef = useRef<boolean>(false);
+  const sessionIdRef = useRef<string | null>(null);
 
   const { effectiveTheme } = useTheme();
   const { t } = useTranslation();
+
+  // Keep sessionId ref in sync with state to avoid stale closures
+  useEffect(() => {
+    sessionIdRef.current = sessionId;
+  }, [sessionId]);
 
   const contactFormSchema = z.object({
     name: z
@@ -99,8 +105,8 @@ const Contact = () => {
       console.log("Fetching CSRF token...");
 
       const headers: Record<string, string> = {};
-      // Use current sessionId from state, not from dependency
-      const currentSessionId = sessionId;
+      // Use ref to get current sessionId value (avoids stale closure)
+      const currentSessionId = sessionIdRef.current;
       if (currentSessionId) {
         headers["x-session-id"] = currentSessionId;
         console.log("Using existing session ID for token refresh");
@@ -143,14 +149,14 @@ const Contact = () => {
     } finally {
       isFetchingRef.current = false;
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- sessionId intentionally omitted to prevent infinite loop
+  }, []); // Safe to use empty deps since we use refs for dynamic values to avoid infinite loops
 
   // Token expiry logic is now inlined to prevent useCallback dependency issues
 
   // Initialize security on component mount
   useEffect(() => {
     fetchCSRFToken();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- fetchCSRFToken intentionally omitted to prevent infinite loop
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- fetchCSRFToken uses refs to avoid stale closures, safe to omit
 
   // Simplified: Only refresh token manually before form submission
   // Auto-refresh was causing infinite loops, so we'll handle it in the onSubmit function
@@ -173,10 +179,11 @@ const Contact = () => {
       setSecurityError(null);
       setIsBlocked(false);
 
-      // Ensure we have a valid CSRF token
+      // Ensure we have a valid CSRF token (5 minute refresh threshold)
       const now = Date.now();
+      const refreshThreshold = 5 * 60 * 1000; // 5 minutes - consistent with backend
       const isExpired = tokenExpires
-        ? now >= tokenExpires - 5 * 60 * 1000
+        ? now >= tokenExpires - refreshThreshold
         : true;
 
       if (!csrfToken || !sessionId || isExpired) {

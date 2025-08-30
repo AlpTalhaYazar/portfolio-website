@@ -288,7 +288,7 @@ export function refreshCSRFToken(sessionId: string): CSRFToken | null {
   // Only refresh if token is still valid but close to expiring
   const now = Date.now();
   const timeUntilExpiry = existing.expires - now;
-  const refreshThreshold = 15 * 60 * 1000; // 15 minutes
+  const refreshThreshold = 5 * 60 * 1000; // 5 minutes (matches PR description)
 
   if (timeUntilExpiry < refreshThreshold) {
     return generateCSRFToken(sessionId);
