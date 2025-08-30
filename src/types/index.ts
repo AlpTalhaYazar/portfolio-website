@@ -125,12 +125,14 @@ export const SECURITY_CONSTANTS = {
   DEFAULT_RATE_LIMIT_WINDOW: 15 * 60 * 1000, // 15 minutes
   DEFAULT_MAX_REQUESTS: 5,
 
-  // Progressive Blocking Durations
+  // Progressive Blocking Durations (gradual escalation)
   BLOCK_DURATIONS: {
     LEVEL_1: 5 * 60 * 1000, // 5 minutes
-    LEVEL_2: 30 * 60 * 1000, // 30 minutes
-    LEVEL_3: 2 * 60 * 60 * 1000, // 2 hours
-    LEVEL_4: 24 * 60 * 60 * 1000, // 24 hours
+    LEVEL_2: 10 * 60 * 1000, // 10 minutes
+    LEVEL_3: 30 * 60 * 1000, // 30 minutes
+    LEVEL_4: 60 * 60 * 1000, // 1 hour
+    LEVEL_5: 2 * 60 * 60 * 1000, // 2 hours
+    LEVEL_6: 24 * 60 * 60 * 1000, // 24 hours
   },
 
   // Cleanup intervals

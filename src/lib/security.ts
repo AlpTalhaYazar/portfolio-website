@@ -145,23 +145,29 @@ function triggerProgressiveBlock(clientIP: string, now: number) {
     return;
   }
 
-  // Escalate based on violation count
+  // Escalate based on violation count with gradual progression
   const violations = existing.violations + 1;
   let blockDuration: number;
   let escalationLevel: number;
 
-  if (violations <= 2) {
-    blockDuration = SECURITY_CONSTANTS.BLOCK_DURATIONS.LEVEL_1;
+  if (violations === 1) {
+    blockDuration = SECURITY_CONSTANTS.BLOCK_DURATIONS.LEVEL_1; // 5 min
     escalationLevel = 1;
-  } else if (violations <= 5) {
-    blockDuration = SECURITY_CONSTANTS.BLOCK_DURATIONS.LEVEL_2;
+  } else if (violations === 2) {
+    blockDuration = SECURITY_CONSTANTS.BLOCK_DURATIONS.LEVEL_2; // 10 min
     escalationLevel = 2;
-  } else if (violations <= 10) {
-    blockDuration = SECURITY_CONSTANTS.BLOCK_DURATIONS.LEVEL_3;
+  } else if (violations <= 4) {
+    blockDuration = SECURITY_CONSTANTS.BLOCK_DURATIONS.LEVEL_3; // 30 min
     escalationLevel = 3;
-  } else {
-    blockDuration = SECURITY_CONSTANTS.BLOCK_DURATIONS.LEVEL_4;
+  } else if (violations <= 7) {
+    blockDuration = SECURITY_CONSTANTS.BLOCK_DURATIONS.LEVEL_4; // 1 hour
     escalationLevel = 4;
+  } else if (violations <= 10) {
+    blockDuration = SECURITY_CONSTANTS.BLOCK_DURATIONS.LEVEL_5; // 2 hours
+    escalationLevel = 5;
+  } else {
+    blockDuration = SECURITY_CONSTANTS.BLOCK_DURATIONS.LEVEL_6; // 24 hours
+    escalationLevel = 6;
   }
 
   progressiveBlockStore.set(clientIP, {

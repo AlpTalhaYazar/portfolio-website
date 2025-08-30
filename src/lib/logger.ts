@@ -3,6 +3,8 @@
  * Prevents sensitive information from being logged in production
  */
 
+import { SecurityEvent } from "@/types";
+
 const isDevelopment = process.env.NODE_ENV === "development";
 
 export const logger = {
@@ -43,7 +45,10 @@ export const logger = {
   /**
    * Security-focused logging that sanitizes sensitive information
    */
-  security: (message: string, data?: Record<string, unknown>) => {
+  security: (
+    message: string,
+    data?: Record<string, unknown> | SecurityEvent
+  ) => {
     if (isDevelopment) {
       console.log(`[SECURITY DEV] ${message}`, data);
     } else {
@@ -58,7 +63,7 @@ export const logger = {
  * Sanitize log data to remove sensitive information in production
  */
 function sanitizeLogData(
-  data: Record<string, unknown>
+  data: Record<string, unknown> | SecurityEvent
 ): Record<string, unknown> {
   const sensitiveKeys = [
     "token",

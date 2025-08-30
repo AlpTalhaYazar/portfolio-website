@@ -151,7 +151,7 @@ const Contact = () => {
     } finally {
       isFetchingRef.current = false;
     }
-  }, []); // All used values are stable (state setters, logger) or accessed via refs. If you add any new dynamic values, include them in the dependency array.
+  }, []); // Empty dependency array - all values accessed via refs or are stable
 
   // Token expiry logic is now inlined to prevent useCallback dependency issues
 
