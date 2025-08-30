@@ -41,6 +41,7 @@ export async function GET(request: NextRequest) {
         ip: clientIP,
         userAgent,
         severity: "high",
+        timestamp: new Date().toISOString(),
         details: {
           endpoint: "/api/csrf-token",
           origin: request.headers.get("origin"),
@@ -98,10 +99,11 @@ export async function GET(request: NextRequest) {
 
     // 4. Log successful token generation (low severity)
     logSecurityEvent({
-      type: "csrf_violation", // Reusing type for token generation
+      type: "token_generated",
       ip: clientIP,
       userAgent,
       severity: "low",
+      timestamp: new Date().toISOString(),
       details: {
         action: "token_generated",
         sessionId,
@@ -130,10 +132,11 @@ export async function GET(request: NextRequest) {
     logger.error("Error generating CSRF token:", error);
 
     logSecurityEvent({
-      type: "csrf_violation",
+      type: "token_expired", // Better type for token generation failures
       ip: clientIP,
       userAgent,
       severity: "medium",
+      timestamp: new Date().toISOString(),
       details: {
         action: "token_generation_failed",
         error: error instanceof Error ? error.message : "Unknown error",

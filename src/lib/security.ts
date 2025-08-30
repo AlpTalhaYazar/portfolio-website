@@ -5,6 +5,7 @@ import {
   RateLimitInfo,
   SecurityEvent,
   RateLimitResult,
+  SECURITY_CONSTANTS,
 } from "@/types";
 import { logger } from "@/lib/logger";
 
@@ -39,8 +40,8 @@ const csrfTokenStore = new Map<string, CSRFToken>();
  */
 export function checkRateLimit(
   request: NextRequest,
-  windowMs: number = 15 * 60 * 1000, // 15 minutes
-  maxRequests: number = 5 // max 5 requests per window
+  windowMs: number = SECURITY_CONSTANTS.DEFAULT_RATE_LIMIT_WINDOW,
+  maxRequests: number = SECURITY_CONSTANTS.DEFAULT_MAX_REQUESTS
 ): RateLimitResult {
   const clientIP = getClientIP(request);
   const now = Date.now();
@@ -120,8 +121,7 @@ function checkProgressiveBlock(clientIP: string, now: number) {
   }
 
   // Block expired, clean up if it's been long enough since last violation
-  if (now > blockData.lastViolation + 24 * 60 * 60 * 1000) {
-    // 24 hours
+  if (now > blockData.lastViolation + SECURITY_CONSTANTS.CLEANUP_INTERVAL) {
     progressiveBlockStore.delete(clientIP);
   }
 
@@ -139,7 +139,7 @@ function triggerProgressiveBlock(clientIP: string, now: number) {
     progressiveBlockStore.set(clientIP, {
       violations: 1,
       lastViolation: now,
-      blockUntil: now + 5 * 60 * 1000, // 5 minutes
+      blockUntil: now + SECURITY_CONSTANTS.BLOCK_DURATIONS.LEVEL_1,
       escalationLevel: 1,
     });
     return;
@@ -151,16 +151,16 @@ function triggerProgressiveBlock(clientIP: string, now: number) {
   let escalationLevel: number;
 
   if (violations <= 2) {
-    blockDuration = 5 * 60 * 1000; // 5 minutes
+    blockDuration = SECURITY_CONSTANTS.BLOCK_DURATIONS.LEVEL_1;
     escalationLevel = 1;
   } else if (violations <= 5) {
-    blockDuration = 30 * 60 * 1000; // 30 minutes
+    blockDuration = SECURITY_CONSTANTS.BLOCK_DURATIONS.LEVEL_2;
     escalationLevel = 2;
   } else if (violations <= 10) {
-    blockDuration = 2 * 60 * 60 * 1000; // 2 hours
+    blockDuration = SECURITY_CONSTANTS.BLOCK_DURATIONS.LEVEL_3;
     escalationLevel = 3;
   } else {
-    blockDuration = 24 * 60 * 60 * 1000; // 24 hours
+    blockDuration = SECURITY_CONSTANTS.BLOCK_DURATIONS.LEVEL_4;
     escalationLevel = 4;
   }
 
@@ -218,7 +218,7 @@ export function generateSessionId(request: NextRequest): string {
  */
 export function generateCSRFToken(sessionId: string): CSRFToken {
   const token = crypto.randomBytes(32).toString("hex");
-  const expires = Date.now() + 60 * 60 * 1000; // 1 hour
+  const expires = Date.now() + SECURITY_CONSTANTS.CSRF_TOKEN_EXPIRY;
 
   const csrfToken: CSRFToken = {
     token,
@@ -289,9 +289,8 @@ export function refreshCSRFToken(sessionId: string): CSRFToken | null {
   // Only refresh if token is still valid but close to expiring
   const now = Date.now();
   const timeUntilExpiry = existing.expires - now;
-  const refreshThreshold = 5 * 60 * 1000; // 5 minutes (matches PR description)
 
-  if (timeUntilExpiry < refreshThreshold) {
+  if (timeUntilExpiry < SECURITY_CONSTANTS.CSRF_REFRESH_THRESHOLD) {
     return generateCSRFToken(sessionId);
   }
 
@@ -432,28 +431,31 @@ export function detectSpam(data: {
 /**
  * Enhanced security event logging with severity levels
  */
-export function logSecurityEvent(event: Omit<SecurityEvent, "timestamp">) {
+export function logSecurityEvent(event: SecurityEvent) {
   const securityEvent: SecurityEvent = {
     ...event,
-    timestamp: new Date().toISOString(),
+    timestamp: event.timestamp || new Date().toISOString(),
   };
 
-  // Log based on severity
+  // Log based on severity using secure logger
   switch (event.severity) {
     case "critical":
-      console.error(`[SECURITY CRITICAL] ${event.type}:`, securityEvent);
+      logger.error(`[SECURITY CRITICAL] ${event.type}`, securityEvent);
       break;
     case "high":
-      console.error(`[SECURITY HIGH] ${event.type}:`, securityEvent);
+      logger.error(`[SECURITY HIGH] ${event.type}`, securityEvent);
       break;
     case "medium":
-      console.warn(`[SECURITY MEDIUM] ${event.type}:`, securityEvent);
+      logger.warn(`[SECURITY MEDIUM] ${event.type}`, securityEvent);
       break;
     case "low":
-      logger.info(`[SECURITY LOW] ${event.type}:`, securityEvent);
+      logger.security(
+        `[SECURITY LOW] ${event.type}`,
+        securityEvent as unknown as Record<string, unknown>
+      );
       break;
     default:
-      console.warn(`[SECURITY] ${event.type}:`, securityEvent);
+      logger.warn(`[SECURITY] ${event.type}`, securityEvent);
   }
 
   // In production, send to monitoring service based on severity

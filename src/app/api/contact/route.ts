@@ -49,6 +49,7 @@ export async function POST(request: NextRequest) {
         ip: clientIP,
         userAgent,
         severity: "high",
+        timestamp: new Date().toISOString(),
         details: {
           origin: request.headers.get("origin"),
           referer: request.headers.get("referer"),
@@ -71,6 +72,7 @@ export async function POST(request: NextRequest) {
         ip: clientIP,
         userAgent,
         severity,
+        timestamp: new Date().toISOString(),
         details: {
           escalationLevel: rateLimit.blockInfo?.escalationLevel,
           blockUntil: rateLimit.blockInfo?.blockUntil,
@@ -116,6 +118,7 @@ export async function POST(request: NextRequest) {
         ip: clientIP,
         userAgent,
         severity: "high",
+        timestamp: new Date().toISOString(),
         details: { reason: "missing_session_id" },
       });
       return NextResponse.json(
@@ -131,6 +134,7 @@ export async function POST(request: NextRequest) {
         ip: clientIP,
         userAgent,
         severity: "high",
+        timestamp: new Date().toISOString(),
         details: {
           reason: csrfVerification.reason,
           sessionId,
@@ -153,6 +157,7 @@ export async function POST(request: NextRequest) {
         ip: clientIP,
         userAgent,
         severity: "medium",
+        timestamp: new Date().toISOString(),
         details: { reason: "honeypot_filled", honeypot },
       });
       // Return success to fool bots
@@ -177,6 +182,7 @@ export async function POST(request: NextRequest) {
         ip: clientIP,
         userAgent,
         severity: "medium",
+        timestamp: new Date().toISOString(),
         details: { reason: "content_analysis", data: sanitizedData },
       });
       // Return success to fool spammers

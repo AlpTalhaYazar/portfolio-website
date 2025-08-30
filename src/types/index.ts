@@ -115,6 +115,28 @@ export interface SecurityConfig {
 // SECURITY-SPECIFIC TYPES
 // =================================================
 
+// Security Configuration Constants
+export const SECURITY_CONSTANTS = {
+  // CSRF Token Management
+  CSRF_TOKEN_EXPIRY: 60 * 60 * 1000, // 1 hour
+  CSRF_REFRESH_THRESHOLD: 5 * 60 * 1000, // 5 minutes before expiry
+
+  // Rate Limiting
+  DEFAULT_RATE_LIMIT_WINDOW: 15 * 60 * 1000, // 15 minutes
+  DEFAULT_MAX_REQUESTS: 5,
+
+  // Progressive Blocking Durations
+  BLOCK_DURATIONS: {
+    LEVEL_1: 5 * 60 * 1000, // 5 minutes
+    LEVEL_2: 30 * 60 * 1000, // 30 minutes
+    LEVEL_3: 2 * 60 * 60 * 1000, // 2 hours
+    LEVEL_4: 24 * 60 * 60 * 1000, // 24 hours
+  },
+
+  // Cleanup intervals
+  CLEANUP_INTERVAL: 24 * 60 * 60 * 1000, // 24 hours
+} as const;
+
 export interface CSRFToken {
   readonly token: string;
   readonly expires: number;
@@ -135,7 +157,11 @@ export interface SecurityEvent {
     | "csrf_violation"
     | "spam_detected"
     | "origin_violation"
-    | "progressive_block";
+    | "progressive_block"
+    | "token_generated"
+    | "token_refreshed"
+    | "token_expired"
+    | "security_success";
   readonly ip: string;
   readonly userAgent?: string;
   readonly timestamp: string;

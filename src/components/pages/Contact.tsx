@@ -11,6 +11,7 @@ import { useTranslation } from "@/lib/i18n";
 import LightsaberButton from "@/components/ui/LightsaberButton";
 import HologramCard from "@/components/ui/HologramCard";
 import { useTheme } from "@/components/theme/ThemeProvider";
+import { SECURITY_CONSTANTS } from "@/types";
 import { logger } from "@/lib/logger";
 
 // Security and API response interfaces
@@ -240,11 +241,10 @@ const Contact = () => {
       setSecurityError(null);
       setIsBlocked(false);
 
-      // Ensure we have a valid CSRF token (5 minute refresh threshold)
+      // Ensure we have a valid CSRF token
       const now = Date.now();
-      const refreshThreshold = 5 * 60 * 1000; // 5 minutes - consistent with backend
       const isExpired = tokenExpires
-        ? now >= tokenExpires - refreshThreshold
+        ? now >= tokenExpires - SECURITY_CONSTANTS.CSRF_REFRESH_THRESHOLD
         : true;
 
       if (!csrfToken || !sessionId || isExpired) {
