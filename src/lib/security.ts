@@ -455,10 +455,7 @@ export function logSecurityEvent(event: SecurityEvent) {
       logger.warn(`[SECURITY MEDIUM] ${event.type}`, securityEvent);
       break;
     case "low":
-      logger.security(
-        `[SECURITY LOW] ${event.type}`,
-        securityEvent as unknown as Record<string, unknown>
-      );
+      logger.security(`[SECURITY LOW] ${event.type}`, securityEvent);
       break;
     default:
       logger.warn(`[SECURITY] ${event.type}`, securityEvent);
