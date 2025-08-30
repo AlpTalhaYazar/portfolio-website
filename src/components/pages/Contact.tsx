@@ -4,17 +4,45 @@ import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Mail, MapPin, Phone, Send } from "lucide-react";
+import { Mail, MapPin, Phone, Send, Shield, AlertTriangle } from "lucide-react";
 import { socialLinks } from "@/lib/data";
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "@/lib/i18n";
 import LightsaberButton from "@/components/ui/LightsaberButton";
 import HologramCard from "@/components/ui/HologramCard";
 import { useTheme } from "@/components/theme/ThemeProvider";
 
+// Security and API response interfaces
+interface CSRFTokenResponse {
+  success: boolean;
+  token: string;
+  sessionId: string;
+  expires: number;
+  expiresIn: number;
+}
+
+interface SecurityError {
+  error: string;
+  blocked?: boolean;
+  escalationLevel?: number;
+}
+
 const Contact = () => {
+  // Form state
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  // Security state
+  const [csrfToken, setCsrfToken] = useState<string | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [tokenExpires, setTokenExpires] = useState<number | null>(null);
+  const [isSecurityLoading, setIsSecurityLoading] = useState(true);
+  const [securityError, setSecurityError] = useState<string | null>(null);
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [blockInfo, setBlockInfo] = useState<{
+    escalationLevel?: number;
+  } | null>(null);
+
   const { effectiveTheme } = useTheme();
   const { t } = useTranslation();
 
@@ -36,6 +64,7 @@ const Contact = () => {
       .min(10, t.contact.validation.messageMinLength)
       .max(5000, "Message too long"),
     honeypot: z.string().optional(), // Hidden field for bot detection
+    csrfToken: z.string().optional(), // Will be populated automatically
   });
 
   type ContactFormData = z.infer<typeof contactFormSchema>;
@@ -49,30 +78,136 @@ const Contact = () => {
     resolver: zodResolver(contactFormSchema),
   });
 
+  // CSRF Token Management
+  const fetchCSRFToken = useCallback(async (): Promise<boolean> => {
+    try {
+      setIsSecurityLoading(true);
+      setSecurityError(null);
+
+      const headers: Record<string, string> = {};
+      if (sessionId) {
+        headers["x-session-id"] = sessionId;
+      }
+
+      const response = await fetch("/api/csrf-token", {
+        method: "GET",
+        headers,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to get security token");
+      }
+
+      const data: CSRFTokenResponse = await response.json();
+
+      setCsrfToken(data.token);
+      setSessionId(data.sessionId);
+      setTokenExpires(data.expires);
+      setIsSecurityLoading(false);
+
+      return true;
+    } catch (error) {
+      console.error("Failed to fetch CSRF token:", error);
+      setSecurityError(
+        error instanceof Error
+          ? error.message
+          : "Security initialization failed"
+      );
+      setIsSecurityLoading(false);
+      return false;
+    }
+  }, [sessionId]);
+
+  // Check if token needs refresh
+  const isTokenExpired = useCallback(() => {
+    if (!tokenExpires) return true;
+    return Date.now() >= tokenExpires - 5 * 60 * 1000; // Refresh 5 minutes before expiry
+  }, [tokenExpires]);
+
+  // Initialize security on component mount
+  useEffect(() => {
+    fetchCSRFToken();
+  }, [fetchCSRFToken]);
+
+  // Auto-refresh token when needed
+  useEffect(() => {
+    if (!isSecurityLoading && isTokenExpired()) {
+      fetchCSRFToken();
+    }
+  }, [isSecurityLoading, isTokenExpired, fetchCSRFToken]);
+
   const onSubmit = async (data: ContactFormData) => {
     try {
       setSubmitError(null);
+      setSecurityError(null);
+      setIsBlocked(false);
+
+      // Ensure we have a valid CSRF token
+      if (!csrfToken || !sessionId || isTokenExpired()) {
+        const tokenRefreshed = await fetchCSRFToken();
+        if (!tokenRefreshed) {
+          throw new Error(
+            "Security validation failed. Please refresh the page."
+          );
+        }
+      }
+
+      // Prepare submission data with security token
+      const submissionData = {
+        ...data,
+        csrfToken: csrfToken!,
+      };
+
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+
+      if (sessionId) {
+        headers["x-session-id"] = sessionId;
+      }
 
       const response = await fetch("/api/contact/", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
+        headers,
+        body: JSON.stringify(submissionData),
       });
 
       const result = await response.json();
 
       if (!response.ok) {
+        // Handle enhanced rate limiting responses
         if (response.status === 429) {
+          const securityResult = result as SecurityError;
+
+          if (securityResult.blocked) {
+            setIsBlocked(true);
+            setBlockInfo({ escalationLevel: securityResult.escalationLevel });
+          }
+
           const retryAfter = response.headers.get("retry-after");
           const minutes = retryAfter
             ? Math.ceil(parseInt(retryAfter) / 60)
             : 15;
+
+          const escalationMessage = securityResult.escalationLevel
+            ? ` (Level ${securityResult.escalationLevel})`
+            : "";
+
           throw new Error(
-            `Too many requests. Please wait ${minutes} minutes before trying again.`
+            `Too many requests${escalationMessage}. Please wait ${minutes} minutes before trying again.`
           );
         }
+
+        // Handle CSRF or other security errors
+        if (response.status === 403) {
+          // Try to refresh CSRF token for the next attempt
+          await fetchCSRFToken();
+          throw new Error(
+            result.error || "Security validation failed. Please try again."
+          );
+        }
+
         throw new Error(result.error || "Failed to send message");
       }
 
@@ -90,8 +225,8 @@ const Contact = () => {
           : "Failed to send message. Please try again."
       );
 
-      // Reset error message after 5 seconds
-      setTimeout(() => setSubmitError(null), 5000);
+      // Reset error message after 10 seconds for security errors
+      setTimeout(() => setSubmitError(null), 10000);
     }
   };
 
@@ -348,9 +483,33 @@ const Contact = () => {
                   )}
                 </div>
 
+                {/* Security Status Indicator */}
+                {isSecurityLoading && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                    Initializing security...
+                  </div>
+                )}
+
+                {securityError && (
+                  <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm mb-4">
+                    <AlertTriangle size={16} />
+                    {securityError}
+                  </div>
+                )}
+
+                {csrfToken && !securityError && (
+                  <div className="flex items-center gap-2 text-sm text-green-600 mb-4">
+                    <Shield size={16} />
+                    Form secured
+                  </div>
+                )}
+
                 <LightsaberButton
                   variant="blue"
-                  disabled={isSubmitting}
+                  disabled={
+                    isSubmitting || isSecurityLoading || !csrfToken || isBlocked
+                  }
                   className="w-full"
                   type="submit"
                 >
@@ -358,6 +517,16 @@ const Contact = () => {
                     <>
                       <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
                       {t.contact.form.sending}
+                    </>
+                  ) : isSecurityLoading ? (
+                    <>
+                      <Shield size={18} />
+                      Securing...
+                    </>
+                  ) : isBlocked ? (
+                    <>
+                      <AlertTriangle size={18} />
+                      Temporarily Blocked
                     </>
                   ) : (
                     <>
@@ -381,9 +550,35 @@ const Contact = () => {
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm"
+                    className={`p-4 border rounded-lg text-sm ${
+                      isBlocked
+                        ? "bg-orange-50 border-orange-200 text-orange-700"
+                        : "bg-red-50 border-red-200 text-red-700"
+                    }`}
                   >
-                    ❌ {submitError}
+                    <div className="flex items-start gap-2">
+                      {isBlocked ? (
+                        <AlertTriangle size={16} className="mt-0.5" />
+                      ) : (
+                        <span>❌</span>
+                      )}
+                      <div>
+                        <div>{submitError}</div>
+                        {isBlocked && blockInfo?.escalationLevel && (
+                          <div className="mt-2 text-xs opacity-75">
+                            Security Level: {blockInfo.escalationLevel}/4
+                            {blockInfo.escalationLevel >= 3 &&
+                              " - Extended restrictions in effect"}
+                          </div>
+                        )}
+                        {isBlocked && (
+                          <div className="mt-2 text-xs opacity-75">
+                            This is a temporary security measure. Please wait
+                            before trying again.
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </motion.div>
                 )}
               </form>
