@@ -5,6 +5,9 @@ import {
   RateLimitInfo,
   SecurityEvent,
   RateLimitResult,
+  RateLimitConfig,
+  ProgressiveBlockInfo,
+  BlockInfo,
   SECURITY_CONSTANTS,
 } from "@/types";
 import { logger } from "@/lib/logger";
@@ -17,15 +20,7 @@ import { logger } from "@/lib/logger";
 const rateLimitStore = new Map<string, RateLimitInfo>();
 
 // Progressive blocking store for escalating restrictions
-const progressiveBlockStore = new Map<
-  string,
-  {
-    violations: number;
-    lastViolation: number;
-    blockUntil: number;
-    escalationLevel: number;
-  }
->();
+const progressiveBlockStore = new Map<string, ProgressiveBlockInfo>();
 
 // CSRF token store with session management
 const csrfTokenStore = new Map<string, CSRFToken>();
@@ -38,11 +33,40 @@ const csrfTokenStore = new Map<string, CSRFToken>();
  * Enhanced rate limiting with progressive blocking
  * Escalates restrictions based on violation history
  */
+// Overload for backwards compatibility (separate parameters)
 export function checkRateLimit(
   request: NextRequest,
-  windowMs: number = SECURITY_CONSTANTS.DEFAULT_RATE_LIMIT_WINDOW,
+  windowMs?: number,
+  maxRequests?: number
+): RateLimitResult;
+
+// Overload for RateLimitConfig object
+export function checkRateLimit(
+  request: NextRequest,
+  config: RateLimitConfig
+): RateLimitResult;
+
+// Implementation
+export function checkRateLimit(
+  request: NextRequest,
+  windowMsOrConfig:
+    | number
+    | RateLimitConfig = SECURITY_CONSTANTS.DEFAULT_RATE_LIMIT_WINDOW,
   maxRequests: number = SECURITY_CONSTANTS.DEFAULT_MAX_REQUESTS
 ): RateLimitResult {
+  // Handle both parameter styles
+  let windowMs: number;
+  let maxRequestsResolved: number;
+
+  if (typeof windowMsOrConfig === "object") {
+    // Called with RateLimitConfig object
+    windowMs = windowMsOrConfig.windowMs;
+    maxRequestsResolved = windowMsOrConfig.maxRequests;
+  } else {
+    // Called with separate parameters (backwards compatibility)
+    windowMs = windowMsOrConfig;
+    maxRequestsResolved = maxRequests;
+  }
   const clientIP = getClientIP(request);
   const now = Date.now();
   const key = `rate_limit:${clientIP}`;
@@ -70,12 +94,12 @@ export function checkRateLimit(
     return {
       allowed: true,
       resetTime,
-      remainingRequests: maxRequests - 1,
+      remainingRequests: maxRequestsResolved - 1,
       blockInfo: { isBlocked: false, escalationLevel: 0 },
     };
   }
 
-  if (existing.count >= maxRequests) {
+  if (existing.count >= maxRequestsResolved) {
     // Rate limit exceeded - trigger progressive blocking
     triggerProgressiveBlock(clientIP, now);
 
@@ -97,7 +121,7 @@ export function checkRateLimit(
   return {
     allowed: true,
     resetTime: existing.resetTime,
-    remainingRequests: maxRequests - updatedInfo.count,
+    remainingRequests: maxRequestsResolved - updatedInfo.count,
     blockInfo: { isBlocked: false, escalationLevel: 0 },
   };
 }
@@ -105,7 +129,7 @@ export function checkRateLimit(
 /**
  * Check if client is in progressive block
  */
-function checkProgressiveBlock(clientIP: string, now: number) {
+function checkProgressiveBlock(clientIP: string, now: number): BlockInfo {
   const blockData = progressiveBlockStore.get(clientIP);
 
   if (!blockData) {
