@@ -111,6 +111,7 @@ const Contact = () => {
       const currentSessionId = sessionIdRef.current;
       if (currentSessionId) {
         headers["x-session-id"] = currentSessionId;
+
         logger.dev.log("Using existing session ID for token refresh");
       } else {
         logger.dev.log("Generating new session ID");
@@ -123,6 +124,7 @@ const Contact = () => {
 
       if (!response.ok) {
         const errorData = await response.json();
+
         throw new Error(errorData.error || "Failed to get security token");
       }
 
@@ -141,12 +143,15 @@ const Contact = () => {
       return true;
     } catch (error) {
       logger.error("Failed to fetch CSRF token:", error);
+
       setSecurityError(
         error instanceof Error
           ? error.message
           : "Security initialization failed"
       );
+
       setIsSecurityLoading(false);
+
       return false;
     } finally {
       isFetchingRef.current = false;
@@ -163,6 +168,7 @@ const Contact = () => {
         logger.dev.log(
           "Security initialization already in progress, skipping..."
         );
+
         return;
       }
 
@@ -178,6 +184,7 @@ const Contact = () => {
         const currentSessionId = sessionIdRef.current;
         if (currentSessionId) {
           headers["x-session-id"] = currentSessionId;
+
           logger.dev.log("Using existing session ID for initialization");
         } else {
           logger.dev.log("Generating new session ID");
@@ -190,6 +197,7 @@ const Contact = () => {
 
         if (!response.ok) {
           const errorData = await response.json();
+
           throw new Error(errorData.error || "Failed to get security token");
         }
 
@@ -206,11 +214,13 @@ const Contact = () => {
         setIsSecurityLoading(false);
       } catch (error) {
         logger.error("Failed to initialize security:", error);
+
         setSecurityError(
           error instanceof Error
             ? error.message
             : "Security initialization failed"
         );
+
         setIsSecurityLoading(false);
       } finally {
         isFetchingRef.current = false;
@@ -256,6 +266,7 @@ const Contact = () => {
         });
 
         const tokenRefreshed = await fetchCSRFToken();
+
         if (!tokenRefreshed) {
           throw new Error(
             "Security validation failed. Please refresh the page."
@@ -313,6 +324,7 @@ const Contact = () => {
         if (response.status === 403) {
           // Try to refresh CSRF token for the next attempt
           await fetchCSRFToken();
+
           throw new Error(
             result.error || "Security validation failed. Please try again."
           );
@@ -322,16 +334,20 @@ const Contact = () => {
       }
 
       logger.dev.log("Email sent successfully:", result);
+
       setIsSubmitted(true);
+
       reset();
 
       // Clear previous success timeout and set new one
       if (successTimeoutRef.current) {
         clearTimeout(successTimeoutRef.current);
       }
+
       successTimeoutRef.current = setTimeout(() => setIsSubmitted(false), 5000);
     } catch (error) {
       logger.error("Error sending email:", error);
+
       setSubmitError(
         error instanceof Error
           ? error.message
