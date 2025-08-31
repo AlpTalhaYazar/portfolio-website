@@ -153,6 +153,11 @@ export interface RateLimitInfo {
   readonly blockUntil?: number;
 }
 
+export interface RateLimitConfig {
+  readonly windowMs: number;
+  readonly maxRequests: number;
+}
+
 export interface SecurityEvent {
   readonly type:
     | "rate_limit"
@@ -175,11 +180,20 @@ export interface RateLimitResult {
   readonly allowed: boolean;
   readonly resetTime?: number;
   readonly remainingRequests?: number;
-  readonly blockInfo?: {
-    readonly isBlocked: boolean;
-    readonly blockUntil?: number;
-    readonly escalationLevel: number;
-  };
+  readonly blockInfo?: BlockInfo;
+}
+
+export interface ProgressiveBlockInfo {
+  readonly violations: number;
+  readonly lastViolation: number;
+  readonly blockUntil: number;
+  readonly escalationLevel: number;
+}
+
+export interface BlockInfo {
+  readonly isBlocked: boolean;
+  readonly blockUntil?: number;
+  readonly escalationLevel: number;
 }
 
 // =================================================
