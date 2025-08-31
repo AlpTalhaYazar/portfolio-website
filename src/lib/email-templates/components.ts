@@ -80,11 +80,11 @@ export const contactInfoComponent: EmailComponent<ContactInfoComponentData> = {
     Contact Details:
     ================
     
-    <strong>Name:</strong> ${data.name}
-    <br/>
-    <strong>Email:</strong> ${data.email}
-    <br/>
-    <strong>Subject:</strong> ${data.subject}
+    Name: ${data.name}
+    
+    Email: ${data.email}
+    
+    Subject: ${data.subject}
   `,
 };
 
@@ -151,7 +151,7 @@ export const ctaButtonComponent: EmailComponent<CTAButtonComponentData> = {
   name: "ctaButton",
   render: (data: CTAButtonComponentData) => `
     <div style="text-align: center; margin: 25px 0;">
-      <a href="${data.url}" class="email-button ${
+      <a href="${data.url}" class="cta-button ${
     data.variant || "primary"
   }" target="_blank" rel="noopener noreferrer">
         ${data.text}

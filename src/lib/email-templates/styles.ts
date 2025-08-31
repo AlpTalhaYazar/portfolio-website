@@ -259,26 +259,9 @@ export function generateBaseStyles(): string {
         }
       }
 
-      /* Dark mode support */
-      @media (prefers-color-scheme: dark) {
-        .email-container {
-          background-color: #1a1a1a;
-          border-color: #333;
-        }
-        
-        .email-content {
-          color: #e0e0e0;
-        }
-        
-        .message-content {
-          background-color: #2a2a2a;
-        }
-        
-        .security-info {
-          background-color: #2a2a2a;
-          border-color: #333;
-        }
-      }
+      /* Note: Dark mode media queries are not well supported in most email clients
+         and may be stripped out during delivery. For broader compatibility,
+         consider using a single light theme optimized for all email clients. */
     </style>
   `;
 }

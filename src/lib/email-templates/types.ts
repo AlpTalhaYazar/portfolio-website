@@ -221,14 +221,20 @@ export function isFooterData(data: ComponentData): data is FooterComponentData {
 export function isDividerData(
   data: ComponentData
 ): data is DividerComponentData {
+  // Check for the specific shape of DividerComponentData
+  // Since DividerComponentData can be empty {}, we check that it's an object
+  // with no required properties from other component types
   return (
-    !("title" in data) &&
-    !("message" in data) &&
-    !("name" in data) &&
-    !("ipAddress" in data) &&
-    !("text" in data) &&
-    !("socialLinks" in data) &&
-    !("branding" in data)
+    typeof data === "object" &&
+    data !== null &&
+    !("title" in data) && // Not header
+    !("name" in data) && // Not contact info
+    !("message" in data) && // Not message
+    !("ipAddress" in data) && // Not security info
+    !("text" in data) && // Not CTA button
+    !("socialLinks" in data) && // Not social links
+    !("companyName" in data) && // Not footer
+    !("status" in data) // Not status badge
   );
 }
 
