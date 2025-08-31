@@ -46,112 +46,85 @@ import {
 } from "./components";
 
 /**
- * Centralized component renderer to eliminate DRY violations
- * Handles component type checking and rendering
+ * Unified component renderer using registry pattern
+ * Eliminates code duplication and improves maintainability
  */
 function renderComponent(
   componentName: ComponentName,
   data: ComponentData,
   method: "render" | "renderText" = "render"
 ): string {
-  switch (componentName) {
-    case "header":
-      if (isHeaderData(data)) {
-        return method === "render"
-          ? headerComponent.render(data)
-          : headerComponent.renderText?.(data) || "";
-      }
-      break;
-    case "contactInfo":
-      if (isContactInfoData(data)) {
-        return method === "render"
-          ? contactInfoComponent.render(data)
-          : contactInfoComponent.renderText?.(data) || "";
-      }
-      break;
-    case "message":
-      if (isMessageData(data)) {
-        return method === "render"
-          ? messageComponent.render(data)
-          : messageComponent.renderText?.(data) || "";
-      }
-      break;
-    case "securityInfo":
-      if (isSecurityInfoData(data)) {
-        return method === "render"
-          ? securityInfoComponent.render(data)
-          : securityInfoComponent.renderText?.(data) || "";
-      }
-      break;
-    case "ctaButton":
-      if (isCTAButtonData(data)) {
-        return method === "render"
-          ? ctaButtonComponent.render(data)
-          : ctaButtonComponent.renderText?.(data) || "";
-      }
-      break;
-    case "socialLinks":
-      if (isSocialLinksData(data)) {
-        return method === "render"
-          ? socialLinksComponent.render(data)
-          : socialLinksComponent.renderText?.(data) || "";
-      }
-      break;
-    case "footer":
-      if (isFooterData(data)) {
-        return method === "render"
-          ? footerComponent.render(data)
-          : footerComponent.renderText?.(data) || "";
-      }
-      break;
-    case "divider":
-      if (isDividerData(data)) {
-        return method === "render"
-          ? dividerComponent.render(data)
-          : dividerComponent.renderText?.(data) || "";
-      }
-      break;
-    case "statusBadge":
-      if (isStatusBadgeData(data)) {
-        return method === "render"
-          ? statusBadgeComponent.render(data)
-          : statusBadgeComponent.renderText?.(data) || "";
-      }
-      break;
+  const entry = componentRegistry[componentName];
+  if (entry && entry.typeGuard(data)) {
+    if (method === "render") {
+      return entry.component.render(data);
+    } else {
+      return entry.component.renderText?.(data) || "";
+    }
   }
   return "";
 }
 
 /**
- * Centralized component validation
+ * Unified component validation using registry pattern
+ * Eliminates duplication with renderComponent function
  */
 function isValidComponentData(
   componentName: ComponentName,
   data: ComponentData
 ): boolean {
-  switch (componentName) {
-    case "header":
-      return isHeaderData(data);
-    case "contactInfo":
-      return isContactInfoData(data);
-    case "message":
-      return isMessageData(data);
-    case "securityInfo":
-      return isSecurityInfoData(data);
-    case "ctaButton":
-      return isCTAButtonData(data);
-    case "socialLinks":
-      return isSocialLinksData(data);
-    case "footer":
-      return isFooterData(data);
-    case "divider":
-      return isDividerData(data);
-    case "statusBadge":
-      return isStatusBadgeData(data);
-    default:
-      return false;
-  }
+  const entry = componentRegistry[componentName];
+  return entry ? entry.typeGuard(data) : false;
 }
+// Component registry to eliminate code duplication and improve maintainability
+// Note: Using unknown type with type guards ensures type safety at runtime
+interface RegistryEntry {
+  typeGuard: (data: ComponentData) => boolean;
+  component: {
+    render: (data: unknown) => string;
+    renderText?: (data: unknown) => string;
+  };
+}
+
+const componentRegistry: Record<ComponentName, RegistryEntry> = {
+  header: {
+    typeGuard: isHeaderData,
+    component: headerComponent as RegistryEntry["component"],
+  },
+  contactInfo: {
+    typeGuard: isContactInfoData,
+    component: contactInfoComponent as RegistryEntry["component"],
+  },
+  message: {
+    typeGuard: isMessageData,
+    component: messageComponent as RegistryEntry["component"],
+  },
+  securityInfo: {
+    typeGuard: isSecurityInfoData,
+    component: securityInfoComponent as RegistryEntry["component"],
+  },
+  ctaButton: {
+    typeGuard: isCTAButtonData,
+    component: ctaButtonComponent as RegistryEntry["component"],
+  },
+  socialLinks: {
+    typeGuard: isSocialLinksData,
+    component: socialLinksComponent as RegistryEntry["component"],
+  },
+  footer: {
+    typeGuard: isFooterData,
+    component: footerComponent as RegistryEntry["component"],
+  },
+  divider: {
+    typeGuard: isDividerData,
+    component: dividerComponent as RegistryEntry["component"],
+  },
+  statusBadge: {
+    typeGuard: isStatusBadgeData,
+    component: statusBadgeComponent as RegistryEntry["component"],
+  },
+};
+
 // Static professional branding
 const defaultBranding: EmailBranding = {
   siteName: "Portfolio Contact",

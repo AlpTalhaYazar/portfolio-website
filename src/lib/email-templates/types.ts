@@ -162,18 +162,8 @@ export interface DividerComponentData {
   // Divider component requires minimal data with proper type discrimination
 }
 
-// Discriminated union for type safety
-export interface ComponentDataWithType {
-  header: HeaderComponentData & { _type: "header" };
-  contactInfo: ContactInfoComponentData & { _type: "contactInfo" };
-  message: MessageComponentData & { _type: "message" };
-  securityInfo: SecurityInfo & { _type: "securityInfo" };
-  ctaButton: CTAButtonComponentData & { _type: "ctaButton" };
-  socialLinks: SocialLinksComponentData & { _type: "socialLinks" };
-  footer: FooterComponentData & { _type: "footer" };
-  divider: DividerComponentData & { _type: "divider" };
-  statusBadge: StatusBadgeComponentData & { _type: "statusBadge" };
-}
+// Removed redundant ComponentDataWithType interface -
+// ComponentDataMap already provides the same functionality
 
 // Component name to data type mapping (for type constraints)
 export interface ComponentDataMap {

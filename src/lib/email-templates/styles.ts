@@ -138,13 +138,7 @@ export function generateBaseStyles(): string {
         text-align: center;
         margin: 20px 0;
         border: 2px solid #3498db;
-        transition: all 0.3s ease;
         box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-      }
-
-      .cta-button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(0,0,0,0.2);
       }
 
       .cta-button.secondary {
@@ -170,12 +164,6 @@ export function generateBaseStyles(): string {
         height: 44px;
         line-height: 20px;
         text-align: center;
-        transition: all 0.3s ease;
-      }
-
-      .social-links a:hover {
-        background-color: #3498db;
-        transform: translateY(-2px);
       }
 
       .email-footer {
