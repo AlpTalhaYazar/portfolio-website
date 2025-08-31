@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 import { z } from "zod";
 import {
-  checkRateLimit,
   getClientIP,
   verifyOrigin,
   validateHoneypot,
@@ -61,46 +60,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 2. Enhanced rate limiting with progressive blocking
-    const rateLimit = checkRateLimit(request, 15 * 60 * 1000, 5); // 5 requests per 15 minutes
-    if (!rateLimit.allowed) {
-      const severity =
-        (rateLimit.blockInfo?.escalationLevel ?? 0) >= 3 ? "high" : "medium";
-
-      logSecurityEvent({
-        type: "rate_limit",
-        ip: clientIP,
-        userAgent,
-        severity,
-        timestamp: new Date().toISOString(),
-        details: {
-          escalationLevel: rateLimit.blockInfo?.escalationLevel,
-          blockUntil: rateLimit.blockInfo?.blockUntil,
-        },
-      });
-
-      const retryAfter = rateLimit.resetTime
-        ? Math.ceil((rateLimit.resetTime - Date.now()) / 1000)
-        : rateLimit.blockInfo?.blockUntil
-        ? Math.ceil((rateLimit.blockInfo.blockUntil - Date.now()) / 1000)
-        : 900; // 15 minutes default
-
-      return NextResponse.json(
-        {
-          error: "Too many requests. Please try again later.",
-          ...(rateLimit.blockInfo?.isBlocked && {
-            blocked: true,
-            escalationLevel: rateLimit.blockInfo.escalationLevel,
-          }),
-        },
-        {
-          status: 429,
-          headers: {
-            "Retry-After": retryAfter.toString(),
-          },
-        }
-      );
-    }
+    // 2. Rate limiting now handled in middleware for all API routes
 
     // Parse request body
     const body = await request.json();
@@ -110,7 +70,7 @@ export async function POST(request: NextRequest) {
     const { name, email, subject, message, honeypot, csrfToken } =
       validatedData;
 
-    // 3. CSRF Token verification
+    // 2. CSRF Token verification
     const sessionId = request.headers.get("x-session-id");
     if (!sessionId) {
       logSecurityEvent({
@@ -150,7 +110,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 4. Honeypot validation (bot detection)
+    // 3. Honeypot validation (bot detection)
     if (!validateHoneypot(honeypot)) {
       logSecurityEvent({
         type: "spam_detected",
@@ -167,7 +127,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 5. Sanitize inputs
+    // 4. Sanitize inputs
     const sanitizedData = {
       name: sanitizeInput(name),
       email: sanitizeInput(email),
@@ -175,7 +135,7 @@ export async function POST(request: NextRequest) {
       message: sanitizeInput(message),
     };
 
-    // 6. Spam detection
+    // 5. Spam detection
     if (detectSpam(sanitizedData)) {
       logSecurityEvent({
         type: "spam_detected",
@@ -199,6 +159,7 @@ export async function POST(request: NextRequest) {
 
     if (!gmailUser || !gmailAppPassword) {
       console.error("Gmail credentials not configured properly");
+
       return NextResponse.json(
         {
           error:
@@ -227,9 +188,11 @@ export async function POST(request: NextRequest) {
     // Verify connection configuration
     try {
       await transporter.verify();
+
       console.log("Gmail SMTP connection verified successfully");
     } catch (verifyError) {
       console.error("Gmail SMTP verification failed:", verifyError);
+
       return NextResponse.json(
         {
           error: "Email service configuration error",
@@ -324,6 +287,7 @@ export async function POST(request: NextRequest) {
 
     // Send email
     const info = await transporter.sendMail(mailOptions);
+
     console.log("Email sent successfully:", info.messageId);
 
     return NextResponse.json({
