@@ -701,7 +701,11 @@ const Contact = () => {
                         <div>{submitError}</div>
                         {isBlocked && blockInfo?.escalationLevel && (
                           <div className="mt-2 text-xs opacity-75">
-                            Security Level: {blockInfo.escalationLevel}/4
+                            Security Level: {blockInfo.escalationLevel}/
+                            {
+                              Object.keys(SECURITY_CONSTANTS.BLOCK_DURATIONS)
+                                .length
+                            }
                             {blockInfo.escalationLevel >= 3 &&
                               " - Extended restrictions in effect"}
                           </div>
