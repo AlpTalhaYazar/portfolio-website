@@ -135,6 +135,15 @@ export const SECURITY_CONSTANTS = {
     LEVEL_6: 24 * 60 * 60 * 1000, // 24 hours
   },
 
+  // Violation thresholds for escalation levels
+  VIOLATION_THRESHOLDS: {
+    LEVEL_2: 2, // 2 violations → Level 2 (10 min)
+    LEVEL_3: 4, // 3-4 violations → Level 3 (30 min)
+    LEVEL_4: 7, // 5-7 violations → Level 4 (1 hour)
+    LEVEL_5: 10, // 8-10 violations → Level 5 (2 hours)
+    // 11+ violations → Level 6 (24 hours)
+  },
+
   // Cleanup intervals
   CLEANUP_INTERVAL: 24 * 60 * 60 * 1000, // 24 hours
 } as const;
