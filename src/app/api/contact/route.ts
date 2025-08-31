@@ -2,13 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 import { z } from "zod";
 import {
-  checkRateLimit,
   getClientIP,
   verifyOrigin,
   validateHoneypot,
   sanitizeInput,
   detectSpam,
   logSecurityEvent,
+  verifyCSRFToken,
+  cleanupExpiredTokens,
 } from "@/lib/security";
 
 // Validation schema
@@ -24,6 +25,7 @@ const contactSchema = z.object({
     .min(10, "Message must be at least 10 characters")
     .max(5000, "Message too long"),
   honeypot: z.string().optional(), // Hidden field for bot detection
+  csrfToken: z.string().min(1, "Security token is required"), // CSRF protection
 });
 
 export async function POST(request: NextRequest) {
@@ -31,6 +33,9 @@ export async function POST(request: NextRequest) {
   const userAgent = request.headers.get("user-agent") || "unknown";
 
   try {
+    // 0. Clean up expired tokens periodically
+    cleanupExpiredTokens();
+
     // 1. Origin verification
     const allowedOrigins = [
       process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
@@ -42,6 +47,8 @@ export async function POST(request: NextRequest) {
         type: "origin_violation",
         ip: clientIP,
         userAgent,
+        severity: "high",
+        timestamp: new Date().toISOString(),
         details: {
           origin: request.headers.get("origin"),
           referer: request.headers.get("referer"),
@@ -53,33 +60,55 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 2. Rate limiting
-    const rateLimit = checkRateLimit(request, 15 * 60 * 1000, 5); // 5 requests per 15 minutes
-    if (!rateLimit.allowed) {
-      logSecurityEvent({
-        type: "rate_limit",
-        ip: clientIP,
-        userAgent,
-      });
-      return NextResponse.json(
-        { error: "Too many requests. Please try again later." },
-        {
-          status: 429,
-          headers: {
-            "Retry-After": Math.ceil(
-              (rateLimit.resetTime! - Date.now()) / 1000
-            ).toString(),
-          },
-        }
-      );
-    }
+    // 2. Rate limiting now handled in middleware for all API routes
 
     // Parse request body
     const body = await request.json();
 
     // Validate input data
     const validatedData = contactSchema.parse(body);
-    const { name, email, subject, message, honeypot } = validatedData;
+    const { name, email, subject, message, honeypot, csrfToken } =
+      validatedData;
+
+    // 2. CSRF Token verification
+    const sessionId = request.headers.get("x-session-id");
+    if (!sessionId) {
+      logSecurityEvent({
+        type: "csrf_violation",
+        ip: clientIP,
+        userAgent,
+        severity: "high",
+        timestamp: new Date().toISOString(),
+        details: { reason: "missing_session_id" },
+      });
+      return NextResponse.json(
+        { error: "Invalid request. Missing session information." },
+        { status: 403 }
+      );
+    }
+
+    const csrfVerification = verifyCSRFToken(csrfToken, sessionId);
+    if (!csrfVerification.valid) {
+      logSecurityEvent({
+        type: "csrf_violation",
+        ip: clientIP,
+        userAgent,
+        severity: "high",
+        timestamp: new Date().toISOString(),
+        details: {
+          reason: csrfVerification.reason,
+          sessionId,
+          providedToken: csrfToken ? "present" : "missing",
+        },
+      });
+      return NextResponse.json(
+        {
+          error:
+            "Security validation failed. Please refresh the page and try again.",
+        },
+        { status: 403 }
+      );
+    }
 
     // 3. Honeypot validation (bot detection)
     if (!validateHoneypot(honeypot)) {
@@ -87,6 +116,8 @@ export async function POST(request: NextRequest) {
         type: "spam_detected",
         ip: clientIP,
         userAgent,
+        severity: "medium",
+        timestamp: new Date().toISOString(),
         details: { reason: "honeypot_filled", honeypot },
       });
       // Return success to fool bots
@@ -110,6 +141,8 @@ export async function POST(request: NextRequest) {
         type: "spam_detected",
         ip: clientIP,
         userAgent,
+        severity: "medium",
+        timestamp: new Date().toISOString(),
         details: { reason: "content_analysis", data: sanitizedData },
       });
       // Return success to fool spammers
@@ -126,6 +159,7 @@ export async function POST(request: NextRequest) {
 
     if (!gmailUser || !gmailAppPassword) {
       console.error("Gmail credentials not configured properly");
+
       return NextResponse.json(
         {
           error:
@@ -154,9 +188,11 @@ export async function POST(request: NextRequest) {
     // Verify connection configuration
     try {
       await transporter.verify();
+
       console.log("Gmail SMTP connection verified successfully");
     } catch (verifyError) {
       console.error("Gmail SMTP verification failed:", verifyError);
+
       return NextResponse.json(
         {
           error: "Email service configuration error",
@@ -251,6 +287,7 @@ export async function POST(request: NextRequest) {
 
     // Send email
     const info = await transporter.sendMail(mailOptions);
+
     console.log("Email sent successfully:", info.messageId);
 
     return NextResponse.json({
