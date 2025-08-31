@@ -38,6 +38,7 @@ export interface ContactFormData {
 }
 
 export interface SecurityInfo {
+  _type: "securityInfo";
   ipAddress: string;
   userAgent: string;
   timestamp: string;
@@ -110,28 +111,33 @@ export interface EmailTemplateConfig {
 
 // Component-specific data types
 export interface HeaderComponentData {
+  _type: "header";
   title: string;
   subtitle?: string;
   branding: EmailBranding;
 }
 
 export interface ContactInfoComponentData {
+  _type: "contactInfo";
   name: string;
   email: string;
   subject: string;
 }
 
 export interface MessageComponentData {
+  _type: "message";
   message: string;
 }
 
 export interface CTAButtonComponentData {
+  _type: "ctaButton";
   text: string;
   url: string;
   variant?: "primary" | "secondary";
 }
 
 export interface SocialLinksComponentData {
+  _type: "socialLinks";
   socialLinks: Array<{
     name: string;
     url: string;
@@ -140,18 +146,20 @@ export interface SocialLinksComponentData {
 }
 
 export interface FooterComponentData {
+  _type: "footer";
   branding: EmailBranding;
   includeUnsubscribe?: boolean;
 }
 
 export interface StatusBadgeComponentData {
+  _type: "statusBadge";
   status: "success" | "warning" | "error";
   text: string;
 }
 
 export interface DividerComponentData {
-  // Divider component requires no data, but we need a proper interface
-  _placeholder?: never;
+  _type: "divider";
+  // Divider component requires minimal data with proper type discrimination
 }
 
 // Discriminated union for type safety
@@ -192,72 +200,96 @@ export type ComponentData =
   | StatusBadgeComponentData
   | DividerComponentData;
 
-// Type guards for runtime type checking
+// Type guards using discriminated union - robust and maintainable!
 export function isHeaderData(data: ComponentData): data is HeaderComponentData {
-  return "title" in data && "branding" in data;
+  return (
+    typeof data === "object" &&
+    data !== null &&
+    "_type" in data &&
+    data._type === "header"
+  );
 }
 
 export function isContactInfoData(
   data: ComponentData
 ): data is ContactInfoComponentData {
-  return "name" in data && "email" in data && "subject" in data;
+  return (
+    typeof data === "object" &&
+    data !== null &&
+    "_type" in data &&
+    data._type === "contactInfo"
+  );
 }
 
 export function isMessageData(
   data: ComponentData
 ): data is MessageComponentData {
-  return "message" in data && !("name" in data);
+  return (
+    typeof data === "object" &&
+    data !== null &&
+    "_type" in data &&
+    data._type === "message"
+  );
 }
 
 export function isSecurityInfoData(data: ComponentData): data is SecurityInfo {
-  return "ipAddress" in data && "userAgent" in data && "timestamp" in data;
+  return (
+    typeof data === "object" &&
+    data !== null &&
+    "_type" in data &&
+    data._type === "securityInfo"
+  );
 }
 
 export function isCTAButtonData(
   data: ComponentData
 ): data is CTAButtonComponentData {
-  return "text" in data && "url" in data;
+  return (
+    typeof data === "object" &&
+    data !== null &&
+    "_type" in data &&
+    data._type === "ctaButton"
+  );
 }
 
 export function isSocialLinksData(
   data: ComponentData
 ): data is SocialLinksComponentData {
-  return "socialLinks" in data;
+  return (
+    typeof data === "object" &&
+    data !== null &&
+    "_type" in data &&
+    data._type === "socialLinks"
+  );
 }
 
 export function isFooterData(data: ComponentData): data is FooterComponentData {
   return (
-    "branding" in data &&
-    typeof data.branding === "object" &&
-    data.branding !== null &&
-    "siteName" in data.branding &&
-    "websiteUrl" in data.branding &&
-    !("title" in data)
+    typeof data === "object" &&
+    data !== null &&
+    "_type" in data &&
+    data._type === "footer"
   );
 }
 
 export function isDividerData(
   data: ComponentData
 ): data is DividerComponentData {
-  // Check for the specific shape of DividerComponentData
-  // Since DividerComponentData can be empty {}, we check that it's an object
-  // with no required properties from other component types
   return (
     typeof data === "object" &&
     data !== null &&
-    !("title" in data) && // Not header
-    !("name" in data) && // Not contact info
-    !("message" in data) && // Not message
-    !("ipAddress" in data) && // Not security info
-    !("text" in data) && // Not CTA button
-    !("socialLinks" in data) && // Not social links
-    !("branding" in data) && // Not footer
-    !("status" in data) // Not status badge
+    "_type" in data &&
+    data._type === "divider"
   );
 }
 
 export function isStatusBadgeData(
   data: ComponentData
 ): data is StatusBadgeComponentData {
-  return "status" in data && "text" in data && !("url" in data);
+  return (
+    typeof data === "object" &&
+    data !== null &&
+    "_type" in data &&
+    data._type === "statusBadge"
+  );
 }

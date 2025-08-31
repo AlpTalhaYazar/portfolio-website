@@ -220,6 +220,7 @@ export async function POST(request: NextRequest) {
         message: cleanMessage,
       },
       {
+        _type: "securityInfo" as const,
         ipAddress: clientIP,
         userAgent,
         timestamp: new Date().toLocaleString(),

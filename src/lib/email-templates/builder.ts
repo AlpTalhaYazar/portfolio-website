@@ -213,6 +213,7 @@ export class EmailTemplateBuilder {
    */
   addHeader(title: string, subtitle?: string): this {
     const data: HeaderComponentData = {
+      _type: "header" as const,
       title,
       subtitle,
       branding: this.branding,
@@ -224,7 +225,12 @@ export class EmailTemplateBuilder {
    * Add contact information component
    */
   addContactInfo(name: string, email: string, subject: string): this {
-    const data: ContactInfoComponentData = { name, email, subject };
+    const data: ContactInfoComponentData = {
+      _type: "contactInfo" as const,
+      name,
+      email,
+      subject,
+    };
     return this.addComponent("contactInfo", data);
   }
 
@@ -232,7 +238,10 @@ export class EmailTemplateBuilder {
    * Add message component
    */
   addMessage(message: string): this {
-    const data: MessageComponentData = { message };
+    const data: MessageComponentData = {
+      _type: "message" as const,
+      message,
+    };
     return this.addComponent("message", data);
   }
 
@@ -251,7 +260,12 @@ export class EmailTemplateBuilder {
     url: string,
     variant?: "primary" | "secondary"
   ): this {
-    const data: CTAButtonComponentData = { text, url, variant };
+    const data: CTAButtonComponentData = {
+      _type: "ctaButton" as const,
+      text,
+      url,
+      variant,
+    };
     return this.addComponent("ctaButton", data);
   }
 
@@ -259,7 +273,9 @@ export class EmailTemplateBuilder {
    * Add divider component
    */
   addDivider(): this {
-    const data: DividerComponentData = {};
+    const data: DividerComponentData = {
+      _type: "divider" as const,
+    };
     return this.addComponent("divider", data);
   }
 
@@ -267,7 +283,11 @@ export class EmailTemplateBuilder {
    * Add status badge component
    */
   addStatusBadge(status: "success" | "warning" | "error", text: string): this {
-    const data: StatusBadgeComponentData = { status, text };
+    const data: StatusBadgeComponentData = {
+      _type: "statusBadge" as const,
+      status,
+      text,
+    };
     return this.addComponent("statusBadge", data);
   }
 
@@ -276,6 +296,7 @@ export class EmailTemplateBuilder {
    */
   addFooter(includeUnsubscribe = false): this {
     const data: FooterComponentData = {
+      _type: "footer" as const,
       branding: this.branding,
       includeUnsubscribe,
     };

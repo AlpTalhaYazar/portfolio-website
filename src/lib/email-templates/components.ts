@@ -231,6 +231,7 @@ export const footerComponent: EmailComponent<FooterComponentData> = {
       ${
         data.branding.socialLinks
           ? socialLinksComponent.render({
+              _type: "socialLinks" as const,
               socialLinks: data.branding.socialLinks,
             })
           : ""
@@ -253,6 +254,7 @@ export const footerComponent: EmailComponent<FooterComponentData> = {
     ${
       data.branding.socialLinks
         ? socialLinksComponent.renderText!({
+            _type: "socialLinks" as const,
             socialLinks: data.branding.socialLinks,
           })
         : ""
