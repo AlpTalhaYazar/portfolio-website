@@ -11,6 +11,7 @@ import {
   verifyCSRFToken,
   cleanupExpiredTokens,
 } from "@/lib/security";
+import { createContactEmail } from "@/lib/email-templates";
 
 // Validation schema
 const contactSchema = z.object({
@@ -210,79 +211,31 @@ export async function POST(request: NextRequest) {
       message: cleanMessage,
     } = sanitizedData;
 
-    // Email content with security information
-    const htmlContent = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9;">
-        <div style="background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-          <h2 style="color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px;">
-            📧 New Contact Form Submission
-          </h2>
-          
-          <div style="margin: 20px 0;">
-            <h3 style="color: #555; margin-bottom: 15px;">Contact Details:</h3>
-            <table style="width: 100%; border-collapse: collapse;">
-              <tr style="background-color: #f8f9fa;">
-                <td style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold; width: 120px;">Name:</td>
-                <td style="padding: 12px; border: 1px solid #dee2e6;">${cleanName}</td>
-              </tr>
-              <tr>
-                <td style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold;">Email:</td>
-                <td style="padding: 12px; border: 1px solid #dee2e6;"><a href="mailto:${cleanEmail}" style="color: #007bff;">${cleanEmail}</a></td>
-              </tr>
-              <tr style="background-color: #f8f9fa;">
-                <td style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold;">Subject:</td>
-                <td style="padding: 12px; border: 1px solid #dee2e6;">${cleanSubject}</td>
-              </tr>
-            </table>
-          </div>
+    // Generate professional email template
+    const emailTemplate = createContactEmail(
+      {
+        name: cleanName,
+        email: cleanEmail,
+        subject: cleanSubject,
+        message: cleanMessage,
+      },
+      {
+        _type: "securityInfo" as const,
+        ipAddress: clientIP,
+        userAgent,
+        timestamp: new Date().toLocaleString(),
+        sessionId,
+      }
+    );
 
-          <div style="margin: 20px 0;">
-            <h3 style="color: #555; margin-bottom: 15px;">Message:</h3>
-            <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #007bff;">
-              <p style="margin: 0; line-height: 1.6; white-space: pre-wrap;">${cleanMessage}</p>
-            </div>
-          </div>
-
-          <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #dee2e6; color: #666; font-size: 12px;">
-            <h4 style="color: #555; margin-bottom: 10px;">Security Information:</h4>
-            <p><strong>IP Address:</strong> ${clientIP}</p>
-            <p><strong>User Agent:</strong> ${userAgent}</p>
-            <p><strong>Timestamp:</strong> ${new Date().toLocaleString()}</p>
-            <p style="margin-top: 15px; text-align: center;">This email was sent from your portfolio contact form</p>
-          </div>
-        </div>
-      </div>
-    `;
-
-    const textContent = `
-      NEW CONTACT FORM SUBMISSION
-      ===========================
-
-      Contact Details:
-      - Name: ${cleanName}
-      - Email: ${cleanEmail}
-      - Subject: ${cleanSubject}
-
-      Message:
-      ${cleanMessage}
-
-      Security Information:
-      - IP Address: ${clientIP}
-      - User Agent: ${userAgent}
-      - Timestamp: ${new Date().toLocaleString()}
-
-      ---
-      Sent from portfolio contact form
-    `;
-
-    // Email options
+    // Email options with professional template
     const mailOptions = {
       from: `"${cleanName} via Portfolio" <${gmailUser}>`, // sender address
       to: emailTo, // recipient
       replyTo: cleanEmail, // reply to the contact person
-      subject: `Portfolio Contact: ${cleanSubject}`,
-      text: textContent,
-      html: htmlContent,
+      subject: emailTemplate.subject,
+      text: emailTemplate.text,
+      html: emailTemplate.html,
     };
 
     // Send email
