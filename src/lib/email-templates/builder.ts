@@ -14,6 +14,7 @@ import {
   SecurityInfo,
   ComponentDataMap,
   ComponentData,
+  ComponentName,
   HeaderComponentData,
   ContactInfoComponentData,
   MessageComponentData,
@@ -33,8 +34,6 @@ import {
 } from "./types";
 import { generateBaseStyles } from "./styles";
 import {
-  components,
-  ComponentName,
   headerComponent,
   contactInfoComponent,
   messageComponent,
@@ -45,6 +44,114 @@ import {
   dividerComponent,
   statusBadgeComponent,
 } from "./components";
+
+/**
+ * Centralized component renderer to eliminate DRY violations
+ * Handles component type checking and rendering
+ */
+function renderComponent(
+  componentName: ComponentName,
+  data: ComponentData,
+  method: "render" | "renderText" = "render"
+): string {
+  switch (componentName) {
+    case "header":
+      if (isHeaderData(data)) {
+        return method === "render"
+          ? headerComponent.render(data)
+          : headerComponent.renderText?.(data) || "";
+      }
+      break;
+    case "contactInfo":
+      if (isContactInfoData(data)) {
+        return method === "render"
+          ? contactInfoComponent.render(data)
+          : contactInfoComponent.renderText?.(data) || "";
+      }
+      break;
+    case "message":
+      if (isMessageData(data)) {
+        return method === "render"
+          ? messageComponent.render(data)
+          : messageComponent.renderText?.(data) || "";
+      }
+      break;
+    case "securityInfo":
+      if (isSecurityInfoData(data)) {
+        return method === "render"
+          ? securityInfoComponent.render(data)
+          : securityInfoComponent.renderText?.(data) || "";
+      }
+      break;
+    case "ctaButton":
+      if (isCTAButtonData(data)) {
+        return method === "render"
+          ? ctaButtonComponent.render(data)
+          : ctaButtonComponent.renderText?.(data) || "";
+      }
+      break;
+    case "socialLinks":
+      if (isSocialLinksData(data)) {
+        return method === "render"
+          ? socialLinksComponent.render(data)
+          : socialLinksComponent.renderText?.(data) || "";
+      }
+      break;
+    case "footer":
+      if (isFooterData(data)) {
+        return method === "render"
+          ? footerComponent.render(data)
+          : footerComponent.renderText?.(data) || "";
+      }
+      break;
+    case "divider":
+      if (isDividerData(data)) {
+        return method === "render"
+          ? dividerComponent.render(data)
+          : dividerComponent.renderText?.(data) || "";
+      }
+      break;
+    case "statusBadge":
+      if (isStatusBadgeData(data)) {
+        return method === "render"
+          ? statusBadgeComponent.render(data)
+          : statusBadgeComponent.renderText?.(data) || "";
+      }
+      break;
+  }
+  return "";
+}
+
+/**
+ * Centralized component validation
+ */
+function isValidComponentData(
+  componentName: ComponentName,
+  data: ComponentData
+): boolean {
+  switch (componentName) {
+    case "header":
+      return isHeaderData(data);
+    case "contactInfo":
+      return isContactInfoData(data);
+    case "message":
+      return isMessageData(data);
+    case "securityInfo":
+      return isSecurityInfoData(data);
+    case "ctaButton":
+      return isCTAButtonData(data);
+    case "socialLinks":
+      return isSocialLinksData(data);
+    case "footer":
+      return isFooterData(data);
+    case "divider":
+      return isDividerData(data);
+    case "statusBadge":
+      return isStatusBadgeData(data);
+    default:
+      return false;
+  }
+}
 // Static professional branding
 const defaultBranding: EmailBranding = {
   siteName: "Portfolio Contact",
@@ -204,30 +311,8 @@ export class EmailTemplateBuilder {
           return "";
         }
 
-        // Type-safe rendering using direct component access
-        if (componentName === "header" && isHeaderData(data)) {
-          return headerComponent.render(data);
-        } else if (componentName === "contactInfo" && isContactInfoData(data)) {
-          return contactInfoComponent.render(data);
-        } else if (componentName === "message" && isMessageData(data)) {
-          return messageComponent.render(data);
-        } else if (
-          componentName === "securityInfo" &&
-          isSecurityInfoData(data)
-        ) {
-          return securityInfoComponent.render(data);
-        } else if (componentName === "ctaButton" && isCTAButtonData(data)) {
-          return ctaButtonComponent.render(data);
-        } else if (componentName === "socialLinks" && isSocialLinksData(data)) {
-          return socialLinksComponent.render(data);
-        } else if (componentName === "footer" && isFooterData(data)) {
-          return footerComponent.render(data);
-        } else if (componentName === "divider" && isDividerData(data)) {
-          return dividerComponent.render(data);
-        } else if (componentName === "statusBadge" && isStatusBadgeData(data)) {
-          return statusBadgeComponent.render(data);
-        }
-        return "";
+        // Use centralized component renderer to eliminate DRY violation
+        return renderComponent(componentName, data, "render");
       })
       .join("\n");
 
@@ -278,63 +363,8 @@ export class EmailTemplateBuilder {
           return "";
         }
 
-        // Type-safe text rendering using direct component access
-        if (
-          componentName === "header" &&
-          isHeaderData(data) &&
-          headerComponent.renderText
-        ) {
-          return headerComponent.renderText(data);
-        } else if (
-          componentName === "contactInfo" &&
-          isContactInfoData(data) &&
-          contactInfoComponent.renderText
-        ) {
-          return contactInfoComponent.renderText(data);
-        } else if (
-          componentName === "message" &&
-          isMessageData(data) &&
-          messageComponent.renderText
-        ) {
-          return messageComponent.renderText(data);
-        } else if (
-          componentName === "securityInfo" &&
-          isSecurityInfoData(data) &&
-          securityInfoComponent.renderText
-        ) {
-          return securityInfoComponent.renderText(data);
-        } else if (
-          componentName === "ctaButton" &&
-          isCTAButtonData(data) &&
-          ctaButtonComponent.renderText
-        ) {
-          return ctaButtonComponent.renderText(data);
-        } else if (
-          componentName === "socialLinks" &&
-          isSocialLinksData(data) &&
-          socialLinksComponent.renderText
-        ) {
-          return socialLinksComponent.renderText(data);
-        } else if (
-          componentName === "footer" &&
-          isFooterData(data) &&
-          footerComponent.renderText
-        ) {
-          return footerComponent.renderText(data);
-        } else if (
-          componentName === "divider" &&
-          isDividerData(data) &&
-          dividerComponent.renderText
-        ) {
-          return dividerComponent.renderText(data);
-        } else if (
-          componentName === "statusBadge" &&
-          isStatusBadgeData(data) &&
-          statusBadgeComponent.renderText
-        ) {
-          return statusBadgeComponent.renderText(data);
-        }
-        return "";
+        // Use centralized component renderer to eliminate DRY violation
+        return renderComponent(componentName, data, "renderText");
       })
       .filter((text) => text.trim())
       .join("\n\n");
@@ -412,60 +442,14 @@ export function buildFromConfig(
 ): EmailTemplate {
   const builder = new EmailTemplateBuilder(defaultBranding, config.options);
 
-  // Add components based on configuration with proper type checking
+  // Add components based on configuration using centralized resolver
   config.components.forEach((componentName) => {
     const componentKey = componentName as keyof ComponentDataMap;
     const componentData = data[componentKey];
 
-    if (componentKey in components && componentData) {
-      // Type-safe component addition
-      switch (componentKey) {
-        case "header":
-          if (isHeaderData(componentData)) {
-            builder.addComponent("header", componentData);
-          }
-          break;
-        case "contactInfo":
-          if (isContactInfoData(componentData)) {
-            builder.addComponent("contactInfo", componentData);
-          }
-          break;
-        case "message":
-          if (isMessageData(componentData)) {
-            builder.addComponent("message", componentData);
-          }
-          break;
-        case "securityInfo":
-          if (isSecurityInfoData(componentData)) {
-            builder.addComponent("securityInfo", componentData);
-          }
-          break;
-        case "ctaButton":
-          if (isCTAButtonData(componentData)) {
-            builder.addComponent("ctaButton", componentData);
-          }
-          break;
-        case "socialLinks":
-          if (isSocialLinksData(componentData)) {
-            builder.addComponent("socialLinks", componentData);
-          }
-          break;
-        case "footer":
-          if (isFooterData(componentData)) {
-            builder.addComponent("footer", componentData);
-          }
-          break;
-        case "divider":
-          if (isDividerData(componentData)) {
-            builder.addComponent("divider", componentData);
-          }
-          break;
-        case "statusBadge":
-          if (isStatusBadgeData(componentData)) {
-            builder.addComponent("statusBadge", componentData);
-          }
-          break;
-      }
+    if (componentData && isValidComponentData(componentName, componentData)) {
+      // Use centralized component validation to eliminate DRY violation
+      builder.addComponent(componentName, componentData);
     }
   });
 

@@ -90,10 +90,21 @@ export type EmailTemplateType =
   | "reset-password"
   | "newsletter";
 
+export type ComponentName =
+  | "header"
+  | "contactInfo"
+  | "message"
+  | "securityInfo"
+  | "ctaButton"
+  | "socialLinks"
+  | "footer"
+  | "divider"
+  | "statusBadge";
+
 export interface EmailTemplateConfig {
   type: EmailTemplateType;
   layout: string;
-  components: string[];
+  components: ComponentName[];
   options?: EmailTemplateOptions;
 }
 

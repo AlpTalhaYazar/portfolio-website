@@ -341,4 +341,4 @@ export const components = {
   statusBadge: statusBadgeComponent,
 } as const;
 
-export type ComponentName = keyof typeof components;
+// ComponentName type moved to types.ts for better organization
