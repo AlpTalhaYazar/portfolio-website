@@ -156,7 +156,7 @@ const Contact = () => {
     } finally {
       isFetchingRef.current = false;
     }
-  }, []); // Empty dependency array - all values accessed via refs or are stable
+  }, []); // Intentionally empty dependency array: fetchCSRFToken accesses sessionIdRef.current (a ref), which is always up-to-date and does not need to be in the dependency array
 
   // Token expiry logic is now inlined to prevent useCallback dependency issues
 
