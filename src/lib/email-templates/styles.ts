@@ -9,7 +9,6 @@
  */
 export function generateBaseStyles(): string {
   return `
-    <style>
       /* Reset and base styles */
       * {
         margin: 0;
@@ -262,7 +261,6 @@ export function generateBaseStyles(): string {
       /* Note: Dark mode media queries are not well supported in most email clients
          and may be stripped out during delivery. For broader compatibility,
          consider using a single light theme optimized for all email clients. */
-    </style>
   `;
 }
 

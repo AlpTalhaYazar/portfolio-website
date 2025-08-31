@@ -215,7 +215,14 @@ export function isSocialLinksData(
 }
 
 export function isFooterData(data: ComponentData): data is FooterComponentData {
-  return "branding" in data && !("title" in data);
+  return (
+    "branding" in data &&
+    typeof data.branding === "object" &&
+    data.branding !== null &&
+    "siteName" in data.branding &&
+    "websiteUrl" in data.branding &&
+    !("title" in data)
+  );
 }
 
 export function isDividerData(
@@ -233,7 +240,7 @@ export function isDividerData(
     !("ipAddress" in data) && // Not security info
     !("text" in data) && // Not CTA button
     !("socialLinks" in data) && // Not social links
-    !("companyName" in data) && // Not footer
+    !("branding" in data) && // Not footer
     !("status" in data) // Not status badge
   );
 }
