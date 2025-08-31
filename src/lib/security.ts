@@ -174,10 +174,7 @@ function triggerProgressiveBlock(clientIP: string, now: number) {
   let blockDuration: number;
   let escalationLevel: number;
 
-  if (violations === 1) {
-    blockDuration = SECURITY_CONSTANTS.BLOCK_DURATIONS.LEVEL_1; // 5 min
-    escalationLevel = 1;
-  } else if (violations === 2) {
+  if (violations === 2) {
     blockDuration = SECURITY_CONSTANTS.BLOCK_DURATIONS.LEVEL_2; // 10 min
     escalationLevel = 2;
   } else if (violations <= 4) {
