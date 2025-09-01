@@ -93,7 +93,7 @@ export const useContactSubmission = (
       // Prepare submission data with security token
       const submissionData = {
         ...data,
-        csrfToken: security.csrfToken!,
+        csrfToken: security.csrfToken ?? "",
       };
 
       const headers: Record<string, string> = {

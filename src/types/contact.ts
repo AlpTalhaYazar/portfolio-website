@@ -2,6 +2,8 @@
 // CONTACT-SPECIFIC TYPES
 // =================================================
 
+import { ReactNode } from "react";
+
 export interface ContactFormData {
   name: string;
   email: string;
@@ -12,7 +14,7 @@ export interface ContactFormData {
 }
 
 export interface ContactInfoItem {
-  icon: React.ReactNode;
+  icon: ReactNode;
   title: string;
   content: string;
   href: string | null;

@@ -7,7 +7,7 @@ import { useCSRFSecurity, useContactSubmission } from "@/hooks";
 import ContactInfo from "./ContactInfo";
 import ContactForm from "./ContactForm";
 
-// Note: SecurityError interface is now imported from @/hooks
+// Note: SecurityError interface is defined in @/types and re-exported via @/hooks
 
 const Contact = () => {
   // Security state - using custom hook
