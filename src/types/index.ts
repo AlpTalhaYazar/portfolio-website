@@ -38,14 +38,8 @@ export interface Skill {
   readonly icon?: string;
 }
 
-export interface ContactForm {
-  name: string;
-  email: string;
-  subject: string;
-  message: string;
-  honeypot?: string;
-  csrfToken?: string;
-}
+// Contact-related types are now in ./contact.ts
+export type { ContactFormData, ContactInfoItem } from "./contact";
 
 export interface SocialLink {
   readonly name: string;
@@ -154,6 +148,20 @@ export interface CSRFToken {
   readonly sessionId: string;
 }
 
+export interface CSRFTokenResponse {
+  success: boolean;
+  token: string;
+  sessionId: string;
+  expires: number;
+  expiresIn: number;
+}
+
+export interface SecurityError {
+  error: string;
+  blocked?: boolean;
+  escalationLevel?: number;
+}
+
 export interface RateLimitInfo {
   readonly count: number;
   readonly resetTime: number;
@@ -236,26 +244,12 @@ export interface ErrorFallbackProps {
 // FORM & VALIDATION TYPES
 // =================================================
 
-export interface FormValidationResult {
-  readonly isValid: boolean;
-  readonly errors: readonly string[];
-}
-
-export interface FormField<T = string> {
-  readonly value: T;
-  readonly error?: string;
-  readonly touched: boolean;
-  readonly dirty: boolean;
-}
-
-export interface ContactFormState {
-  readonly name: FormField;
-  readonly email: FormField;
-  readonly subject: FormField;
-  readonly message: FormField;
-  readonly isSubmitting: boolean;
-  readonly submitAttempts: number;
-}
+// Form-related types are now in ./contact.ts
+export type {
+  FormValidationResult,
+  FormField,
+  ContactFormState,
+} from "./contact";
 
 // =================================================
 // API & DATA TYPES
