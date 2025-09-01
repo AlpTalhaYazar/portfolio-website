@@ -110,8 +110,7 @@ const scriptFilename = fileURLToPath(import.meta.url);
 const isMain =
   typeof import.meta.main === "boolean"
     ? import.meta.main
-    : process.argv[1] &&
-      process.argv[1].endsWith(scriptFilename.split(/[\\/]/).pop() || "");
+    : process.argv[1] === scriptFilename;
 
 if (isMain) {
   main().catch((error) => {

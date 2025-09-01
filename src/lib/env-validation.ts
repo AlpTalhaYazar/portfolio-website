@@ -14,7 +14,7 @@ const nonEmptyStringSchema = z.string().min(1, "Cannot be empty");
 const optionalStringSchema = z.string().optional();
 const phoneSchema = z
   .string()
-  .regex(/^[\+]?[1-9][\d]{0,15}$/, "Invalid phone number format");
+  .regex(/^[\+]?[1-9][\d\s\-\(\)]{0,20}$/, "Invalid phone number format");
 
 // Server-side environment variables schema
 const serverEnvSchema = z.object({
