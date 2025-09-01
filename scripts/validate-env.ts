@@ -10,6 +10,7 @@
 import { execSync } from "child_process";
 import { config } from "dotenv";
 import { join } from "path";
+import { fileURLToPath } from "url";
 
 // Colors for console output
 const colors = {
@@ -61,7 +62,7 @@ async function main(): Promise<void> {
     // Import and run validation
     console.log("🔍 Validating environment variables...");
     const { validateEnvironmentVariables, printValidationResults } =
-      await import("../src/lib/env-validation.js");
+      await import("../src/lib/env-validation");
 
     const result = validateEnvironmentVariables();
     printValidationResults(result);
@@ -104,7 +105,7 @@ async function main(): Promise<void> {
 }
 
 // Run the validation if this script is executed directly
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (fileURLToPath(import.meta.url) === process.argv[1]) {
   main().catch((error) => {
     console.error(
       colorize("red", "Unexpected error during validation:"),
