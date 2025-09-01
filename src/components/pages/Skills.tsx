@@ -11,32 +11,32 @@ const Skills = () => {
   const { t } = useTranslation();
 
   const skillCategories = {
-    backend: { name: t.skills.categories.backend, color: "bg-blue-500" },
-    frontend: { name: t.skills.categories.frontend, color: "bg-green-500" },
-    database: { name: t.skills.categories.database, color: "bg-purple-500" },
-    tools: { name: t.skills.categories.tools, color: "bg-orange-500" },
+    backend: { name: t.skills.categories.backend },
+    frontend: { name: t.skills.categories.frontend },
+    database: { name: t.skills.categories.database },
+    tools: { name: t.skills.categories.tools },
   };
 
   const proficiencyLevels = {
     expert: {
       name: t.skills.proficiency.expert,
-      percentage: 90,
-      color: "bg-green-500",
+      indicator: "●●●●",
+      description: "Advanced",
     },
     proficient: {
       name: t.skills.proficiency.proficient,
-      percentage: 75,
-      color: "bg-blue-500",
+      indicator: "●●●○",
+      description: "Proficient",
     },
     intermediate: {
       name: t.skills.proficiency.intermediate,
-      percentage: 60,
-      color: "bg-yellow-500",
+      indicator: "●●○○",
+      description: "Intermediate",
     },
     basic: {
       name: t.skills.proficiency.basic,
-      percentage: 40,
-      color: "bg-gray-500",
+      indicator: "●○○○",
+      description: "Basic",
     },
   };
 
@@ -72,101 +72,56 @@ const Skills = () => {
           </p>
         </motion.div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {Object.entries(groupedSkills).map(
-            ([category, categorySkills], categoryIndex) => (
-              <motion.div
-                key={category}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: categoryIndex * 0.1 }}
-                viewport={{ once: true }}
-                className="bg-background rounded-lg p-6 shadow-sm border border-border"
-              >
-                <div className="flex items-center mb-6">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {Object.entries(groupedSkills).map(([category, categorySkills]) => (
+            <motion.div
+              key={category}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              viewport={{ once: true }}
+              className="bg-background rounded-lg p-6 shadow-sm border border-border/50"
+            >
+              <h3 className="text-lg font-semibold text-foreground mb-6 pb-2 border-b border-border/30">
+                {skillCategories[category as keyof typeof skillCategories].name}
+              </h3>
+
+              <div className="space-y-3">
+                {categorySkills.map((skill) => (
                   <div
-                    className={`w-3 h-3 rounded-full ${
-                      skillCategories[category as keyof typeof skillCategories]
-                        .color
-                    } mr-3`}
-                  ></div>
-                  <h3 className="text-lg font-semibold text-foreground">
-                    {
-                      skillCategories[category as keyof typeof skillCategories]
-                        .name
-                    }
-                  </h3>
-                </div>
-
-                <div className="space-y-4">
-                  {categorySkills.map((skill, skillIndex) => (
-                    <motion.div
-                      key={skill.name}
-                      initial={{ opacity: 0, x: -20 }}
-                      whileInView={{ opacity: 1, x: 0 }}
-                      transition={{
-                        duration: 0.4,
-                        delay: categoryIndex * 0.1 + skillIndex * 0.05,
-                      }}
-                      viewport={{ once: true }}
-                      className="relative"
-                    >
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm font-medium text-foreground">
-                          {skill.name}
-                        </span>
-                        <span className="text-xs text-muted-foreground capitalize">
-                          {skill.proficiency}
-                        </span>
-                      </div>
-
-                      <div className="w-full bg-secondary rounded-full h-2">
-                        <motion.div
-                          initial={{ width: 0 }}
-                          whileInView={{
-                            width: `${
-                              proficiencyLevels[skill.proficiency].percentage
-                            }%`,
-                          }}
-                          transition={{
-                            duration: 1,
-                            delay: categoryIndex * 0.2 + skillIndex * 0.1,
-                          }}
-                          viewport={{ once: true }}
-                          className={`h-2 rounded-full ${
-                            proficiencyLevels[skill.proficiency].color
-                          }`}
-                        ></motion.div>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              </motion.div>
-            )
-          )}
+                    key={skill.name}
+                    className="flex items-center justify-between py-1"
+                  >
+                    <span className="text-sm font-medium text-foreground">
+                      {skill.name}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <span
+                        className="text-xs text-muted-foreground/80 font-mono tracking-wider"
+                        title={proficiencyLevels[skill.proficiency].description}
+                      >
+                        {proficiencyLevels[skill.proficiency].indicator}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          ))}
         </div>
 
-        {/* Proficiency Legend */}
+        {/* Subtle proficiency guide */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.4 }}
+          transition={{ duration: 0.5 }}
           viewport={{ once: true }}
-          className="mt-12 text-center"
+          className="mt-8 text-center"
         >
-          <h4 className="text-lg font-semibold text-foreground mb-4">
-            Proficiency Levels
-          </h4>
-          <div className="flex flex-wrap justify-center gap-6">
-            {Object.entries(proficiencyLevels).map(([level, config]) => (
-              <div key={level} className="flex items-center gap-2">
-                <div className={`w-3 h-3 rounded ${config.color}`}></div>
-                <span className="text-sm text-muted-foreground">
-                  {config.name} ({config.percentage}%+)
-                </span>
-              </div>
-            ))}
-          </div>
+          <p className="text-xs text-muted-foreground/60">
+            Hover over indicators for proficiency levels: ●●●● Advanced • ●●●○
+            Proficient • ●●○○ Intermediate • ●○○○ Basic
+          </p>
         </motion.div>
       </div>
     </section>
