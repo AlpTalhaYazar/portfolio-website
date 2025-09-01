@@ -122,7 +122,7 @@ export const useCSRFSecurity = (): UseCSRFSecurityReturn => {
     } finally {
       isFetchingRef.current = false;
     }
-  }, []); // Empty dependency array: all dynamic values accessed via refs, which always provide the latest value
+  }, []); // Empty dependency array: all relevant dynamic state values are accessed via refs to avoid stale closures; other values (setters, logger) are stable
 
   // Initialize security on hook mount
   useEffect(() => {
@@ -189,7 +189,7 @@ export const useCSRFSecurity = (): UseCSRFSecurityReturn => {
     };
 
     initializeSecurity();
-  }, []); // No dependencies needed - refs are used inside the async function to avoid stale closures
+  }, []); // No dependencies: refs are used to avoid stale closure issues
 
   return {
     // Token state
