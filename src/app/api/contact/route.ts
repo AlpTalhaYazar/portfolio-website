@@ -40,7 +40,10 @@ export async function POST(request: NextRequest) {
     // 1. Origin verification
     const allowedOrigins = [
       process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
-      "https://www.alptalha.dev",
+      process.env.NEXT_PUBLIC_BASE_URL || "",
+      `https://www.${
+        process.env.NEXT_PUBLIC_BASE_URL?.replace("https://www.", "") || ""
+      }`,
     ];
 
     if (!verifyOrigin(request, allowedOrigins)) {

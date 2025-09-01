@@ -266,17 +266,17 @@ export const skills: Skill[] = [
 export const socialLinks: SocialLink[] = [
   {
     name: "GitHub",
-    url: "https://github.com/alptalhayazar",
+    url: process.env.NEXT_PUBLIC_GITHUB_URL || "",
     icon: "Github",
   },
   {
     name: "LinkedIn",
-    url: "https://linkedin.com/in/alptalhayazar",
+    url: process.env.NEXT_PUBLIC_LINKEDIN_URL || "",
     icon: "Linkedin",
   },
   {
     name: "Email",
-    url: "mailto:alptalhayazar@gmail.com",
+    url: `mailto:${process.env.NEXT_PUBLIC_CONTACT_EMAIL || ""}`,
     icon: "Mail",
   },
 ];

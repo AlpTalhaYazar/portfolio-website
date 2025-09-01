@@ -2,18 +2,18 @@ export default function StructuredData() {
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "Person",
-    name: "Alp Talha Yazar",
-    jobTitle: "Backend Developer",
+    name: process.env.NEXT_PUBLIC_FULL_NAME || "",
+    jobTitle: process.env.NEXT_PUBLIC_JOB_TITLE || "",
     description:
       "Experienced Backend Developer specializing in .NET, microservices, and B2B/B2G applications",
-    url: "https://alptalha.dev",
+    url: process.env.NEXT_PUBLIC_BASE_URL || "",
     sameAs: [
-      "https://github.com/alptalhayazar",
-      "https://linkedin.com/in/alptalhayazar",
+      process.env.NEXT_PUBLIC_GITHUB_URL || "",
+      process.env.NEXT_PUBLIC_LINKEDIN_URL || "",
     ],
     worksFor: {
       "@type": "Organization",
-      name: "Dias (Atlastek)",
+      name: process.env.NEXT_PUBLIC_COMPANY || "",
     },
     knowsAbout: [
       ".NET",
@@ -25,7 +25,7 @@ export default function StructuredData() {
     ],
     address: {
       "@type": "PostalAddress",
-      addressCountry: "Turkey",
+      addressCountry: process.env.NEXT_PUBLIC_CONTACT_LOCATION || "",
     },
   };
 

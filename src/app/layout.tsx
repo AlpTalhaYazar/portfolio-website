@@ -40,7 +40,7 @@ export const metadata: Metadata = {
   authors: [{ name: "Alp Talha Yazar" }],
   creator: "Alp Talha Yazar",
   publisher: "Alp Talha Yazar",
-  metadataBase: new URL("https://alptalha.dev"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || ""),
   alternates: {
     canonical: "/",
   },
@@ -50,7 +50,7 @@ export const metadata: Metadata = {
       "Experienced Backend Developer specializing in .NET, microservices, and B2B/B2G applications.",
     type: "website",
     locale: "en_US",
-    url: "https://alptalha.dev",
+    url: process.env.NEXT_PUBLIC_BASE_URL || "",
     siteName: "Alp Talha Yazar Portfolio",
   },
   twitter: {
@@ -58,7 +58,8 @@ export const metadata: Metadata = {
     title: "Alp Talha Yazar - Backend Developer",
     description:
       "Experienced Backend Developer specializing in .NET, microservices, and B2B/B2G applications.",
-    creator: "@your_twitter_handle", // TODO: Update with actual Twitter handle
+    creator:
+      `@${process.env.NEXT_PUBLIC_TWITTER_HANDLE}` || "@your_twitter_handle",
   },
   robots: {
     index: true,
@@ -72,7 +73,9 @@ export const metadata: Metadata = {
     },
   },
   verification: {
-    google: "your-google-verification-code", // Add your Google Search Console verification code
+    google:
+      process.env.NEXT_PUBLIC_GOOGLE_VERIFICATION ||
+      "your-google-verification-code",
   },
 };
 

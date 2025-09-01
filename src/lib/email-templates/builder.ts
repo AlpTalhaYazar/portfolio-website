@@ -128,8 +128,8 @@ const componentRegistry: Record<ComponentName, RegistryEntry> = {
 // Static professional branding
 const defaultBranding: EmailBranding = {
   siteName: "Portfolio Contact",
-  websiteUrl: "https://portfolio.com",
-  contactEmail: "contact@portfolio.com",
+  websiteUrl: process.env.NEXT_PUBLIC_BASE_URL || "",
+  contactEmail: process.env.NEXT_PUBLIC_CONTACT_EMAIL || "",
 };
 
 /**

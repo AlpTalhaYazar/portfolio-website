@@ -38,20 +38,22 @@ const ContactInfo: React.FC<ContactInfoProps> = ({ className = "" }) => {
     {
       icon: <Mail size={20} />,
       title: t.contact.contactInfo.email,
-      content: "alptalhayazar@gmail.com",
-      href: "mailto:alptalhayazar@gmail.com",
+      content: process.env.NEXT_PUBLIC_CONTACT_EMAIL || "",
+      href: `mailto:${process.env.NEXT_PUBLIC_CONTACT_EMAIL || ""}`,
     },
     {
       icon: <MapPin size={20} />,
       title: t.contact.contactInfo.location,
-      content: "Turkey",
+      content: process.env.NEXT_PUBLIC_CONTACT_LOCATION || "",
       href: null,
     },
     {
       icon: <Phone size={20} />,
       title: t.contact.contactInfo.phone,
-      content: "+90 555 067 35 96",
-      href: "tel:+905550673596",
+      content: process.env.NEXT_PUBLIC_CONTACT_PHONE || "",
+      href: `tel:${(
+        process.env.NEXT_PUBLIC_CONTACT_PHONE_WITHOUT_SPACE || ""
+      ).replace(/\s/g, "")}`,
     },
   ];
 
