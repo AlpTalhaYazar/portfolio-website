@@ -122,7 +122,7 @@ export function middleware(request: NextRequest) {
   // Add Permissions Policy
   response.headers.set(
     "Permissions-Policy",
-    "camera=(), microphone=(), location=(), payment=(), usb=(), bluetooth=()"
+    "camera=(), microphone=(), geolocation=(), payment=(), usb=(), bluetooth=(), fullscreen=(self), autoplay=(self)"
   );
 
   // Add Content Security Policy
