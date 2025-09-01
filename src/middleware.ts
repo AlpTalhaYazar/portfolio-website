@@ -128,7 +128,7 @@ export function middleware(request: NextRequest) {
   // Add Content Security Policy
   const cspHeader = `
     default-src 'self';
-    script-src 'self' 'unsafe-inline' 'unsafe-eval';
+    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com;
     style-src 'self' 'unsafe-inline' fonts.googleapis.com;
     font-src 'self' fonts.gstatic.com;
     img-src 'self' data: blob:;
@@ -137,6 +137,7 @@ export function middleware(request: NextRequest) {
     base-uri 'self';
     form-action 'self';
     frame-ancestors 'none';
+    connect-src 'self' https://www.google-analytics.com https://analytics.google.com https://region1.google-analytics.com;
     upgrade-insecure-requests;
   `
     .replace(/\s{2,}/g, " ")
