@@ -7,21 +7,12 @@ import { useCSRFSecurity, useContactSubmission } from "@/hooks";
 import ContactInfo from "./ContactInfo";
 import ContactForm from "./ContactForm";
 
-// Note: SecurityError interface is defined in @/types and re-exported via @/hooks
-
 const Contact = () => {
-  // Security state - using custom hook
   const security = useCSRFSecurity();
-
-  // Form submission state - using custom hook
   const submission = useContactSubmission(security);
 
   const { effectiveTheme } = useTheme();
   const { t } = useTranslation();
-
-  // Note: Form validation schema and form state management moved to ContactForm component
-
-  // Note: Contact info and icon rendering moved to ContactInfo component
 
   return (
     <section
