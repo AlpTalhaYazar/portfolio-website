@@ -1,20 +1,7 @@
 import { useState, useRef, useEffect } from "react";
-
+import { type ContactFormData, type SecurityError } from "@/types";
 import { logger } from "@/lib/logger";
-import {
-  type SecurityError,
-  type UseCSRFSecurityReturn,
-} from "./useCSRFSecurity";
-
-// Contact form data interface
-export interface ContactFormData {
-  name: string;
-  email: string;
-  subject: string;
-  message: string;
-  honeypot?: string;
-  csrfToken?: string;
-}
+import { type UseCSRFSecurityReturn } from "./useCSRFSecurity";
 
 // Hook return type
 export interface UseContactSubmissionReturn {

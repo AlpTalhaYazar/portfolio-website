@@ -4,16 +4,10 @@ import { motion } from "framer-motion";
 import { Mail, MapPin, Phone } from "lucide-react";
 import { socialLinks } from "@/lib/data";
 import { useTranslation } from "@/lib/i18n";
+import { type ContactInfoItem } from "@/types";
 
 interface ContactInfoProps {
   className?: string;
-}
-
-interface ContactInfoItem {
-  icon: React.ReactNode;
-  title: string;
-  content: string;
-  href: string | null;
 }
 
 const ContactInfo: React.FC<ContactInfoProps> = ({ className = "" }) => {

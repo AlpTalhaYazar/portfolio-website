@@ -1,22 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { SECURITY_CONSTANTS } from "@/types";
+import { SECURITY_CONSTANTS, type CSRFTokenResponse } from "@/types";
 import { logger } from "@/lib/logger";
-
-// CSRF API response interface
-interface CSRFTokenResponse {
-  success: boolean;
-  token: string;
-  sessionId: string;
-  expires: number;
-  expiresIn: number;
-}
-
-// Security error interface
-export interface SecurityError {
-  error: string;
-  blocked?: boolean;
-  escalationLevel?: number;
-}
 
 // Hook return type
 export interface UseCSRFSecurityReturn {
