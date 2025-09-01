@@ -58,8 +58,8 @@ export default function GoogleAnalytics({
     window.gtag("js", new Date());
     window.gtag("config", measurementId, {
       // Modern GA4 privacy settings
-      allow_google_signals: false, // Disable Google Signals for enhanced privacy
-      allow_ad_personalization_signals: false, // Disable ad personalization
+      allow_google_signals: false, // Disable Google Signals (controls cross-device tracking and remarketing features) for enhanced privacy
+      allow_ad_personalization_signals: false, // Disable ad personalization signals (controls personalized advertising data collection)
     });
   }, [measurementId]);
 
