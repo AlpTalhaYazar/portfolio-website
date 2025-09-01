@@ -10,7 +10,6 @@
 import { execSync } from "child_process";
 import { config } from "dotenv";
 import { join } from "path";
-import { fileURLToPath } from "url";
 
 // Colors for console output
 const colors = {
@@ -105,12 +104,8 @@ async function main(): Promise<void> {
 }
 
 // Run the validation if this script is executed directly
-// Use import.meta.main if available (Node.js v20.6.0+), otherwise fallback to filename check
-const scriptFilename = fileURLToPath(import.meta.url);
-const isMain =
-  typeof import.meta.main === "boolean"
-    ? import.meta.main
-    : process.argv[1] === scriptFilename;
+// Use import.meta.main if available (Node.js v20.6.0+), otherwise assume direct execution when using tsx
+const isMain = typeof import.meta.main === "boolean" ? import.meta.main : true;
 
 if (isMain) {
   main().catch((error) => {
