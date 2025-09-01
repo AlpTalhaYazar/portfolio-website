@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useCallback } from "react";
 import Script from "next/script";
 
 // Extend the Window interface to include gtag and dataLayer
@@ -15,10 +15,17 @@ interface GoogleAnalyticsProps {
   measurementId: string;
 }
 
+// Define gtag function outside component to prevent recreations
+const createGtagFunction = () => {
+  return function gtag(...args: unknown[]) {
+    window.dataLayer.push(args);
+  };
+};
+
 export default function GoogleAnalytics({
   measurementId,
 }: GoogleAnalyticsProps) {
-  useEffect(() => {
+  const initializeGA = useCallback(() => {
     // Only initialize if we have a measurement ID and we're in production
     if (!measurementId || process.env.NODE_ENV !== "production") {
       return;
@@ -27,22 +34,23 @@ export default function GoogleAnalytics({
     // Initialize dataLayer if it doesn't exist
     window.dataLayer = window.dataLayer || [];
 
-    // Define gtag function
-    function gtag(...args: unknown[]) {
-      window.dataLayer.push(args);
+    // Create and assign gtag function if not already available
+    if (!window.gtag) {
+      window.gtag = createGtagFunction();
     }
 
-    // Make gtag available globally
-    window.gtag = gtag;
-
     // Configure with measurement ID
-    gtag("js", new Date());
-    gtag("config", measurementId, {
+    window.gtag("js", new Date());
+    window.gtag("config", measurementId, {
       // Modern GA4 privacy settings
       allow_google_signals: false, // Disable Google Signals for enhanced privacy
       allow_ad_personalization_signals: false, // Disable ad personalization
     });
   }, [measurementId]);
+
+  useEffect(() => {
+    initializeGA();
+  }, [initializeGA]);
 
   // Only load in production and with valid measurement ID
   if (!measurementId || process.env.NODE_ENV !== "production") {
@@ -62,12 +70,16 @@ export default function GoogleAnalytics({
 
 // Custom hook for tracking events
 export function useGoogleAnalytics(measurementId?: string) {
+  // Get the measurement ID - prefer parameter, fallback to environment variable
+  const gaId = measurementId || process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
+
   const trackEvent = (
     action: string,
     category: string,
     label?: string,
     value?: number
   ) => {
+    // Events are sent to the already configured GA instance, no measurement ID needed
     if (
       typeof window !== "undefined" &&
       window.gtag &&
@@ -82,8 +94,7 @@ export function useGoogleAnalytics(measurementId?: string) {
   };
 
   const trackPageView = (url: string) => {
-    const gaId = measurementId || process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
-
+    // Page views require reconfiguring GA with the measurement ID and new page path
     if (
       typeof window !== "undefined" &&
       window.gtag &&
