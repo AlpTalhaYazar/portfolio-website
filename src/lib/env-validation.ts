@@ -138,10 +138,10 @@ export function validateEnvironmentVariables(): ValidationResult {
 
   try {
     // Validate the environment variables
-    envSchema.parse(process.env);
+    const validatedEnv = envSchema.parse(process.env);
 
     // Check for potential issues and add warnings
-    addWarnings(result);
+    addWarnings(result, validatedEnv);
   } catch (error) {
     result.isValid = false;
 
@@ -189,11 +189,11 @@ export function validateEnvironmentVariables(): ValidationResult {
 /**
  * Add warnings for potential configuration issues
  */
-function addWarnings(result: ValidationResult): void {
+function addWarnings(result: ValidationResult, validatedEnv: EnvConfig): void {
   // Check if development URLs are used in production
-  if (process.env.NODE_ENV === "production") {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+  if (validatedEnv.NODE_ENV === "production") {
+    const baseUrl = validatedEnv.NEXT_PUBLIC_BASE_URL;
+    const siteUrl = validatedEnv.NEXT_PUBLIC_SITE_URL;
 
     if (baseUrl?.includes("localhost") || baseUrl?.includes("127.0.0.1")) {
       result.warnings.push({
@@ -211,7 +211,10 @@ function addWarnings(result: ValidationResult): void {
   }
 
   // Check if EMAIL_TO is different from GMAIL_USER
-  if (process.env.EMAIL_TO && process.env.EMAIL_TO !== process.env.GMAIL_USER) {
+  if (
+    validatedEnv.EMAIL_TO &&
+    validatedEnv.EMAIL_TO !== validatedEnv.GMAIL_USER
+  ) {
     result.warnings.push({
       variable: "EMAIL_TO",
       message:
@@ -221,8 +224,8 @@ function addWarnings(result: ValidationResult): void {
 
   // Check if Google Analytics is configured
   if (
-    !process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID &&
-    process.env.NODE_ENV === "production"
+    !validatedEnv.NEXT_PUBLIC_GA_MEASUREMENT_ID &&
+    validatedEnv.NODE_ENV === "production"
   ) {
     result.warnings.push({
       variable: "NEXT_PUBLIC_GA_MEASUREMENT_ID",

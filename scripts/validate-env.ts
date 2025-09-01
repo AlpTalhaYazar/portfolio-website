@@ -105,7 +105,15 @@ async function main(): Promise<void> {
 }
 
 // Run the validation if this script is executed directly
-if (fileURLToPath(import.meta.url) === process.argv[1]) {
+// Use import.meta.main if available (Node.js v20.6.0+), otherwise fallback to filename check
+const scriptFilename = fileURLToPath(import.meta.url);
+const isMain =
+  typeof import.meta.main === "boolean"
+    ? import.meta.main
+    : process.argv[1] &&
+      process.argv[1].endsWith(scriptFilename.split(/[\\/]/).pop() || "");
+
+if (isMain) {
   main().catch((error) => {
     console.error(
       colorize("red", "Unexpected error during validation:"),
