@@ -12,3 +12,6 @@ export * from "./theme";
 
 // Utility components
 export * from "./utils";
+
+// Analytics components
+export * from "./analytics";
