@@ -4,11 +4,14 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "next build --turbopack",
+    "build": "npm run validate:env && next build --turbopack",
     "start": "next start",
     "lint": "eslint",
-    "vercel-build": "next build",
-    "type-check": "tsc --noEmit"
+    "vercel-build": "npm run validate:env && next build",
+    "type-check": "tsc --noEmit",
+    "validate:env": "tsx scripts/validate-env.ts",
+    "prebuild": "npm run validate:env",
+    "pre-commit": "npm run lint && npm run type-check && npm run validate:env"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.1",
@@ -30,9 +33,12 @@
     "@types/node": "^24",
     "@types/react": "^19.1.12",
     "@types/react-dom": "^19.1.9",
+    "dotenv": "^17.2.1",
     "eslint": "^9",
     "eslint-config-next": "15.5.2",
     "tailwindcss": "^4",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.19.2",
     "typescript": "^5"
   }
 }

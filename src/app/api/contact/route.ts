@@ -12,6 +12,7 @@ import {
   cleanupExpiredTokens,
 } from "@/lib/security";
 import { createContactEmail } from "@/lib/email-templates";
+import { serverEnv, clientEnv } from "@/lib/env";
 
 // Validation schema
 const contactSchema = z.object({
@@ -39,11 +40,9 @@ export async function POST(request: NextRequest) {
 
     // 1. Origin verification
     const allowedOrigins = [
-      process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
-      process.env.NEXT_PUBLIC_BASE_URL || "",
-      `https://www.${
-        process.env.NEXT_PUBLIC_BASE_URL?.replace("https://www.", "") || ""
-      }`,
+      clientEnv.siteUrl || "http://localhost:3000",
+      clientEnv.baseUrl || "",
+      `https://www.${clientEnv.baseUrl?.replace("https://www.", "") || ""}`,
     ];
 
     if (!verifyOrigin(request, allowedOrigins)) {
@@ -157,9 +156,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Check for required environment variables
-    const gmailUser = process.env.GMAIL_USER;
-    const gmailAppPassword = process.env.GMAIL_APP_PASSWORD;
-    const emailTo = process.env.EMAIL_TO || process.env.GMAIL_USER;
+    const gmailUser = serverEnv.gmailUser;
+    const gmailAppPassword = serverEnv.gmailAppPassword;
+    const emailTo = serverEnv.emailTo;
 
     if (!gmailUser || !gmailAppPassword) {
       console.error("Gmail credentials not configured properly");
