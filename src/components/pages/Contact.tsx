@@ -5,43 +5,28 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Send, Shield, AlertTriangle } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
+// Note: Form state management moved to custom hooks
 import { useTranslation } from "@/lib/i18n";
 import LightsaberButton from "@/components/ui/LightsaberButton";
 import HologramCard from "@/components/ui/HologramCard";
 import { useTheme } from "@/components/theme/ThemeProvider";
 import { SECURITY_CONSTANTS } from "@/types";
-import { logger } from "@/lib/logger";
-import { useCSRFSecurity, type SecurityError } from "@/hooks";
+import {
+  useCSRFSecurity,
+  useContactSubmission,
+  type ContactFormData,
+} from "@/hooks";
 import ContactInfo from "./ContactInfo";
 
 // Note: SecurityError interface is now imported from @/hooks
 
 const Contact = () => {
-  // Form state
-  const [isSubmitted, setIsSubmitted] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
-  const [isBlocked, setIsBlocked] = useState(false);
-  const [blockInfo, setBlockInfo] = useState<{
-    escalationLevel?: number;
-  } | null>(null);
-
   // Security state - using custom hook
-  const {
-    csrfToken,
-    sessionId,
-    tokenExpires,
-    isSecurityLoading,
-    securityError,
-    fetchCSRFToken,
-    clearSecurityError,
-    isTokenExpired,
-    isTokenValid,
-  } = useCSRFSecurity();
+  const security = useCSRFSecurity();
 
-  // Refs for cleanup and state management
-  const submitErrorTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const successTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // Form submission state - using custom hook
+  const { isSubmitted, submitError, isBlocked, blockInfo, onSubmit } =
+    useContactSubmission(security);
 
   const { effectiveTheme } = useTheme();
   const { t } = useTranslation();
@@ -67,7 +52,7 @@ const Contact = () => {
     csrfToken: z.string().optional(), // Will be populated automatically
   });
 
-  type ContactFormData = z.infer<typeof contactFormSchema>;
+  // Note: ContactFormData type is now imported from @/hooks
 
   const {
     register,
@@ -78,132 +63,13 @@ const Contact = () => {
     resolver: zodResolver(contactFormSchema),
   });
 
-  // Note: CSRF token management is now handled by useCSRFSecurity hook
+  // Note: Form submission logic is now handled by useContactSubmission hook
 
-  // Cleanup timeouts on unmount
-  useEffect(() => {
-    return () => {
-      if (submitErrorTimeoutRef.current) {
-        clearTimeout(submitErrorTimeoutRef.current);
-      }
-      if (successTimeoutRef.current) {
-        clearTimeout(successTimeoutRef.current);
-      }
-    };
-  }, []);
-
-  const onSubmit = async (data: ContactFormData) => {
-    try {
-      setSubmitError(null);
-      clearSecurityError();
-      setIsBlocked(false);
-
-      // Ensure we have a valid CSRF token
-      if (!isTokenValid()) {
-        logger.dev.log("Refreshing CSRF token before form submission", {
-          hasToken: !!csrfToken,
-          hasSession: !!sessionId,
-          isExpired: isTokenExpired(),
-          tokenExpires: tokenExpires ? new Date(tokenExpires) : null,
-        });
-
-        const tokenRefreshed = await fetchCSRFToken();
-
-        if (!tokenRefreshed) {
-          throw new Error(
-            "Security validation failed. Please refresh the page."
-          );
-        }
-      }
-
-      // Prepare submission data with security token
-      const submissionData = {
-        ...data,
-        csrfToken: csrfToken!,
-      };
-
-      const headers: Record<string, string> = {
-        "Content-Type": "application/json",
-      };
-
-      if (sessionId) {
-        headers["x-session-id"] = sessionId;
-      }
-
-      const response = await fetch("/api/contact/", {
-        method: "POST",
-        headers,
-        body: JSON.stringify(submissionData),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        // Handle enhanced rate limiting responses
-        if (response.status === 429) {
-          const securityResult = result as SecurityError;
-
-          if (securityResult.blocked) {
-            setIsBlocked(true);
-            setBlockInfo({ escalationLevel: securityResult.escalationLevel });
-          }
-
-          const retryAfter = response.headers.get("retry-after");
-          const minutes = retryAfter
-            ? Math.ceil(parseInt(retryAfter) / 60)
-            : 15;
-
-          const escalationMessage = securityResult.escalationLevel
-            ? ` (Level ${securityResult.escalationLevel})`
-            : "";
-
-          throw new Error(
-            `Too many requests${escalationMessage}. Please wait ${minutes} minutes before trying again.`
-          );
-        }
-
-        // Handle CSRF or other security errors
-        if (response.status === 403) {
-          // Try to refresh CSRF token for the next attempt
-          await fetchCSRFToken();
-
-          throw new Error(
-            result.error || "Security validation failed. Please try again."
-          );
-        }
-
-        throw new Error(result.error || "Failed to send message");
-      }
-
-      logger.dev.log("Email sent successfully:", result);
-
-      setIsSubmitted(true);
-
+  // Handle form submission with reset
+  const handleFormSubmit = async (data: ContactFormData) => {
+    await onSubmit(data);
+    if (!submitError) {
       reset();
-
-      // Clear previous success timeout and set new one
-      if (successTimeoutRef.current) {
-        clearTimeout(successTimeoutRef.current);
-      }
-
-      successTimeoutRef.current = setTimeout(() => setIsSubmitted(false), 5000);
-    } catch (error) {
-      logger.error("Error sending email:", error);
-
-      setSubmitError(
-        error instanceof Error
-          ? error.message
-          : "Failed to send message. Please try again."
-      );
-
-      // Clear previous error timeout and set new one (10 seconds for security errors)
-      if (submitErrorTimeoutRef.current) {
-        clearTimeout(submitErrorTimeoutRef.current);
-      }
-      submitErrorTimeoutRef.current = setTimeout(
-        () => setSubmitError(null),
-        10000
-      );
     }
   };
 
@@ -244,7 +110,10 @@ const Contact = () => {
             viewport={{ once: true }}
           >
             <HologramCard variant="bordered" animate={false}>
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+              <form
+                onSubmit={handleSubmit(handleFormSubmit)}
+                className="space-y-6"
+              >
                 {/* Honeypot field - hidden from users, should remain empty */}
                 <input
                   {...register("honeypot")}
@@ -349,21 +218,21 @@ const Contact = () => {
                 </div>
 
                 {/* Security Status Indicator */}
-                {isSecurityLoading && (
+                {security.isSecurityLoading && (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
                     <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
                     Initializing security...
                   </div>
                 )}
 
-                {securityError && (
+                {security.securityError && (
                   <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm mb-4">
                     <AlertTriangle size={16} />
-                    {securityError}
+                    {security.securityError}
                   </div>
                 )}
 
-                {csrfToken && !securityError && (
+                {security.csrfToken && !security.securityError && (
                   <div className="flex items-center gap-2 text-sm text-green-600 mb-4">
                     <Shield size={16} />
                     Form secured
@@ -373,7 +242,10 @@ const Contact = () => {
                 <LightsaberButton
                   variant="blue"
                   disabled={
-                    isSubmitting || isSecurityLoading || !csrfToken || isBlocked
+                    isSubmitting ||
+                    security.isSecurityLoading ||
+                    !security.csrfToken ||
+                    isBlocked
                   }
                   className="w-full"
                   type="submit"
@@ -383,7 +255,7 @@ const Contact = () => {
                       <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
                       {t.contact.form.sending}
                     </>
-                  ) : isSecurityLoading ? (
+                  ) : security.isSecurityLoading ? (
                     <>
                       <Shield size={18} />
                       Securing...
