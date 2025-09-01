@@ -284,7 +284,9 @@ export function printValidationResults(result: ValidationResult): void {
       "   4. Generate Gmail App Password at https://myaccount.google.com/apppasswords\n"
     );
 
-    process.exit(1);
+    throw new Error(
+      "Environment variable validation failed. See above for details."
+    );
   }
 }
 

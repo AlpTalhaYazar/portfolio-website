@@ -127,7 +127,7 @@ export const envUtils = {
     github: clientEnv.githubUrl,
     linkedin: clientEnv.linkedinUrl,
     twitter: clientEnv.twitterHandle
-      ? `https://twitter.com/${clientEnv.twitterHandle}`
+      ? `https://x.com/${clientEnv.twitterHandle}`
       : undefined,
   }),
 
