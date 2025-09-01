@@ -6,58 +6,45 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Mail, MapPin, Phone, Send, Shield, AlertTriangle } from "lucide-react";
 import { socialLinks } from "@/lib/data";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "@/lib/i18n";
 import LightsaberButton from "@/components/ui/LightsaberButton";
 import HologramCard from "@/components/ui/HologramCard";
 import { useTheme } from "@/components/theme/ThemeProvider";
 import { SECURITY_CONSTANTS } from "@/types";
 import { logger } from "@/lib/logger";
+import { useCSRFSecurity, type SecurityError } from "@/hooks";
 
-// Security and API response interfaces
-interface CSRFTokenResponse {
-  success: boolean;
-  token: string;
-  sessionId: string;
-  expires: number;
-  expiresIn: number;
-}
-
-interface SecurityError {
-  error: string;
-  blocked?: boolean;
-  escalationLevel?: number;
-}
+// Note: SecurityError interface is now imported from @/hooks
 
 const Contact = () => {
   // Form state
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-
-  // Security state
-  const [csrfToken, setCsrfToken] = useState<string | null>(null);
-  const [sessionId, setSessionId] = useState<string | null>(null);
-  const [tokenExpires, setTokenExpires] = useState<number | null>(null);
-  const [isSecurityLoading, setIsSecurityLoading] = useState(true);
-  const [securityError, setSecurityError] = useState<string | null>(null);
   const [isBlocked, setIsBlocked] = useState(false);
   const [blockInfo, setBlockInfo] = useState<{
     escalationLevel?: number;
   } | null>(null);
 
+  // Security state - using custom hook
+  const {
+    csrfToken,
+    sessionId,
+    tokenExpires,
+    isSecurityLoading,
+    securityError,
+    fetchCSRFToken,
+    clearSecurityError,
+    isTokenExpired,
+    isTokenValid,
+  } = useCSRFSecurity();
+
   // Refs for cleanup and state management
   const submitErrorTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const successTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const isFetchingRef = useRef<boolean>(false);
-  const sessionIdRef = useRef<string | null>(null);
 
   const { effectiveTheme } = useTheme();
   const { t } = useTranslation();
-
-  // Keep sessionId ref in sync with state to avoid stale closures
-  useEffect(() => {
-    sessionIdRef.current = sessionId;
-  }, [sessionId]);
 
   const contactFormSchema = z.object({
     name: z
@@ -91,147 +78,7 @@ const Contact = () => {
     resolver: zodResolver(contactFormSchema),
   });
 
-  // CSRF Token Management
-  const fetchCSRFToken = useCallback(async (): Promise<boolean> => {
-    // Prevent multiple simultaneous calls
-    if (isFetchingRef.current) {
-      logger.dev.log("CSRF token fetch already in progress, skipping...");
-      return false;
-    }
-
-    try {
-      isFetchingRef.current = true;
-      setIsSecurityLoading(true);
-      setSecurityError(null);
-
-      logger.dev.log("Fetching CSRF token...");
-
-      const headers: Record<string, string> = {};
-      // Use ref to get current sessionId value (avoids stale closure)
-      const currentSessionId = sessionIdRef.current;
-      if (currentSessionId) {
-        headers["x-session-id"] = currentSessionId;
-
-        logger.dev.log("Using existing session ID for token refresh");
-      } else {
-        logger.dev.log("Generating new session ID");
-      }
-
-      const response = await fetch("/api/csrf-token/", {
-        method: "GET",
-        headers,
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-
-        throw new Error(errorData.error || "Failed to get security token");
-      }
-
-      const data: CSRFTokenResponse = await response.json();
-
-      logger.dev.log(
-        "CSRF token fetched successfully, expires:",
-        new Date(data.expires)
-      );
-
-      setCsrfToken(data.token);
-      setSessionId(data.sessionId);
-      setTokenExpires(data.expires);
-      setIsSecurityLoading(false);
-
-      return true;
-    } catch (error) {
-      logger.error("Failed to fetch CSRF token:", error);
-
-      setSecurityError(
-        error instanceof Error
-          ? error.message
-          : "Security initialization failed"
-      );
-
-      setIsSecurityLoading(false);
-
-      return false;
-    } finally {
-      isFetchingRef.current = false;
-    }
-  }, []); // Intentionally empty dependency array: fetchCSRFToken accesses sessionIdRef.current (a ref), which is always up-to-date and does not need to be in the dependency array
-
-  // Token expiry logic is now inlined to prevent useCallback dependency issues
-
-  // Initialize security on component mount - inline logic to avoid dependency issues
-  useEffect(() => {
-    const initializeSecurity = async () => {
-      // Prevent multiple simultaneous calls
-      if (isFetchingRef.current) {
-        logger.dev.log(
-          "Security initialization already in progress, skipping..."
-        );
-
-        return;
-      }
-
-      try {
-        isFetchingRef.current = true;
-        setIsSecurityLoading(true);
-        setSecurityError(null);
-
-        logger.dev.log("Initializing security...");
-
-        const headers: Record<string, string> = {};
-        // Use ref to get current sessionId value (avoids stale closure)
-        const currentSessionId = sessionIdRef.current;
-        if (currentSessionId) {
-          headers["x-session-id"] = currentSessionId;
-
-          logger.dev.log("Using existing session ID for initialization");
-        } else {
-          logger.dev.log("Generating new session ID");
-        }
-
-        const response = await fetch("/api/csrf-token/", {
-          method: "GET",
-          headers,
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-
-          throw new Error(errorData.error || "Failed to get security token");
-        }
-
-        const data: CSRFTokenResponse = await response.json();
-
-        logger.dev.log(
-          "Security initialized successfully, expires:",
-          new Date(data.expires)
-        );
-
-        setCsrfToken(data.token);
-        setSessionId(data.sessionId);
-        setTokenExpires(data.expires);
-        setIsSecurityLoading(false);
-      } catch (error) {
-        logger.error("Failed to initialize security:", error);
-
-        setSecurityError(
-          error instanceof Error
-            ? error.message
-            : "Security initialization failed"
-        );
-
-        setIsSecurityLoading(false);
-      } finally {
-        isFetchingRef.current = false;
-      }
-    };
-
-    initializeSecurity();
-  }, []); // No dependencies needed - all dynamic values accessed via refs
-
-  // Simplified: Only refresh token manually before form submission
-  // Auto-refresh was causing infinite loops, so we'll handle it in the onSubmit function
+  // Note: CSRF token management is now handled by useCSRFSecurity hook
 
   // Cleanup timeouts on unmount
   useEffect(() => {
@@ -248,20 +95,15 @@ const Contact = () => {
   const onSubmit = async (data: ContactFormData) => {
     try {
       setSubmitError(null);
-      setSecurityError(null);
+      clearSecurityError();
       setIsBlocked(false);
 
       // Ensure we have a valid CSRF token
-      const now = Date.now();
-      const isExpired = tokenExpires
-        ? now >= tokenExpires - SECURITY_CONSTANTS.CSRF_REFRESH_THRESHOLD
-        : true;
-
-      if (!csrfToken || !sessionId || isExpired) {
+      if (!isTokenValid()) {
         logger.dev.log("Refreshing CSRF token before form submission", {
           hasToken: !!csrfToken,
           hasSession: !!sessionId,
-          isExpired,
+          isExpired: isTokenExpired(),
           tokenExpires: tokenExpires ? new Date(tokenExpires) : null,
         });
 
