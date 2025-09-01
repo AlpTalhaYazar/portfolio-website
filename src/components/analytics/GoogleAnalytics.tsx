@@ -15,6 +15,20 @@ interface GoogleAnalyticsProps {
   measurementId: string;
 }
 
+// Helper function to check if analytics should be enabled
+const isAnalyticsEnabled = (): boolean => {
+  return process.env.NODE_ENV === "production";
+};
+
+// Helper function to check if gtag is available and analytics is enabled
+const isGtagReady = (): boolean => {
+  return (
+    typeof window !== "undefined" &&
+    typeof window.gtag === "function" &&
+    isAnalyticsEnabled()
+  );
+};
+
 // Define gtag function outside component to prevent recreations
 const createGtagFunction = () => {
   return function gtag(...args: unknown[]) {
@@ -29,8 +43,8 @@ export default function GoogleAnalytics({
   measurementId,
 }: GoogleAnalyticsProps) {
   const initializeGA = useCallback(() => {
-    // Only initialize if we have a measurement ID and we're in production
-    if (!measurementId || process.env.NODE_ENV !== "production") {
+    // Only initialize if we have a measurement ID and analytics is enabled
+    if (!measurementId || !isAnalyticsEnabled()) {
       return;
     }
 
@@ -55,8 +69,8 @@ export default function GoogleAnalytics({
     initializeGA();
   }, [initializeGA]);
 
-  // Only load in production and with valid measurement ID
-  if (!measurementId || process.env.NODE_ENV !== "production") {
+  // Only load with valid measurement ID and when analytics is enabled
+  if (!measurementId || !isAnalyticsEnabled()) {
     return null;
   }
 
@@ -83,11 +97,7 @@ export function useGoogleAnalytics(_measurementId?: string) {
     value?: number
   ) => {
     // Events are sent to the already configured GA instance, no measurement ID needed
-    if (
-      typeof window !== "undefined" &&
-      window.gtag &&
-      process.env.NODE_ENV === "production"
-    ) {
+    if (isGtagReady()) {
       window.gtag("event", action, {
         event_category: category,
         event_label: label,
@@ -98,11 +108,7 @@ export function useGoogleAnalytics(_measurementId?: string) {
 
   const trackPageView = (url: string) => {
     // Send a page_view event instead of reconfiguring GA (more efficient)
-    if (
-      typeof window !== "undefined" &&
-      window.gtag &&
-      process.env.NODE_ENV === "production"
-    ) {
+    if (isGtagReady()) {
       window.gtag("event", "page_view", {
         page_location: url,
       });
