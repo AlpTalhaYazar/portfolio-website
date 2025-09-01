@@ -28,9 +28,9 @@ The Google Analytics Measurement ID is configured as a public environment variab
 ### Features
 
 1. **Production-Only Loading**: Analytics only loads in production environment
-2. **Privacy-Friendly Settings**: Includes `anonymize_ip` and `respect_gdpr` options
+2. **Modern Privacy Settings**: Uses current GA4 privacy controls (`allow_google_signals: false`, `allow_ad_personalization_signals: false`)
 3. **TypeScript Support**: Properly typed with custom window interface extensions
-4. **Custom Hooks**: `useGoogleAnalytics` hook for tracking custom events
+4. **Custom Hooks**: `useGoogleAnalytics` hook for tracking custom events with flexible measurement ID support
 5. **Next.js Optimized**: Uses Next.js `Script` component with `afterInteractive` strategy
 
 ### Usage
@@ -63,7 +63,12 @@ import { useRouter } from "next/router";
 import { useEffect } from "react";
 
 function MyApp() {
+  // Option 1: Use default measurement ID from environment
   const { trackPageView } = useGoogleAnalytics();
+
+  // Option 2: Use specific measurement ID
+  // const { trackPageView } = useGoogleAnalytics("G-XXXXXXXXXX");
+
   const router = useRouter();
 
   useEffect(() => {
@@ -81,8 +86,10 @@ function MyApp() {
 
 - The GA Measurement ID is not considered sensitive data
 - Analytics only loads in production to avoid development noise
-- IP anonymization is enabled for privacy compliance
-- GDPR respect flag is set for European compliance
+- Modern GA4 privacy settings are enabled:
+  - `allow_google_signals: false` - Disables Google Signals for enhanced privacy
+  - `allow_ad_personalization_signals: false` - Disables ad personalization signals
+- Compatible with GDPR and other privacy regulations
 
 ### Testing
 

@@ -38,9 +38,9 @@ export default function GoogleAnalytics({
     // Configure with measurement ID
     gtag("js", new Date());
     gtag("config", measurementId, {
-      // Privacy-friendly settings
-      anonymize_ip: true,
-      respect_gdpr: true,
+      // Modern GA4 privacy settings
+      allow_google_signals: false, // Disable Google Signals for enhanced privacy
+      allow_ad_personalization_signals: false, // Disable ad personalization
     });
   }, [measurementId]);
 
@@ -61,7 +61,7 @@ export default function GoogleAnalytics({
 }
 
 // Custom hook for tracking events
-export function useGoogleAnalytics() {
+export function useGoogleAnalytics(measurementId?: string) {
   const trackEvent = (
     action: string,
     category: string,
@@ -82,12 +82,15 @@ export function useGoogleAnalytics() {
   };
 
   const trackPageView = (url: string) => {
+    const gaId = measurementId || process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
+
     if (
       typeof window !== "undefined" &&
       window.gtag &&
-      process.env.NODE_ENV === "production"
+      process.env.NODE_ENV === "production" &&
+      gaId
     ) {
-      window.gtag("config", process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID, {
+      window.gtag("config", gaId, {
         page_path: url,
       });
     }
