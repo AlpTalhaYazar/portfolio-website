@@ -18,7 +18,10 @@ interface GoogleAnalyticsProps {
 // Define gtag function outside component to prevent recreations
 const createGtagFunction = () => {
   return function gtag(...args: unknown[]) {
-    window.dataLayer.push(args);
+    // Safety check for dataLayer existence and type
+    if (window.dataLayer && Array.isArray(window.dataLayer)) {
+      window.dataLayer.push(args);
+    }
   };
 };
 
@@ -69,9 +72,9 @@ export default function GoogleAnalytics({
 }
 
 // Custom hook for tracking events
-export function useGoogleAnalytics(measurementId?: string) {
-  // Get the measurement ID - prefer parameter, fallback to environment variable
-  const gaId = measurementId || process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
+export function useGoogleAnalytics(_measurementId?: string) {
+  // Note: _measurementId parameter available for future extensibility
+  // Currently only used for documentation and consistency
 
   const trackEvent = (
     action: string,
@@ -94,15 +97,14 @@ export function useGoogleAnalytics(measurementId?: string) {
   };
 
   const trackPageView = (url: string) => {
-    // Page views require reconfiguring GA with the measurement ID and new page path
+    // Send a page_view event instead of reconfiguring GA (more efficient)
     if (
       typeof window !== "undefined" &&
       window.gtag &&
-      process.env.NODE_ENV === "production" &&
-      gaId
+      process.env.NODE_ENV === "production"
     ) {
-      window.gtag("config", gaId, {
-        page_path: url,
+      window.gtag("event", "page_view", {
+        page_location: url,
       });
     }
   };

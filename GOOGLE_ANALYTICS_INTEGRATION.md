@@ -59,7 +59,7 @@ function MyComponent() {
 
 ```tsx
 import { useGoogleAnalytics } from "@/components/analytics";
-import { useRouter } from "next/router";
+import { useRouter, usePathname } from "next/navigation";
 import { useEffect } from "react";
 
 function MyApp() {
@@ -70,15 +70,12 @@ function MyApp() {
   // const { trackPageView } = useGoogleAnalytics("G-XXXXXXXXXX");
 
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
-    const handleRouteChange = (url: string) => {
-      trackPageView(url);
-    };
-
-    router.events.on("routeChangeComplete", handleRouteChange);
-    return () => router.events.off("routeChangeComplete", handleRouteChange);
-  }, [router.events, trackPageView]);
+    // Track page view for App Router
+    trackPageView(pathname);
+  }, [pathname, trackPageView]);
 }
 ```
 
