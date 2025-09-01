@@ -29,14 +29,12 @@ const isGtagReady = (): boolean => {
   );
 };
 
-// Define gtag function outside component to prevent recreations
-const createGtagFunction = () => {
-  return function gtag(...args: unknown[]) {
-    // Safety check for dataLayer existence and type
-    if (window.dataLayer && Array.isArray(window.dataLayer)) {
-      window.dataLayer.push(args);
-    }
-  };
+// Define gtag function as a constant to prevent recreations
+const gtagFunction = function gtag(...args: unknown[]) {
+  // Safety check for dataLayer existence and type
+  if (window.dataLayer && Array.isArray(window.dataLayer)) {
+    window.dataLayer.push(args);
+  }
 };
 
 export default function GoogleAnalytics({
@@ -53,7 +51,7 @@ export default function GoogleAnalytics({
 
     // Create and assign gtag function if not already available
     if (!window.gtag) {
-      window.gtag = createGtagFunction();
+      window.gtag = gtagFunction;
     }
 
     // Configure with measurement ID
