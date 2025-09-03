@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { StructuredData } from "@/components/utils";
 import { ThemeProvider } from "@/components/theme";
-import { GoogleAnalytics } from "@/components/analytics";
+import { GoogleAnalytics } from "@next/third-parties/google";
 import { I18nProvider } from "@/lib/i18n";
 import { themeScript } from "@/lib/theme-script";
 import "./globals.css";
@@ -88,11 +88,6 @@ export default function RootLayout({
     <html lang="en" className="scroll-smooth" suppressHydrationWarning>
       <head>
         <StructuredData />
-        {process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID && (
-          <GoogleAnalytics
-            measurementId={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID}
-          />
-        )}
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body
@@ -107,6 +102,9 @@ export default function RootLayout({
           <ThemeProvider>{children}</ThemeProvider>
         </I18nProvider>
       </body>
+      {process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID && (
+        <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID} />
+      )}
     </html>
   );
 }
