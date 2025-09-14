@@ -1,6 +1,19 @@
 {
   "version": 2,
   "framework": "nextjs",
+  "redirects": [
+    {
+      "source": "/(.*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "alptalha.dev"
+        }
+      ],
+      "destination": "https://www.alptalha.dev/$1",
+      "statusCode": 301
+    }
+  ],
   "headers": [
     {
       "source": "/api/(.*)",
