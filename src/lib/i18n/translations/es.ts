@@ -97,6 +97,7 @@ export const es = {
       intermediate: "Intermedio",
       basic: "Básico",
     },
+    legend: "Pase el cursor sobre los indicadores para ver los niveles de competencia: ●●●● Avanzado • ●●●○ Competente • ●●○○ Intermedio • ●○○○ Básico",
   },
 
   // Projects Section
@@ -155,11 +156,24 @@ export const es = {
       "Lo siento, hubo un error al enviar tu mensaje. Por favor intenta de nuevo.",
     validation: {
       nameRequired: "El nombre es obligatorio",
+      nameTooLong: "El nombre es demasiado largo",
       emailRequired: "El correo es obligatorio",
       emailInvalid: "Por favor ingresa una dirección de correo válida",
+      emailTooLong: "El correo es demasiado largo",
       subjectRequired: "El asunto es obligatorio",
+      subjectTooLong: "El asunto es demasiado largo",
       messageRequired: "El mensaje es obligatorio",
       messageMinLength: "El mensaje debe tener al menos 10 caracteres",
+      messageTooLong: "El mensaje es demasiado largo",
+    },
+    security: {
+      initializing: "Inicializando seguridad...",
+      secured: "Formulario seguro",
+      securing: "Asegurando...",
+      temporarilyBlocked: "Bloqueado Temporalmente",
+      securityLevel: "Nivel de Seguridad",
+      extendedRestrictions: "Restricciones extendidas en efecto",
+      temporaryMeasure: "Esta es una medida de seguridad temporal. Por favor espere antes de intentar de nuevo.",
     },
   },
 
@@ -232,6 +246,7 @@ export const es = {
     themeToggle: "Cambiar tema de color",
     languageToggle: "Cambiar idioma",
     scrollToTop: "Volver arriba",
+    scrollToNext: "Ir a la siguiente sección",
     externalLink: "Abre en ventana nueva",
     required: "Campo obligatorio",
   },

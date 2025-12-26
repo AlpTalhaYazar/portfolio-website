@@ -97,6 +97,7 @@ export const en = {
       intermediate: "Intermediate",
       basic: "Basic",
     },
+    legend: "Hover over indicators for proficiency levels: ●●●● Advanced • ●●●○ Proficient • ●●○○ Intermediate • ●○○○ Basic",
   },
 
   // Projects Section
@@ -154,11 +155,24 @@ export const en = {
     error: "Sorry, there was an error sending your message. Please try again.",
     validation: {
       nameRequired: "Name is required",
+      nameTooLong: "Name is too long",
       emailRequired: "Email is required",
       emailInvalid: "Please enter a valid email address",
+      emailTooLong: "Email is too long",
       subjectRequired: "Subject is required",
+      subjectTooLong: "Subject is too long",
       messageRequired: "Message is required",
       messageMinLength: "Message must be at least 10 characters long",
+      messageTooLong: "Message is too long",
+    },
+    security: {
+      initializing: "Initializing security...",
+      secured: "Form secured",
+      securing: "Securing...",
+      temporarilyBlocked: "Temporarily Blocked",
+      securityLevel: "Security Level",
+      extendedRestrictions: "Extended restrictions in effect",
+      temporaryMeasure: "This is a temporary security measure. Please wait before trying again.",
     },
   },
 
@@ -231,6 +245,7 @@ export const en = {
     themeToggle: "Toggle color theme",
     languageToggle: "Change language",
     scrollToTop: "Scroll to top",
+    scrollToNext: "Scroll to next section",
     externalLink: "Opens in new window",
     required: "Required field",
   },

@@ -150,7 +150,7 @@ const Hero = () => {
           <button
             onClick={scrollToNextSection}
             className="flex flex-col items-center text-muted-foreground hover:text-foreground transition-colors duration-200"
-            aria-label={t.a11y.scrollToTop}
+            aria-label={t.a11y.scrollToNext}
           >
             <span className="text-sm mb-2">{t.common.next}</span>
             <motion.div

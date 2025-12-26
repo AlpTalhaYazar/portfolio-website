@@ -98,9 +98,13 @@ const Skills = () => {
                     <div className="flex items-center gap-2">
                       <span
                         className="text-xs text-muted-foreground/80 font-mono tracking-wider"
+                        aria-hidden="true"
                         title={proficiencyLevels[skill.proficiency].description}
                       >
                         {proficiencyLevels[skill.proficiency].indicator}
+                      </span>
+                      <span className="sr-only">
+                        {proficiencyLevels[skill.proficiency].name}
                       </span>
                     </div>
                   </div>
@@ -119,8 +123,7 @@ const Skills = () => {
           className="mt-8 text-center"
         >
           <p className="text-xs text-muted-foreground/60">
-            Hover over indicators for proficiency levels: ●●●● Advanced • ●●●○
-            Proficient • ●●○○ Intermediate • ●○○○ Basic
+            {t.skills.legend}
           </p>
         </motion.div>
       </div>

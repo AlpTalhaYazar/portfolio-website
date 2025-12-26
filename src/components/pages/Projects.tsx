@@ -34,9 +34,10 @@ const Projects = () => {
   };
 
   const getStatusColor = (status: string) => {
+    // Use semantic colors that adapt to all themes
     return status === "active"
-      ? "bg-blue-50 text-blue-700 border-blue-200"
-      : "bg-green-50 text-green-700 border-green-200";
+      ? "bg-primary/10 text-primary border-primary/30"
+      : "bg-accent text-accent-foreground border-border";
   };
 
   return (

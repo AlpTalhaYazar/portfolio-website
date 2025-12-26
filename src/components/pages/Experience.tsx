@@ -60,6 +60,7 @@ const Experience = () => {
                 className={`absolute left-4 md:left-1/2 w-4 h-4 bg-primary rounded-full transform md:-translate-x-2 ${
                   experience.type === "current" ? "ring-4 ring-primary/20" : ""
                 }`}
+                aria-hidden="true"
               ></div>
 
               {/* Content card */}

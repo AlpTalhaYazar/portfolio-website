@@ -96,6 +96,7 @@ export const tr = {
       intermediate: "Orta",
       basic: "Temel",
     },
+    legend: "Yeterlilik seviyeleri için göstergelerin üzerine gelin: ●●●● İleri Düzey • ●●●○ Yetkin • ●●○○ Orta • ●○○○ Temel",
   },
 
   // Projects Section
@@ -154,11 +155,24 @@ export const tr = {
       "Üzgünüz, mesajınız gönderilirken bir hata oluştu. Lütfen tekrar deneyin.",
     validation: {
       nameRequired: "İsim gereklidir",
+      nameTooLong: "İsim çok uzun",
       emailRequired: "E-posta gereklidir",
       emailInvalid: "Lütfen geçerli bir e-posta adresi girin",
+      emailTooLong: "E-posta çok uzun",
       subjectRequired: "Konu gereklidir",
+      subjectTooLong: "Konu çok uzun",
       messageRequired: "Mesaj gereklidir",
       messageMinLength: "Mesaj en az 10 karakter olmalıdır",
+      messageTooLong: "Mesaj çok uzun",
+    },
+    security: {
+      initializing: "Güvenlik başlatılıyor...",
+      secured: "Form güvende",
+      securing: "Güvenlik sağlanıyor...",
+      temporarilyBlocked: "Geçici Olarak Engellendi",
+      securityLevel: "Güvenlik Seviyesi",
+      extendedRestrictions: "Uzatılmış kısıtlamalar devrede",
+      temporaryMeasure: "Bu geçici bir güvenlik önlemidir. Tekrar denemeden önce lütfen bekleyin.",
     },
   },
 
@@ -231,6 +245,7 @@ export const tr = {
     themeToggle: "Renk temasını değiştir",
     languageToggle: "Dil değiştir",
     scrollToTop: "Yukarı kaydır",
+    scrollToNext: "Sonraki bölüme kaydır",
     externalLink: "Yeni pencerede açılır",
     required: "Zorunlu alan",
   },

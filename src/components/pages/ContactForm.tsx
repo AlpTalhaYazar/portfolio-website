@@ -35,19 +35,19 @@ const ContactForm: React.FC<ContactFormProps> = ({
     name: z
       .string()
       .min(2, t.contact.validation.nameRequired)
-      .max(100, "Name too long"),
+      .max(100, t.contact.validation.nameTooLong),
     email: z
       .string()
       .email(t.contact.validation.emailInvalid)
-      .max(255, "Email too long"),
+      .max(255, t.contact.validation.emailTooLong),
     subject: z
       .string()
       .min(5, t.contact.validation.subjectRequired)
-      .max(200, "Subject too long"),
+      .max(200, t.contact.validation.subjectTooLong),
     message: z
       .string()
       .min(10, t.contact.validation.messageMinLength)
-      .max(5000, "Message too long"),
+      .max(5000, t.contact.validation.messageTooLong),
     honeypot: z.string().optional(), // Hidden field for bot detection
     csrfToken: z.string().optional(), // Will be populated automatically
   });
@@ -109,11 +109,13 @@ const ContactForm: React.FC<ContactFormProps> = ({
                 {...register("name")}
                 type="text"
                 id="name"
+                aria-describedby={errors.name ? "name-error" : undefined}
+                aria-invalid={errors.name ? true : undefined}
                 className="w-full px-4 py-3 rounded-lg border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-colors duration-200"
                 placeholder={t.contact.form.placeholders.name}
               />
               {errors.name && (
-                <p className="mt-1 text-sm text-red-500">
+                <p id="name-error" role="alert" className="mt-1 text-sm text-red-500">
                   {errors.name.message}
                 </p>
               )}
@@ -130,11 +132,13 @@ const ContactForm: React.FC<ContactFormProps> = ({
                 {...register("email")}
                 type="email"
                 id="email"
+                aria-describedby={errors.email ? "email-error" : undefined}
+                aria-invalid={errors.email ? true : undefined}
                 className="w-full px-4 py-3 rounded-lg border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-colors duration-200"
                 placeholder={t.contact.form.placeholders.email}
               />
               {errors.email && (
-                <p className="mt-1 text-sm text-red-500">
+                <p id="email-error" role="alert" className="mt-1 text-sm text-red-500">
                   {errors.email.message}
                 </p>
               )}
@@ -152,11 +156,13 @@ const ContactForm: React.FC<ContactFormProps> = ({
               {...register("subject")}
               type="text"
               id="subject"
+              aria-describedby={errors.subject ? "subject-error" : undefined}
+              aria-invalid={errors.subject ? true : undefined}
               className="w-full px-4 py-3 rounded-lg border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-colors duration-200"
               placeholder={t.contact.form.placeholders.subject}
             />
             {errors.subject && (
-              <p className="mt-1 text-sm text-red-500">
+              <p id="subject-error" role="alert" className="mt-1 text-sm text-red-500">
                 {errors.subject.message}
               </p>
             )}
@@ -173,11 +179,13 @@ const ContactForm: React.FC<ContactFormProps> = ({
               {...register("message")}
               id="message"
               rows={6}
+              aria-describedby={errors.message ? "message-error" : undefined}
+              aria-invalid={errors.message ? true : undefined}
               className="w-full px-4 py-3 rounded-lg border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-colors duration-200 resize-vertical"
               placeholder={t.contact.form.placeholders.message}
             />
             {errors.message && (
-              <p className="mt-1 text-sm text-red-500">
+              <p id="message-error" role="alert" className="mt-1 text-sm text-red-500">
                 {errors.message.message}
               </p>
             )}
@@ -187,7 +195,7 @@ const ContactForm: React.FC<ContactFormProps> = ({
           {security.isSecurityLoading && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
               <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-              Initializing security...
+              {t.contact.security.initializing}
             </div>
           )}
 
@@ -201,7 +209,7 @@ const ContactForm: React.FC<ContactFormProps> = ({
           {security.csrfToken && !security.securityError && (
             <div className="flex items-center gap-2 text-sm text-green-600 mb-4">
               <Shield size={16} />
-              Form secured
+              {t.contact.security.secured}
             </div>
           )}
 
@@ -224,12 +232,12 @@ const ContactForm: React.FC<ContactFormProps> = ({
             ) : security.isSecurityLoading ? (
               <>
                 <Shield size={18} />
-                Securing...
+                {t.contact.security.securing}
               </>
             ) : submission.isBlocked ? (
               <>
                 <AlertTriangle size={18} />
-                Temporarily Blocked
+                {t.contact.security.temporarilyBlocked}
               </>
             ) : (
               <>
@@ -270,16 +278,15 @@ const ContactForm: React.FC<ContactFormProps> = ({
                   {submission.isBlocked &&
                     submission.blockInfo?.escalationLevel && (
                       <div className="mt-2 text-xs opacity-75">
-                        Security Level: {submission.blockInfo.escalationLevel}/
+                        {t.contact.security.securityLevel}: {submission.blockInfo.escalationLevel}/
                         {Object.keys(SECURITY_CONSTANTS.BLOCK_DURATIONS).length}
                         {submission.blockInfo.escalationLevel >= 3 &&
-                          " - Extended restrictions in effect"}
+                          ` - ${t.contact.security.extendedRestrictions}`}
                       </div>
                     )}
                   {submission.isBlocked && (
                     <div className="mt-2 text-xs opacity-75">
-                      This is a temporary security measure. Please wait before
-                      trying again.
+                      {t.contact.security.temporaryMeasure}
                     </div>
                   )}
                 </div>
