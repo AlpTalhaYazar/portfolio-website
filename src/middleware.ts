@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { checkRateLimit, getClientIP, logSecurityEvent } from "@/lib/security";
+import { checkRateLimit, getClientIP, logSecurityEvent } from "@/lib/security-edge";
 import type { RateLimitConfig } from "@/types";
 
 // Rate limiting configuration per endpoint
