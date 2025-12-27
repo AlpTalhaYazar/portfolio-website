@@ -11,6 +11,7 @@ import {
   verifyCSRFToken,
   cleanupExpiredTokens,
 } from "@/lib/security";
+import { logger } from "@/lib/logger";
 import { createContactEmail } from "@/lib/email-templates";
 import { serverEnv, clientEnv } from "@/lib/env";
 
@@ -161,7 +162,7 @@ export async function POST(request: NextRequest) {
     const emailTo = serverEnv.emailTo;
 
     if (!gmailUser || !gmailAppPassword) {
-      console.error("Gmail credentials not configured properly");
+      logger.error("Gmail credentials not configured properly");
 
       return NextResponse.json(
         {
@@ -184,7 +185,7 @@ export async function POST(request: NextRequest) {
         pass: gmailAppPassword,
       },
       tls: {
-        rejectUnauthorized: false,
+        rejectUnauthorized: true,
       },
     });
 
@@ -192,9 +193,9 @@ export async function POST(request: NextRequest) {
     try {
       await transporter.verify();
 
-      console.log("Gmail SMTP connection verified successfully");
+      logger.dev.log("Gmail SMTP connection verified successfully");
     } catch (verifyError) {
-      console.error("Gmail SMTP verification failed:", verifyError);
+      logger.error("Gmail SMTP verification failed:", verifyError);
 
       return NextResponse.json(
         {
@@ -243,7 +244,7 @@ export async function POST(request: NextRequest) {
     // Send email
     const info = await transporter.sendMail(mailOptions);
 
-    console.log("Email sent successfully:", info.messageId);
+    logger.dev.log("Email sent successfully:", info.messageId);
 
     return NextResponse.json({
       success: true,
@@ -251,7 +252,7 @@ export async function POST(request: NextRequest) {
       messageId: info.messageId,
     });
   } catch (error) {
-    console.error("Error sending email:", error);
+    logger.error("Error sending email:", error);
 
     // Handle validation errors
     if (error instanceof z.ZodError) {
