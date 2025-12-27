@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { Geist, Geist_Mono } from "next/font/google";
 import { StructuredData } from "@/components/utils";
 import { ThemeProvider } from "@/components/theme";
@@ -190,16 +191,20 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Get nonce from middleware for CSP
+  const headersList = await headers();
+  const nonce = headersList.get("x-nonce") || "";
+
   return (
     <html lang="en" className="scroll-smooth" suppressHydrationWarning>
       <head>
         <StructuredData />
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <script nonce={nonce} dangerouslySetInnerHTML={{ __html: themeScript }} />
 
         {/* Additional SEO Meta Tags */}
         <meta name="format-detection" content="telephone=no" />

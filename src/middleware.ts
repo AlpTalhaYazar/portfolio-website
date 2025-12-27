@@ -1,11 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { checkRateLimit, getClientIP, logSecurityEvent } from "@/lib/security-edge";
+import {
+  checkRateLimitRedis,
+  getClientIP,
+  logSecurityEvent,
+  getRateLimitingMethod,
+} from "@/lib/redis-rate-limit";
 import type { RateLimitConfig } from "@/types";
 
 // Rate limiting configuration per endpoint
 const RATE_LIMIT_CONFIG: Record<string, RateLimitConfig> = {
   "/api/contact/": { windowMs: 15 * 60 * 1000, maxRequests: 5 }, // 5 requests per 15 minutes
   "/api/csrf-token/": { windowMs: 5 * 60 * 1000, maxRequests: 10 }, // 10 requests per 5 minutes
+  "/api/health/": { windowMs: 1 * 60 * 1000, maxRequests: 30 }, // 30 requests per minute (higher for health checks)
   // Default for other API routes
   "/api/": { windowMs: 10 * 60 * 1000, maxRequests: 20 }, // 20 requests per 10 minutes
 };
@@ -19,12 +25,22 @@ const SENSITIVE_PATHS = [
 ];
 
 /**
- * Apply rate limiting based on endpoint configuration
+ * Generate a cryptographically secure nonce using Web Crypto API (Edge compatible)
  */
-function applyRateLimit(
+function generateNonce(): string {
+  const array = new Uint8Array(16);
+  crypto.getRandomValues(array);
+  return btoa(String.fromCharCode(...array));
+}
+
+/**
+ * Apply rate limiting based on endpoint configuration
+ * Uses Redis when available, falls back to in-memory
+ */
+async function applyRateLimit(
   request: NextRequest,
   pathname: string
-): NextResponse | null {
+): Promise<NextResponse | null> {
   const clientIP = getClientIP(request);
   const userAgent = request.headers.get("user-agent") || "unknown";
 
@@ -37,7 +53,8 @@ function applyRateLimit(
     }
   }
 
-  const rateLimit = checkRateLimit(request, rateLimitConfig);
+  // Use Redis-backed rate limiting (with fallback to in-memory)
+  const rateLimit = await checkRateLimitRedis(request, rateLimitConfig);
 
   if (!rateLimit.allowed) {
     const severity =
@@ -55,14 +72,20 @@ function applyRateLimit(
         blockUntil: rateLimit.blockInfo?.blockUntil,
         windowMs: rateLimitConfig.windowMs,
         maxRequests: rateLimitConfig.maxRequests,
+        method: getRateLimitingMethod(), // Log which method is being used
       },
     });
 
-    const retryAfter = rateLimit.resetTime
-      ? Math.ceil((rateLimit.resetTime - Date.now()) / 1000)
-      : rateLimit.blockInfo?.blockUntil
-      ? Math.ceil((rateLimit.blockInfo.blockUntil - Date.now()) / 1000)
-      : Math.ceil(rateLimitConfig.windowMs / 1000);
+    let retryAfter: number;
+    if (rateLimit.resetTime) {
+      retryAfter = Math.ceil((rateLimit.resetTime - Date.now()) / 1000);
+    } else if (rateLimit.blockInfo?.blockUntil) {
+      retryAfter = Math.ceil(
+        (rateLimit.blockInfo.blockUntil - Date.now()) / 1000
+      );
+    } else {
+      retryAfter = Math.ceil(rateLimitConfig.windowMs / 1000);
+    }
 
     return NextResponse.json(
       {
@@ -87,22 +110,61 @@ function applyRateLimit(
   return null; // No rate limit applied, continue to next middleware/route
 }
 
-export function middleware(request: NextRequest) {
+/**
+ * Build Content Security Policy header with nonce for inline scripts/styles
+ */
+function buildCSPHeader(nonce: string): string {
+  // Note: We need 'unsafe-eval' for Next.js hot module replacement in dev
+  // and for certain third-party scripts like Google Analytics
+  const cspDirectives = [
+    "default-src 'self'",
+    // Script sources: nonce for inline, specific domains for third-party
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://www.googletagmanager.com https://www.google-analytics.com`,
+    // Style sources: nonce for inline styles
+    `style-src 'self' 'nonce-${nonce}' fonts.googleapis.com`,
+    "font-src 'self' fonts.gstatic.com",
+    "img-src 'self' data: blob: https:",
+    "media-src 'self'",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "frame-ancestors 'none'",
+    "connect-src 'self' https://www.google-analytics.com https://analytics.google.com https://region1.google-analytics.com",
+    "upgrade-insecure-requests",
+  ];
+
+  return cspDirectives.join("; ");
+}
+
+/**
+ * Async middleware with Redis-backed rate limiting and nonce-based CSP
+ */
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (SENSITIVE_PATHS.some((path) => pathname.includes(path))) {
     return new NextResponse("Forbidden", { status: 403 });
   }
 
-  // Apply rate limiting to API routes
+  // Apply rate limiting to API routes (async for Redis support)
   if (pathname.startsWith("/api/")) {
-    const rateLimitResult = applyRateLimit(request, pathname);
+    const rateLimitResult = await applyRateLimit(request, pathname);
     if (rateLimitResult) {
       return rateLimitResult; // Return rate limit response
     }
   }
 
-  const response = NextResponse.next();
+  // Generate nonce for CSP
+  const nonce = generateNonce();
+
+  const response = NextResponse.next({
+    request: {
+      headers: new Headers(request.headers),
+    },
+  });
+
+  // Pass nonce to the application via header (will be read by layout.tsx)
+  response.headers.set("x-nonce", nonce);
 
   // Add security headers
   response.headers.set("X-Content-Type-Options", "nosniff");
@@ -125,25 +187,8 @@ export function middleware(request: NextRequest) {
     "camera=(), microphone=(), geolocation=(), payment=(), usb=(), bluetooth=(), fullscreen=(self), autoplay=(self)"
   );
 
-  // Add Content Security Policy
-  const cspHeader = `
-    default-src 'self';
-    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com;
-    style-src 'self' 'unsafe-inline' fonts.googleapis.com;
-    font-src 'self' fonts.gstatic.com;
-    img-src 'self' data: blob:;
-    media-src 'self';
-    object-src 'none';
-    base-uri 'self';
-    form-action 'self';
-    frame-ancestors 'none';
-    connect-src 'self' https://www.google-analytics.com https://analytics.google.com https://region1.google-analytics.com;
-    upgrade-insecure-requests;
-  `
-    .replace(/\s{2,}/g, " ")
-    .trim();
-
-  response.headers.set("Content-Security-Policy", cspHeader);
+  // Add nonce-based Content Security Policy
+  response.headers.set("Content-Security-Policy", buildCSPHeader(nonce));
 
   return response;
 }
