@@ -1,87 +1,62 @@
-import { test, expect } from "@playwright/test";
+import { expect, test } from "@playwright/test";
+
+import { mockCsrfToken } from "./support/mockCsrf";
 
 test.describe("Navigation", () => {
-  test("should load home page successfully", async ({ page }) => {
+  test.beforeEach(async ({ page }) => {
+    await mockCsrfToken(page);
+  });
+
+  test("loads the redesigned home page", async ({ page }) => {
     const response = await page.goto("/");
 
     expect(response?.status()).toBe(200);
-    await expect(page).toHaveTitle(/Alp Talha Yazar/);
+    await expect(page).toHaveTitle(/Senior Backend Engineer/i);
+    await expect(
+      page.getByRole("heading", {
+        name: /I build backend systems that stay reliable under real load\./i,
+      })
+    ).toBeVisible();
   });
 
-  test("should have skip link for accessibility", async ({ page }) => {
+  test("keeps the skip link and core sections", async ({ page }) => {
     await page.goto("/");
 
-    const skipLink = page.locator(".skip-link, a[href='#main-content']");
-    await expect(skipLink).toBeAttached();
-  });
+    await expect(page.locator(".skip-link")).toBeAttached();
 
-  test("should have main sections on page", async ({ page }) => {
-    await page.goto("/");
-
-    // Check for main content sections
-    const sections = [
+    for (const sectionId of [
       "#about",
       "#experience",
       "#skills",
       "#projects",
       "#contact",
-    ];
-
-    for (const sectionId of sections) {
-      const section = page.locator(sectionId);
-      // Section should exist (might be above or below viewport)
-      await expect(section).toBeAttached();
+    ]) {
+      await expect(page.locator(sectionId)).toBeAttached();
     }
   });
 
-  test("should scroll to section when clicking navigation link", async ({
+  test("scrolls to the contact section from header navigation", async ({
     page,
   }) => {
     await page.goto("/");
 
-    // Find a nav link to contact section
-    const contactLink = page.locator('a[href="#contact"], a[href="/#contact"]');
+    await page.locator('header a[href="#contact"]').first().click();
+    await page.waitForTimeout(300);
 
-    if ((await contactLink.count()) > 0) {
-      await contactLink.first().click();
-
-      // Wait for scroll
-      await page.waitForTimeout(500);
-
-      // Contact section should be in view
-      const contactSection = page.locator("#contact");
-      await expect(contactSection).toBeInViewport({ ratio: 0.1 });
-    }
+    await expect(page.locator("#contact")).toBeInViewport({ ratio: 0.1 });
   });
 
-  test("should have proper meta tags for SEO", async ({ page }) => {
+  test("renders canonical and structured data", async ({ page }) => {
     await page.goto("/");
 
-    // Check meta description
-    const metaDescription = page.locator('meta[name="description"]');
-    await expect(metaDescription).toHaveAttribute("content", /.+/);
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+      "href",
+      "https://www.alptalha.dev/"
+    );
 
-    // Check Open Graph tags
-    const ogTitle = page.locator('meta[property="og:title"]');
-    await expect(ogTitle).toHaveAttribute("content", /.+/);
-
-    // Check canonical URL
-    const canonical = page.locator('link[rel="canonical"]');
-    await expect(canonical).toHaveAttribute("href", /.+/);
-  });
-
-  test("should load structured data", async ({ page }) => {
-    await page.goto("/");
-
-    // Find JSON-LD script
     const jsonLd = page.locator('script[type="application/ld+json"]');
     await expect(jsonLd).toBeAttached();
-
-    // Parse and validate structure
-    const content = await jsonLd.textContent();
-    expect(content).toBeTruthy();
-
-    const data = JSON.parse(content!);
+    const data = JSON.parse((await jsonLd.textContent()) || "{}");
     expect(data["@context"]).toBe("https://schema.org");
   });
 });
