@@ -5,6 +5,7 @@ import {
   logSecurityEvent,
   getRateLimitingMethod,
 } from "@/lib/redis-rate-limit";
+import { buildCSPHeader } from "@/lib/csp";
 import { getLocaleFromPathname } from "@/lib/i18n/routing";
 import type { RateLimitConfig } from "@/types";
 
@@ -112,32 +113,6 @@ async function applyRateLimit(
 }
 
 /**
- * Build Content Security Policy header with nonce for inline scripts/styles
- */
-function buildCSPHeader(nonce: string): string {
-  // Note: We need 'unsafe-eval' for Next.js hot module replacement in dev
-  // and for certain third-party scripts like Google Analytics
-  const cspDirectives = [
-    "default-src 'self'",
-    // Script sources: nonce for inline, specific domains for third-party
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://www.googletagmanager.com https://www.google-analytics.com`,
-    // Style sources: nonce for inline styles
-    `style-src 'self' 'nonce-${nonce}' fonts.googleapis.com`,
-    "font-src 'self' fonts.gstatic.com",
-    "img-src 'self' data: blob: https:",
-    "media-src 'self'",
-    "object-src 'none'",
-    "base-uri 'self'",
-    "form-action 'self'",
-    "frame-ancestors 'none'",
-    "connect-src 'self' https://www.google-analytics.com https://analytics.google.com https://region1.google-analytics.com",
-    "upgrade-insecure-requests",
-  ];
-
-  return cspDirectives.join("; ");
-}
-
-/**
  * Async middleware with Redis-backed rate limiting and nonce-based CSP
  */
 export async function middleware(request: NextRequest) {
@@ -193,7 +168,7 @@ export async function middleware(request: NextRequest) {
   );
 
   // Add nonce-based Content Security Policy
-  response.headers.set("Content-Security-Policy", buildCSPHeader(nonce));
+  response.headers.set("Content-Security-Policy", buildCSPHeader({ nonce }));
 
   return response;
 }
