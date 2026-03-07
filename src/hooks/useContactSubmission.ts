@@ -12,7 +12,7 @@ export interface UseContactSubmissionReturn {
   blockInfo: { escalationLevel?: number } | null;
 
   // Functions
-  onSubmit: (data: ContactFormData) => Promise<void>;
+  onSubmit: (data: ContactFormData) => Promise<boolean>;
   clearSubmitError: () => void;
   resetSubmissionState: () => void;
 }
@@ -64,7 +64,7 @@ export const useContactSubmission = (
   };
 
   // Form submission handler
-  const onSubmit = async (data: ContactFormData): Promise<void> => {
+  const onSubmit = async (data: ContactFormData): Promise<boolean> => {
     try {
       setSubmitError(null);
       security.clearSecurityError();
@@ -159,6 +159,7 @@ export const useContactSubmission = (
       }
 
       successTimeoutRef.current = setTimeout(() => setIsSubmitted(false), 5000);
+      return true;
     } catch (error) {
       logger.error("Error sending email:", error);
 
@@ -176,6 +177,7 @@ export const useContactSubmission = (
         () => setSubmitError(null),
         10000
       );
+      return false;
     }
   };
 

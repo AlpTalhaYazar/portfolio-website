@@ -1,274 +1,226 @@
 @import "tailwindcss";
 
-/* Light theme (default) */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-  --card: #ffffff;
-  --card-foreground: #171717;
-  --primary: #3b82f6;
-  --primary-foreground: #ffffff;
-  --secondary: #f1f5f9;
-  --secondary-foreground: #0f172a;
-  --muted: #f8fafc;
-  --muted-foreground: #64748b;
-  --accent: #f1f5f9;
-  --accent-foreground: #0f172a;
-  --border: #e2e8f0;
-  --input: #e2e8f0;
-  --ring: #3b82f6;
-  --radius: 0.75rem;
+  --background: #080808;
+  --foreground: #f0ede8;
+  --surface: #111111;
+  --surface-2: #171717;
+  --muted: #9b9b9b;
+  --faint: #4b4b4b;
+  --border: #1e1e1e;
+  --border-strong: #2c2c2c;
+  --accent: #c8ff47;
+  --accent-foreground: #080808;
+  --error: #ff6a6a;
+  --radius: 1.5rem;
 }
 
-/* Dark theme */
-.dark {
-  --background: #0a0a0a;
-  --foreground: #ededed;
-  --card: #0a0a0a;
-  --card-foreground: #ededed;
-  --primary: #3b82f6;
-  --primary-foreground: #ffffff;
-  --secondary: #1e293b;
-  --secondary-foreground: #f8fafc;
-  --muted: #1e293b;
-  --muted-foreground: #94a3b8;
-  --accent: #1e293b;
-  --accent-foreground: #f8fafc;
-  --border: #334155;
-  --input: #334155;
-  --ring: #3b82f6;
-}
-
-/* Ensure light theme is explicit */
-.light {
-  --background: #ffffff;
-  --foreground: #171717;
-  --card: #ffffff;
-  --card-foreground: #171717;
-  --primary: #3b82f6;
-  --primary-foreground: #ffffff;
-  --secondary: #f1f5f9;
-  --secondary-foreground: #0f172a;
-  --muted: #f8fafc;
-  --muted-foreground: #64748b;
-  --accent: #f1f5f9;
-  --accent-foreground: #0f172a;
-  --border: #e2e8f0;
-  --input: #e2e8f0;
-  --ring: #3b82f6;
-}
-
-/* Matrix theme - inspired by The Matrix movie */
-.matrix {
-  --background: #000000;
-  --foreground: #00ff00;
-  --card: #001100;
-  --card-foreground: #00ff00;
-  --primary: #00ff00;
-  --primary-foreground: #000000;
-  --secondary: #003300;
-  --secondary-foreground: #00cc00;
-  --muted: #002200;
-  --muted-foreground: #008800;
-  --accent: #004400;
-  --accent-foreground: #00ff00;
-  --border: #006600;
-  --input: #003300;
-  --ring: #00ff00;
-}
-
-/* Custom theme variables for Tailwind CSS */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-muted-foreground: var(--muted);
+  --color-faint: var(--faint);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
+  --color-error: var(--error);
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+* {
+  box-sizing: border-box;
 }
 
 html {
-  scroll-behavior: smooth;
+  background: var(--background);
+  color: var(--foreground);
 }
 
-.gradient-text {
-  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 50%, #1d4ed8 100%);
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top, rgba(200, 255, 71, 0.06), transparent 35%),
+    var(--background);
+  color: var(--foreground);
+  font-family: var(--font-space-grotesk), system-ui, sans-serif;
 }
 
-/* Matrix theme gradient text */
-.matrix .gradient-text {
-  background: linear-gradient(135deg, #00ff00 0%, #00cc00 50%, #008800 100%);
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+a,
+button,
+input,
+textarea {
+  transition:
+    color 160ms ease,
+    background-color 160ms ease,
+    border-color 160ms ease,
+    opacity 160ms ease,
+    transform 160ms ease;
 }
 
-/* Star Wars theme - A long time ago in a galaxy far, far away... */
-.starwars {
-  --background: #000000;
-  --foreground: #ffffff;
-  --card: #0a0a0f;
-  --card-foreground: #ffffff;
-  --primary: #4fc3f7;
-  --primary-foreground: #000000;
-  --secondary: #263238;
-  --secondary-foreground: #ffffff;
-  --muted: #37474f;
-  --muted-foreground: #b0bec5;
-  --accent: #00bcd4;
-  --accent-foreground: #000000;
-  --border: #455a64;
-  --input: #37474f;
-  --ring: #4fc3f7;
-
-  /* Star Wars specific colors */
-  --lightsaber-blue: #4fc3f7;
-  --lightsaber-green: #66bb6a;
-  --lightsaber-red: #f44336;
-  --lightsaber-purple: #9c27b0;
-  --empire-gray: #263238;
-  --hologram-blue: #00bcd4;
-  --golden-amber: #ffc107;
-  --death-star-gray: #455a64;
+button,
+input,
+textarea {
+  font: inherit;
 }
 
-/* Matrix theme specific styles */
-.matrix {
-  /* Add subtle glow effect to text in matrix mode */
+::selection {
+  background: rgba(200, 255, 71, 0.24);
+  color: var(--foreground);
 }
 
-.matrix h1,
-.matrix h2,
-.matrix h3 {
-  text-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+::placeholder {
+  color: var(--muted);
 }
 
-.matrix .bg-primary {
-  background-color: #00ff00 !important;
-  box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
+.skip-link {
+  position: absolute;
+  left: 1rem;
+  top: -100px;
+  z-index: 100;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-foreground);
+  padding: 0.75rem 1rem;
 }
 
-.matrix .border-primary {
-  border-color: #00ff00 !important;
-  box-shadow: 0 0 10px rgba(0, 255, 0, 0.2);
+.skip-link:focus {
+  top: 1rem;
 }
 
-/* Star Wars theme specific styles */
-.starwars {
-  background: radial-gradient(ellipse at center, #001122 0%, #000000 70%);
-  color: #ffffff;
+.section-shell {
+  padding: 7rem 1.25rem;
 }
 
-.starwars h1,
-.starwars h2,
-.starwars h3 {
-  text-shadow: 0 0 10px rgba(79, 195, 247, 0.3);
+.shell-grid {
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+  background-size: 28px 28px;
 }
 
-.starwars .bg-primary {
-  background-color: var(--lightsaber-blue) !important;
-  box-shadow: 0 0 20px rgba(79, 195, 247, 0.4), 0 0 40px rgba(79, 195, 247, 0.2);
-  border: 1px solid rgba(79, 195, 247, 0.6);
+.surface-card {
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  border-radius: calc(var(--radius) + 0.5rem);
+  padding: 2rem;
 }
 
-.starwars .border-primary {
-  border-color: var(--lightsaber-blue) !important;
-  box-shadow: 0 0 10px rgba(79, 195, 247, 0.3);
+.surface-card:hover {
+  border-color: var(--border-strong);
 }
 
-/* Lightsaber glow effects */
-.starwars .lightsaber-glow {
-  box-shadow: 0 0 5px currentColor, 0 0 10px currentColor, 0 0 15px currentColor,
-    0 0 20px currentColor;
+.section-divider {
+  height: 1px;
+  width: 100%;
+  background: var(--border);
 }
 
-.starwars .hologram-effect {
-  position: relative;
-  background: linear-gradient(
-    45deg,
-    transparent 30%,
-    rgba(0, 188, 212, 0.1) 50%,
-    transparent 70%
-  );
-  border: 1px solid rgba(0, 188, 212, 0.3);
-  box-shadow: inset 0 0 20px rgba(0, 188, 212, 0.1),
-    0 0 20px rgba(0, 188, 212, 0.1);
+.mono-label {
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
 }
 
-.starwars .space-background {
-  background: radial-gradient(2px 2px at 20px 30px, #ffffff, transparent),
-    radial-gradient(2px 2px at 40px 70px, rgba(255, 255, 255, 0.8), transparent),
-    radial-gradient(1px 1px at 90px 40px, #ffffff, transparent),
-    radial-gradient(
-      1px 1px at 130px 80px,
-      rgba(255, 255, 255, 0.6),
-      transparent
-    ),
-    radial-gradient(2px 2px at 160px 30px, #ffffff, transparent),
-    linear-gradient(135deg, #001122 0%, #000000 50%, #000011 100%);
-  background-size: 200px 100px;
-  animation: starfield 20s linear infinite;
+.accent-chip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.02);
+  padding: 0.35rem 0.7rem;
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  color: var(--muted);
 }
 
-@keyframes starfield {
-  from {
-    background-position: 0 0;
+.theme-chip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  border: 1px solid rgba(200, 255, 71, 0.25);
+  background: rgba(200, 255, 71, 0.09);
+  padding: 0.35rem 0.7rem;
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+}
+
+.primary-button,
+.secondary-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 999px;
+  padding: 0.95rem 1.4rem;
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: 0.74rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.primary-button {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+
+.primary-button:hover {
+  transform: translateY(-1px);
+}
+
+.secondary-button {
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--foreground);
+}
+
+.secondary-button:hover {
+  border-color: var(--border-strong);
+  background: var(--surface);
+}
+
+.input-shell {
+  width: 100%;
+  border-radius: 1.25rem;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--foreground);
+  padding: 0.95rem 1rem;
+  line-height: 1.6;
+}
+
+.input-shell:focus {
+  outline: none;
+  border-color: rgba(200, 255, 71, 0.55);
+  box-shadow: 0 0 0 3px rgba(200, 255, 71, 0.12);
+}
+
+.input-shell[aria-invalid="true"] {
+  border-color: rgba(255, 106, 106, 0.55);
+  box-shadow: 0 0 0 3px rgba(255, 106, 106, 0.12);
+}
+
+.writing-vertical {
+  writing-mode: vertical-rl;
+}
+
+:focus-visible {
+  outline: 2px solid rgba(200, 255, 71, 0.55);
+  outline-offset: 2px;
+}
+
+@media (max-width: 640px) {
+  .section-shell {
+    padding: 5.5rem 1.25rem;
   }
-  to {
-    background-position: -200px -100px;
+
+  .surface-card {
+    padding: 1.5rem;
   }
 }
 
-/* Star Wars gradient text */
-.starwars .gradient-text {
-  background: linear-gradient(
-    135deg,
-    #4fc3f7 0%,
-    #66bb6a 25%,
-    #ffc107 50%,
-    #f44336 75%,
-    #9c27b0 100%
-  );
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-size: 200% 200%;
-  animation: rainbow-lightsaber 3s ease-in-out infinite;
-}
-
-@keyframes rainbow-lightsaber {
-  0%,
-  100% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-}
-
-/* =================================================
-   ACCESSIBILITY IMPROVEMENTS
-   ================================================= */
-
-/* Respect user's motion preferences */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -277,107 +229,5 @@ html {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
-  }
-
-  /* Disable canvas animations */
-  canvas {
-    display: none !important;
-  }
-
-  /* Disable complex transforms and animations */
-  .animate-spin,
-  .animate-ping,
-  .animate-pulse,
-  .animate-bounce {
-    animation: none !important;
-  }
-
-  /* Disable matrix and starwars background animations */
-  .space-background {
-    animation: none !important;
-  }
-
-  .rainbow-lightsaber {
-    animation: none !important;
-  }
-
-  /* Disable motion in framer-motion components */
-  [data-framer-component] {
-    transform: none !important;
-    transition: none !important;
-  }
-}
-
-/* Enhanced focus styles for better accessibility */
-:focus-visible {
-  outline: 2px solid var(--ring);
-  outline-offset: 2px;
-  border-radius: 4px;
-}
-
-/* Ensure good contrast for focus indicators */
-button:focus-visible,
-a:focus-visible,
-input:focus-visible,
-select:focus-visible,
-textarea:focus-visible {
-  outline: 2px solid var(--ring);
-  outline-offset: 2px;
-}
-
-/* Skip link for screen readers */
-.skip-link {
-  position: absolute;
-  top: -40px;
-  left: 6px;
-  background: var(--primary);
-  color: var(--primary-foreground);
-  padding: 8px;
-  text-decoration: none;
-  border-radius: 4px;
-  z-index: 100;
-  font-weight: 600;
-}
-
-.skip-link:focus {
-  top: 6px;
-}
-
-/* High contrast focus for theme toggle */
-.theme-toggle:focus-visible {
-  outline: 3px solid var(--ring);
-  outline-offset: 2px;
-  box-shadow: 0 0 0 1px var(--background);
-}
-
-/* Screen reader only text */
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-
-/* Enhanced keyboard navigation styles */
-.keyboard-focus:focus-visible {
-  outline: 2px solid var(--ring);
-  outline-offset: 2px;
-  box-shadow: 0 0 0 4px rgba(var(--ring), 0.1);
-}
-
-/* Ensure minimum touch target size for mobile */
-@media (hover: none) and (pointer: coarse) {
-  button,
-  a,
-  input,
-  select,
-  textarea {
-    min-height: 44px;
-    min-width: 44px;
   }
 }

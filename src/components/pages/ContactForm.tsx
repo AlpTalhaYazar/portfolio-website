@@ -18,7 +18,7 @@ import {
 interface ContactFormProps {
   security: UseCSRFSecurityReturn;
   submission: UseContactSubmissionReturn;
-  onSubmit: (data: ContactFormData) => Promise<void>;
+  onSubmit: (data: ContactFormData) => Promise<boolean>;
   className?: string;
 }
 
@@ -63,8 +63,8 @@ const ContactForm: React.FC<ContactFormProps> = ({
 
   // Handle form submission with reset
   const handleFormSubmit = async (data: ContactFormData) => {
-    await onSubmit(data);
-    if (!submission.submitError) {
+    const wasSuccessful = await onSubmit(data);
+    if (wasSuccessful) {
       reset();
     }
   };

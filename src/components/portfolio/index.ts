@@ -1,0 +1,12 @@
+export { About } from "./About";
+export { Capabilities } from "./Capabilities";
+export { ContactSection } from "./ContactSection";
+export { Experience } from "./Experience";
+export { Footer } from "./Footer";
+export { Header } from "./Header";
+export { Hero } from "./Hero";
+export { LanguageSwitcher } from "./LanguageSwitcher";
+export { NotFoundPage } from "./NotFoundPage";
+export { PortfolioPage } from "./PortfolioPage";
+export { Projects } from "./Projects";
+export { SectionLabel } from "./SectionLabel";
