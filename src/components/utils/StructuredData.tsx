@@ -1,4 +1,5 @@
 import { getPortfolioContent } from "@/lib/content/portfolio";
+import { getCanonicalUrl } from "@/lib/seo/portfolio-metadata";
 import { siteConfig } from "@/lib/site";
 import type { PortfolioLocale } from "@/types/portfolio";
 
@@ -8,7 +9,7 @@ interface StructuredDataProps {
 
 export default function StructuredData({ locale }: StructuredDataProps) {
   const content = getPortfolioContent(locale);
-  const canonical = locale === "en" ? siteConfig.baseUrl : `${siteConfig.baseUrl}/${locale}`;
+  const canonical = getCanonicalUrl(locale);
 
   const graph = [
     {

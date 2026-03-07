@@ -37,8 +37,8 @@ export function ContactForm({ content }: ContactFormProps) {
   });
 
   const onSubmit = handleSubmit(async (data) => {
-    await submission.onSubmit(data);
-    if (!submission.submitError) {
+    const wasSuccessful = await submission.onSubmit(data);
+    if (wasSuccessful) {
       reset();
     }
   });

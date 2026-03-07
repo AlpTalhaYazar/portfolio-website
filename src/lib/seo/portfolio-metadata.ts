@@ -17,7 +17,7 @@ const localeToOpenGraph = {
   es: "es_ES",
 } as const;
 
-function getCanonicalUrl(locale: PortfolioLocale): string {
+export function getCanonicalUrl(locale: PortfolioLocale): string {
   return locale === "en" ? `${siteConfig.baseUrl}/` : `${siteConfig.baseUrl}/${locale}/`;
 }
 
