@@ -10,7 +10,6 @@ describe("portfolio metadata", () => {
     expect(metadata.alternates?.languages).toEqual({
       en: "https://www.alptalha.dev/",
       tr: "https://www.alptalha.dev/tr/",
-      es: "https://www.alptalha.dev/es/",
       "x-default": "https://www.alptalha.dev/",
     });
   });

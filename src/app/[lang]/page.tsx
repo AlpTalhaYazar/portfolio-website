@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 
 import { PortfolioPage } from "@/components/portfolio";
 import { getPortfolioContent } from "@/lib/content/portfolio";
-import { isSupportedLocale } from "@/lib/i18n/routing";
+import { isSupportedLocale, publicPortfolioLocales } from "@/lib/i18n/routing";
 import { buildPortfolioMetadata } from "@/lib/seo/portfolio-metadata";
 
 interface LocalePageProps {
@@ -22,7 +22,9 @@ export async function generateMetadata({ params }: LocalePageProps) {
 }
 
 export async function generateStaticParams() {
-  return [{ lang: "tr" }, { lang: "es" }];
+  return publicPortfolioLocales
+    .filter((locale) => locale !== "en")
+    .map((locale) => ({ lang: locale }));
 }
 
 export default async function LocalePage({ params }: LocalePageProps) {

@@ -28,7 +28,7 @@ export default function StructuredData({ locale }: StructuredDataProps) {
         "@type": "ContactPoint",
         contactType: "professional",
         email: siteConfig.email,
-        availableLanguage: ["English", "Turkish", "Spanish"],
+        availableLanguage: ["English", "Turkish"],
       },
       knowsAbout: [
         ".NET",

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
-import { buildLocalizedHref } from "@/lib/i18n/routing";
+import { buildLocalizedHref, publicPortfolioLocales } from "@/lib/i18n/routing";
 import type { PortfolioLocale } from "@/types/portfolio";
 
 const LABELS: Record<PortfolioLocale, string> = {
@@ -50,7 +50,7 @@ export function LanguageSwitcher({
         compact ? "" : "backdrop-blur"
       }`}
     >
-      {(Object.keys(LABELS) as PortfolioLocale[]).map((locale) => {
+      {publicPortfolioLocales.map((locale) => {
         const isActive = locale === currentLocale;
 
         return (

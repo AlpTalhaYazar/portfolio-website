@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { publicPortfolioLocales } from "@/lib/i18n/routing";
 import { siteConfig } from "@/lib/site";
 import type { PortfolioLocale } from "@/types/portfolio";
 
@@ -26,7 +27,6 @@ export function buildPortfolioMetadata(locale: PortfolioLocale): Metadata {
       languages: {
         en: `${siteConfig.baseUrl}/`,
         tr: `${siteConfig.baseUrl}/tr/`,
-        es: `${siteConfig.baseUrl}/es/`,
         "x-default": `${siteConfig.baseUrl}/`,
       },
     },
@@ -37,9 +37,9 @@ export function buildPortfolioMetadata(locale: PortfolioLocale): Metadata {
       url: getCanonicalUrl(locale),
       siteName: siteConfig.fullName,
       locale: localeToOpenGraph[locale],
-      alternateLocale: Object.values(localeToOpenGraph).filter(
-        (value) => value !== localeToOpenGraph[locale]
-      ),
+      alternateLocale: publicPortfolioLocales
+        .map((supportedLocale) => localeToOpenGraph[supportedLocale])
+        .filter((value) => value !== localeToOpenGraph[locale]),
     },
     twitter: {
       card: "summary_large_image",

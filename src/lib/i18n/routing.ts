@@ -1,7 +1,11 @@
 import { defaultLanguage, supportedLanguages, type Language } from "./config";
 
+export const publicPortfolioLocales = supportedLanguages.filter(
+  (locale): locale is Language => locale !== "es"
+) as readonly Language[];
+
 export function isSupportedLocale(value: string): value is Language {
-  return supportedLanguages.includes(value as Language);
+  return publicPortfolioLocales.includes(value as Language);
 }
 
 export function getLocaleFromPathname(pathname: string): Language {

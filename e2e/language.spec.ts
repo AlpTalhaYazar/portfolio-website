@@ -29,13 +29,13 @@ test.describe("Locale routing", () => {
     ).toBeVisible();
   });
 
-  test("renders spanish on /es", async ({ page }) => {
+  test("does not expose spanish publicly", async ({ page }) => {
     await page.goto("/es");
 
-    await expect(page.locator("html")).toHaveAttribute("lang", "es");
+    await expect(page.locator("html")).toHaveAttribute("lang", "en");
     await expect(
       page.getByRole("heading", {
-        name: /Construyo sistemas backend que siguen siendo fiables bajo carga real\./i,
+        name: /Route not found\./i,
       })
     ).toBeVisible();
   });
@@ -49,8 +49,6 @@ test.describe("Locale routing", () => {
     await expect(
       page.locator('link[rel="alternate"][hreflang="tr"]')
     ).toHaveAttribute("href", "https://www.alptalha.dev/tr/");
-    await expect(
-      page.locator('link[rel="alternate"][hreflang="es"]')
-    ).toHaveAttribute("href", "https://www.alptalha.dev/es/");
+    await expect(page.locator('link[rel="alternate"][hreflang="es"]')).toHaveCount(0);
   });
 });
