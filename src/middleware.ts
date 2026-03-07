@@ -5,6 +5,7 @@ import {
   logSecurityEvent,
   getRateLimitingMethod,
 } from "@/lib/redis-rate-limit";
+import { getLocaleFromPathname } from "@/lib/i18n/routing";
 import type { RateLimitConfig } from "@/types";
 
 // Rate limiting configuration per endpoint
@@ -157,9 +158,13 @@ export async function middleware(request: NextRequest) {
   // Generate nonce for CSP
   const nonce = generateNonce();
 
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-locale", getLocaleFromPathname(pathname));
+  requestHeaders.set("x-pathname", pathname);
+
   const response = NextResponse.next({
     request: {
-      headers: new Headers(request.headers),
+      headers: requestHeaders,
     },
   });
 

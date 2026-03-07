@@ -1,0 +1,40 @@
+import { defaultLanguage, supportedLanguages, type Language } from "./config";
+
+export function isSupportedLocale(value: string): value is Language {
+  return supportedLanguages.includes(value as Language);
+}
+
+export function getLocaleFromPathname(pathname: string): Language {
+  const [, maybeLocale] = pathname.split("/");
+  return maybeLocale && isSupportedLocale(maybeLocale)
+    ? maybeLocale
+    : defaultLanguage;
+}
+
+export function stripLocaleFromPathname(pathname: string): string {
+  const locale = getLocaleFromPathname(pathname);
+
+  if (locale === defaultLanguage) {
+    return pathname || "/";
+  }
+
+  const stripped = pathname.replace(`/${locale}`, "") || "/";
+  return stripped.startsWith("/") ? stripped : `/${stripped}`;
+}
+
+export function buildLocalizedHref(
+  locale: Language,
+  currentHref: string
+): string {
+  const url = new URL(currentHref, "https://www.alptalha.dev");
+  const pathname = stripLocaleFromPathname(url.pathname);
+
+  const localizedPathname =
+    locale === defaultLanguage
+      ? pathname
+      : pathname === "/"
+      ? `/${locale}`
+      : `/${locale}${pathname}`;
+
+  return `${localizedPathname}${url.search}${url.hash}`;
+}
