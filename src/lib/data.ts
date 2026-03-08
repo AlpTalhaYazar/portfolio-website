@@ -2,10 +2,10 @@ import { Experience, Project, Skill, SocialLink } from "@/types";
 
 export const experiences: Experience[] = [
   {
-    id: "current-dias",
+    id: "dias",
     company: "Dias (Atlastek)",
-    position: "Backend Developer",
-    period: "2023 - Present",
+    position: "Software Engineer",
+    period: "March 2025 - Present",
     location: "Turkey",
     description:
       "Working on enterprise-level B2G applications focusing on tracking and management systems.",
@@ -34,7 +34,7 @@ export const experiences: Experience[] = [
     id: "wiro-ai",
     company: "Wiro AI",
     position: "Software Engineer",
-    period: "Jul 2023 – Aug 2024",
+    period: "July 2023 – February 2025",
     location: "Istanbul, Turkey",
     description:
       "Lead development on multiple projects enhancing task management and system monitoring in AI/ML infrastructure. Specialized in creating web applications and maintaining robust APIs with multiple access levels.",
@@ -68,9 +68,9 @@ export const experiences: Experience[] = [
   {
     id: "jetlink",
     company: "Jetlink",
-    position: "Full Stack Developer",
-    period: "2021 - 2022",
-    location: "Turkey",
+    position: "Full Stack Engineer",
+    period: "January 2021 - July 2023",
+    location: "Istanbul, Turkey",
     description:
       "Worked at a chatbot company with multi-project architecture enabling businesses to deploy intelligent chatbots. Led legacy system modernization and managed both cloud and on-premises deployments.",
     achievements: [
@@ -127,7 +127,7 @@ export const projects: Project[] = [
       "Behavioral analysis and reporting system",
       "Automated maintenance and scheduling system",
     ],
-    role: "Backend Developer",
+    role: "Software Engineer",
     company: "Dias (Atlastek)",
     status: "active",
   },
@@ -156,7 +156,7 @@ export const projects: Project[] = [
       "Automated regulatory reporting and submissions",
       "Scalable microservices architecture",
     ],
-    role: "Backend Developer",
+    role: "Software Engineer",
     company: "Dias (Atlastek)",
     status: "completed",
   },

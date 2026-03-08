@@ -23,7 +23,8 @@ export const portfolioContentEs: PortfolioContent = {
   hero: {
     eyebrow: "SENIOR BACKEND ENGINEER",
     availability: "DISPONIBLE PARA TRABAJO REMOTO",
-    headline: "Construyo sistemas backend que siguen siendo fiables bajo carga real.",
+    headline:
+      "Construyo sistemas backend que siguen siendo fiables bajo carga real.",
     supportingText:
       "Arquitectura, fiabilidad y escala para software empresarial en producción.",
     primaryCta: "Ver trabajo seleccionado",
@@ -59,7 +60,7 @@ export const portfolioContentEs: PortfolioContent = {
       {
         number: "01",
         company: "Dias (Atlastek)",
-        role: "Backend Developer",
+        role: "Software Engineer",
         period: "2023 - Actualidad",
         location: "Turquía",
         description:
@@ -130,7 +131,14 @@ export const portfolioContentEs: PortfolioContent = {
           "Monitorización en tiempo real",
           "Flujos de datos a gran escala",
         ],
-        tags: [".NET 9", "PostgreSQL", "Redis", "RabbitMQ", "Docker", "Kubernetes"],
+        tags: [
+          ".NET 9",
+          "PostgreSQL",
+          "Redis",
+          "RabbitMQ",
+          "Docker",
+          "Kubernetes",
+        ],
       },
       {
         number: "02",
@@ -224,7 +232,7 @@ export const portfolioContentEs: PortfolioContent = {
     ],
     callout:
       "Mi punto más fuerte es la arquitectura backend y el criterio de ingeniería: construir sistemas que otros ingenieros puedan ampliar, operar y en los que puedan confiar bajo presión.",
-    statLabel: "4+ AÑOS · SISTEMAS EN PRODUCCIÓN",
+    statLabel: "5+ AÑOS · SISTEMAS EN PRODUCCIÓN",
   },
   contact: {
     sectionNumber: "06",
@@ -232,8 +240,7 @@ export const portfolioContentEs: PortfolioContent = {
     headline: "Construyamos algo que importe.",
     intro:
       "Disponible para roles senior, consultoría y colaboraciones serias de producto.",
-    body:
-      "Si estás construyendo un producto que necesita sistemas backend fiables, propiedad técnica clara y decisiones de ingeniería que aguanten en producción, hablemos.",
+    body: "Si estás construyendo un producto que necesita sistemas backend fiables, propiedad técnica clara y decisiones de ingeniería que aguanten en producción, hablemos.",
     form: {
       nameLabel: "Nombre",
       emailLabel: "Correo",
@@ -245,7 +252,8 @@ export const portfolioContentEs: PortfolioContent = {
         name: "Tu nombre completo",
         email: "tu@email.com",
         subject: "¿De qué se trata?",
-        message: "Cuéntame sobre el rol, producto o sistema que quieres discutir.",
+        message:
+          "Cuéntame sobre el rol, producto o sistema que quieres discutir.",
       },
       validation: {
         nameRequired: "Introduce tu nombre.",

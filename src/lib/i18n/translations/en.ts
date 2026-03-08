@@ -18,7 +18,7 @@ export const en = {
   hero: {
     greeting: "Hello, I'm",
     name: "Alp Talha Yazar",
-    title: "Backend Developer",
+    title: "Software Engineer",
     subtitle:
       "Specializing in .NET, microservices, and enterprise applications",
     description:
@@ -97,7 +97,8 @@ export const en = {
       intermediate: "Intermediate",
       basic: "Basic",
     },
-    legend: "Hover over indicators for proficiency levels: ●●●● Advanced • ●●●○ Proficient • ●●○○ Intermediate • ●○○○ Basic",
+    legend:
+      "Hover over indicators for proficiency levels: ●●●● Advanced • ●●●○ Proficient • ●●○○ Intermediate • ●○○○ Basic",
   },
 
   // Projects Section
@@ -172,7 +173,8 @@ export const en = {
       temporarilyBlocked: "Temporarily Blocked",
       securityLevel: "Security Level",
       extendedRestrictions: "Extended restrictions in effect",
-      temporaryMeasure: "This is a temporary security measure. Please wait before trying again.",
+      temporaryMeasure:
+        "This is a temporary security measure. Please wait before trying again.",
     },
   },
 

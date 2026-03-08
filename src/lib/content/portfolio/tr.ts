@@ -23,7 +23,8 @@ export const portfolioContentTr: PortfolioContent = {
   hero: {
     eyebrow: "SENIOR BACKEND ENGINEER",
     availability: "REMOTE ROLLER İÇİN UYGUN",
-    headline: "Gerçek yük altında güvenilir kalan backend sistemleri geliştiriyorum.",
+    headline:
+      "Gerçek yük altında güvenilir kalan backend sistemleri geliştiriyorum.",
     supportingText:
       "Production ortamındaki kurumsal yazılımlar için mimari, güvenilirlik ve ölçek.",
     primaryCta: "Öne Çıkan İşler",
@@ -54,12 +55,12 @@ export const portfolioContentTr: PortfolioContent = {
     sectionNumber: "03",
     sectionTitle: "DENEYİM",
     intro:
-      "Gerçek production kısıtları altında çalışması gereken sistemler geliştirerek geçen 4+ yıl.",
+      "Gerçek production kısıtları altında çalışması gereken sistemler geliştirerek geçen 5+ yıl.",
     items: [
       {
         number: "01",
         company: "Dias (Atlastek)",
-        role: "Backend Developer",
+        role: "Software Engineer",
         period: "2023 - Günümüz",
         location: "Türkiye",
         description:
@@ -130,7 +131,14 @@ export const portfolioContentTr: PortfolioContent = {
           "Gerçek zamanlı izleme",
           "Yüksek hacimli veri akışı",
         ],
-        tags: [".NET 9", "PostgreSQL", "Redis", "RabbitMQ", "Docker", "Kubernetes"],
+        tags: [
+          ".NET 9",
+          "PostgreSQL",
+          "Redis",
+          "RabbitMQ",
+          "Docker",
+          "Kubernetes",
+        ],
       },
       {
         number: "02",
@@ -224,7 +232,7 @@ export const portfolioContentTr: PortfolioContent = {
     ],
     callout:
       "En güçlü tarafım backend mimarisi ve mühendislik muhakemesi: başka mühendislerin rahatça geliştirebildiği, işletebildiği ve baskı altında güvenebildiği sistemler kurmak.",
-    statLabel: "4+ YIL · PRODUCTION SİSTEMLER",
+    statLabel: "5+ YIL · PRODUCTION SİSTEMLER",
   },
   contact: {
     sectionNumber: "06",
@@ -232,8 +240,7 @@ export const portfolioContentTr: PortfolioContent = {
     headline: "Önemli işler üretelim.",
     intro:
       "Senior roller, danışmanlık işleri ve ciddi ürün işbirlikleri için açığım.",
-    body:
-      "Güvenilir backend sistemlerine, net teknik sahipliğe ve production'da ayakta kalan mühendislik kararlarına ihtiyacınız varsa konuşalım.",
+    body: "Güvenilir backend sistemlerine, net teknik sahipliğe ve production'da ayakta kalan mühendislik kararlarına ihtiyacınız varsa konuşalım.",
     form: {
       nameLabel: "İsim",
       emailLabel: "E-posta",

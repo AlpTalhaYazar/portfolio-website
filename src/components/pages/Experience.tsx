@@ -20,8 +20,8 @@ const Experience = () => {
         effectiveTheme === "matrix"
           ? "bg-muted/30"
           : effectiveTheme === "starwars"
-          ? "bg-transparent"
-          : "bg-background"
+            ? "bg-transparent"
+            : "bg-background",
       )}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

@@ -53,12 +53,13 @@ export const portfolioContentEn: PortfolioContent = {
   experience: {
     sectionNumber: "03",
     sectionTitle: "EXPERIENCE",
-    intro: "Four-plus years building systems that need to keep operating under real production constraints.",
+    intro:
+      "Four-plus years building systems that need to keep operating under real production constraints.",
     items: [
       {
         number: "01",
         company: "Dias (Atlastek)",
-        role: "Backend Developer",
+        role: "Software Engineer",
         period: "2023 - Present",
         location: "Turkey",
         description:
@@ -129,7 +130,14 @@ export const portfolioContentEn: PortfolioContent = {
           "Real-time monitoring",
           "Large-scale data flows",
         ],
-        tags: [".NET 9", "PostgreSQL", "Redis", "RabbitMQ", "Docker", "Kubernetes"],
+        tags: [
+          ".NET 9",
+          "PostgreSQL",
+          "Redis",
+          "RabbitMQ",
+          "Docker",
+          "Kubernetes",
+        ],
       },
       {
         number: "02",
@@ -223,7 +231,7 @@ export const portfolioContentEn: PortfolioContent = {
     ],
     callout:
       "My strongest edge is backend architecture and engineering judgment: building systems other engineers can extend, operate, and trust under pressure.",
-    statLabel: "4+ YEARS · PRODUCTION SYSTEMS",
+    statLabel: "5+ YEARS · PRODUCTION SYSTEMS",
   },
   contact: {
     sectionNumber: "06",
@@ -231,8 +239,7 @@ export const portfolioContentEn: PortfolioContent = {
     headline: "Let's build something that matters.",
     intro:
       "Open to senior engineering roles, consulting engagements, and serious product collaborations.",
-    body:
-      "If you are building a product that needs reliable backend systems, clear technical ownership, and engineering decisions that hold up in production, let's talk.",
+    body: "If you are building a product that needs reliable backend systems, clear technical ownership, and engineering decisions that hold up in production, let's talk.",
     form: {
       nameLabel: "Name",
       emailLabel: "Email",
@@ -244,7 +251,8 @@ export const portfolioContentEn: PortfolioContent = {
         name: "Your full name",
         email: "your@email.com",
         subject: "What are you building?",
-        message: "Tell me about the role, product, or system you want to discuss.",
+        message:
+          "Tell me about the role, product, or system you want to discuss.",
       },
       validation: {
         nameRequired: "Please enter your name.",
