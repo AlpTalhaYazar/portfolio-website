@@ -27,7 +27,7 @@ const ENVIRONMENT_MODES = new Set<EnvironmentMode>([
 
 export function resolveEnvironmentMode(
   argv: string[],
-  env: NodeJS.ProcessEnv = process.env
+  env: Readonly<Record<string, string | undefined>> = process.env
 ): EnvironmentMode {
   const explicitMode = argv.find((arg) => arg.startsWith("--mode="));
 
@@ -49,10 +49,11 @@ export function loadEnvironment({
   directory = process.cwd(),
   mode = "development",
 }: LoadEnvironmentOptions = {}): LoadEnvironmentResult {
-  const existingEnv = { ...process.env };
-  const previousNodeEnv = process.env.NODE_ENV;
+  const mutableEnv = process.env as Record<string, string | undefined>;
+  const existingEnv = { ...mutableEnv };
+  const previousNodeEnv = mutableEnv.NODE_ENV;
 
-  process.env.NODE_ENV = mode;
+  mutableEnv.NODE_ENV = mode;
 
   try {
     const result = loadEnvConfig(
@@ -76,9 +77,9 @@ export function loadEnvironment({
     };
   } finally {
     if (previousNodeEnv === undefined) {
-      delete process.env.NODE_ENV;
+      delete mutableEnv.NODE_ENV;
     } else {
-      process.env.NODE_ENV = previousNodeEnv;
+      mutableEnv.NODE_ENV = previousNodeEnv;
     }
   }
 }
