@@ -19,6 +19,32 @@ export interface LoadEnvironmentResult {
   combinedEnv: typeof process.env;
 }
 
+const ENVIRONMENT_MODES = new Set<EnvironmentMode>([
+  "development",
+  "production",
+  "test",
+]);
+
+export function resolveEnvironmentMode(
+  argv: string[],
+  env: NodeJS.ProcessEnv = process.env
+): EnvironmentMode {
+  const explicitMode = argv.find((arg) => arg.startsWith("--mode="));
+
+  if (explicitMode) {
+    const mode = explicitMode.slice("--mode=".length);
+    if (ENVIRONMENT_MODES.has(mode as EnvironmentMode)) {
+      return mode as EnvironmentMode;
+    }
+  }
+
+  if (env.NODE_ENV && ENVIRONMENT_MODES.has(env.NODE_ENV as EnvironmentMode)) {
+    return env.NODE_ENV as EnvironmentMode;
+  }
+
+  return "development";
+}
+
 export function loadEnvironment({
   directory = process.cwd(),
   mode = "development",

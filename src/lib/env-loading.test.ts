@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import { tmpdir } from "node:os";
-import { loadEnvironment } from "@/lib/env-loading";
+import { loadEnvironment, resolveEnvironmentMode } from "@/lib/env-loading";
 
 const ORIGINAL_ENV = { ...process.env };
 
@@ -102,5 +102,25 @@ describe("loadEnvironment", () => {
     loadEnvironment({ directory, mode: "production" });
 
     expect(process.env.TEST_PRIORITY).toBe("from-process-env");
+  });
+});
+
+describe("resolveEnvironmentMode", () => {
+  it("defaults to development when no flag or env hint is provided", () => {
+    expect(resolveEnvironmentMode([], {})).toBe("development");
+  });
+
+  it("uses NODE_ENV when it is set to production", () => {
+    expect(resolveEnvironmentMode([], { NODE_ENV: "production" })).toBe(
+      "production"
+    );
+  });
+
+  it("lets the explicit --mode flag override NODE_ENV", () => {
+    expect(
+      resolveEnvironmentMode(["--mode=development"], {
+        NODE_ENV: "production",
+      })
+    ).toBe("development");
   });
 });

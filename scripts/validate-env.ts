@@ -8,8 +8,12 @@
  */
 
 import { execSync } from "child_process";
-import { config } from "dotenv";
-import { join } from "path";
+import { relative } from "path";
+import {
+  loadEnvironment,
+  resolveEnvironmentMode,
+  type EnvironmentMode,
+} from "../src/lib/env-loading";
 
 // Colors for console output
 const colors = {
@@ -32,29 +36,45 @@ function logSection(title: string): void {
   console.log(colorize("cyan", "=".repeat(60)));
 }
 
-async function main(): Promise<void> {
+function formatLoadedFiles(mode: EnvironmentMode, loadedEnvFiles: { path: string }[]): string {
+  if (loadedEnvFiles.length === 0) {
+    return `No env files were loaded for ${mode} mode. Using values already present in process.env.`;
+  }
+
+  return loadedEnvFiles
+    .map((file) => `- ${relative(process.cwd(), file.path)}`)
+    .join("\n");
+}
+
+async function main(argv = process.argv.slice(2)): Promise<void> {
+  const mode = resolveEnvironmentMode(argv);
+
   console.log(
     colorize("blue", "\n🚀 Starting Environment Variable Validation...")
   );
+  console.log(colorize("blue", `🧭 Validation mode: ${mode}`));
 
   try {
     logSection("Checking TypeScript Compilation");
 
     // First, compile the TypeScript validation module
     console.log("📦 Compiling TypeScript validation module...");
-    execSync("npx tsc --noEmit --skipLibCheck src/lib/env-validation.ts", {
-      stdio: "pipe",
-      cwd: process.cwd(),
-    });
+    execSync(
+      "npx tsc --noEmit --skipLibCheck src/lib/env-validation.ts src/lib/env-loading.ts",
+      {
+        stdio: "pipe",
+        cwd: process.cwd(),
+      }
+    );
     console.log(colorize("green", "✅ TypeScript compilation successful"));
 
     logSection("Loading Environment Variables");
 
-    // Load environment variables
+    // Load environment variables using the same precedence as the app workflow.
     console.log("📂 Loading environment variables...");
-    config({ path: join(process.cwd(), ".env.local") });
-    config({ path: join(process.cwd(), ".env") });
-    console.log(colorize("green", "✅ Environment files loaded"));
+    const loadResult = loadEnvironment({ mode });
+    console.log(formatLoadedFiles(mode, loadResult.loadedEnvFiles));
+    console.log(colorize("green", "✅ Environment loading complete"));
 
     logSection("Running Environment Validation");
 
@@ -88,13 +108,34 @@ async function main(): Promise<void> {
     }
 
     console.error(colorize("yellow", "\n💡 Quick Setup Guide:"));
-    console.error(colorize("yellow", "1. Copy .env.example to .env.local"));
-    console.error(
-      colorize("yellow", "2. Fill in all required environment variables")
-    );
-    console.error(
-      colorize("yellow", "3. Run this validation again: npm run validate:env")
-    );
+    if (mode === "production") {
+      console.error(
+        colorize(
+          "yellow",
+          "1. Store plaintext production values only in .env.production.local for local verification"
+        )
+      );
+      console.error(
+        colorize(
+          "yellow",
+          "2. Or preload the encrypted repo file with dotenvx run --env-file=.env.production -- npm run validate:env:production"
+        )
+      );
+      console.error(
+        colorize(
+          "yellow",
+          "3. Keep DOTENV_PRIVATE_KEY_PRODUCTION outside git and inject it via your runtime or deployment platform"
+        )
+      );
+    } else {
+      console.error(colorize("yellow", "1. Copy .env.example to .env.local"));
+      console.error(
+        colorize("yellow", "2. Fill in all required environment variables")
+      );
+      console.error(
+        colorize("yellow", "3. Run this validation again: npm run validate:env")
+      );
+    }
     console.error(
       colorize("yellow", "4. See CONTACT_SETUP.md for Gmail configuration help")
     );
