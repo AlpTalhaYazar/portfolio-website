@@ -3,7 +3,30 @@ export interface SiteLink {
   readonly href: string;
 }
 
-const resolvedBaseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.alptalha.dev";
+function isLocalUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return ["localhost", "127.0.0.1", "0.0.0.0"].includes(url.hostname);
+  } catch {
+    return false;
+  }
+}
+
+function resolveCanonicalBaseUrl(): string {
+  const candidates = [
+    process.env.NEXT_PUBLIC_BASE_URL,
+    process.env.NEXT_PUBLIC_SITE_URL,
+    "https://www.alptalha.dev",
+  ];
+
+  const publicCandidate = candidates.find(
+    (value): value is string => value !== undefined && !isLocalUrl(value)
+  );
+
+  return (publicCandidate || "https://www.alptalha.dev").replace(/\/+$/, "");
+}
+
+const resolvedBaseUrl = resolveCanonicalBaseUrl();
 
 export const siteConfig = {
   baseUrl: resolvedBaseUrl.replace(/\/+$/, ""),

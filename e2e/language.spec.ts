@@ -13,8 +13,11 @@ test.describe("Locale routing", () => {
     await expect(page.locator("html")).toHaveAttribute("lang", "en");
     await expect(
       page.getByRole("heading", {
-        name: /I build backend systems that stay reliable under real load\./i,
+        name: /Alp Talha Yazar/i,
       })
+    ).toBeVisible();
+    await expect(
+      page.getByText(/I build backend systems that stay reliable under real load\./i)
     ).toBeVisible();
   });
 
@@ -24,8 +27,11 @@ test.describe("Locale routing", () => {
     await expect(page.locator("html")).toHaveAttribute("lang", "tr");
     await expect(
       page.getByRole("heading", {
-        name: /Gerçek yük altında güvenilir kalan backend sistemleri geliştiriyorum\./i,
+        name: /Alp Talha Yazar/i,
       })
+    ).toBeVisible();
+    await expect(
+      page.getByText(/Gerçek yük altında güvenilir kalan backend sistemleri geliştiriyorum\./i)
     ).toBeVisible();
   });
 

@@ -11,6 +11,10 @@ interface HeroProps {
 }
 
 export function Hero({ content }: HeroProps) {
+  const nameParts = siteConfig.fullName.trim().split(/\s+/);
+  const lastName = nameParts.pop() ?? siteConfig.fullName;
+  const firstNames = nameParts.join(" ");
+
   return (
     <section
       id="hero"
@@ -41,25 +45,33 @@ export function Hero({ content }: HeroProps) {
           initial={{ opacity: 0, y: 28 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.75, delay: 0.08 }}
-          className="max-w-5xl text-[clamp(3.5rem,10vw,7rem)] font-bold leading-[0.92] tracking-[-0.06em] text-foreground"
+          aria-label={siteConfig.fullName}
+          className="max-w-5xl text-[clamp(3.75rem,9.5vw,6.75rem)] font-bold leading-[0.92] tracking-[-0.06em] text-foreground"
         >
-          {content.headline}
+          {firstNames ? (
+            <>
+              {firstNames}
+              <br />
+            </>
+          ) : null}
+          <span>{lastName}</span>
+          <span className="text-accent">.</span>
         </motion.h1>
 
         <motion.p
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.65, delay: 0.14 }}
-          className="mt-5 mono-label text-muted-foreground"
+          className="mt-8 max-w-lg text-balance text-[clamp(1.1rem,1.9vw,1.3rem)] leading-8 text-muted-foreground"
         >
-          {siteConfig.fullName}
+          {content.headline}
         </motion.p>
 
         <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.65, delay: 0.2 }}
-          className="mt-8 max-w-xl text-balance text-lg leading-8 text-muted-foreground"
+          className="mt-4 max-w-xl text-balance text-base leading-8 text-muted-foreground sm:text-lg"
         >
           {content.supportingText}
         </motion.p>

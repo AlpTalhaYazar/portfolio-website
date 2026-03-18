@@ -1,25 +1,28 @@
 "use client";
 
-import type { PortfolioContent, PortfolioLocale } from "@/types/portfolio";
+import { Github, Linkedin, Mail } from "lucide-react";
+
+import type { PortfolioContent } from "@/types/portfolio";
 
 import { socialLinks } from "@/lib/site";
-
-import { LanguageSwitcher } from "./LanguageSwitcher";
 
 interface FooterProps {
   content: PortfolioContent["footer"];
   nav: PortfolioContent["nav"];
-  locale: PortfolioLocale;
 }
 
-export function Footer({ content, nav, locale }: FooterProps) {
+export function Footer({ content, nav }: FooterProps) {
   return (
     <footer className="border-t border-border bg-surface px-5 py-10 sm:px-8">
       <div className="mx-auto flex max-w-6xl flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
         <div className="space-y-2">
-          <a href="#hero" className="mono-label text-foreground">
+          <button
+            type="button"
+            className="mono-label cursor-pointer border-0 bg-transparent p-0 text-left text-foreground"
+            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          >
             {nav.homeLabel}
-          </a>
+          </button>
           <p className="mono-label text-muted-foreground">{content.strapline}</p>
         </div>
 
@@ -36,19 +39,28 @@ export function Footer({ content, nav, locale }: FooterProps) {
         </nav>
 
         <div className="flex flex-col items-start gap-4 lg:items-end">
-          <LanguageSwitcher currentLocale={locale} label={nav.languageLabel} />
           <div className="flex flex-wrap gap-4">
-            {socialLinks.map((link) => (
-              <a
-                key={link.label}
-                href={link.href}
-                target={link.href.startsWith("mailto:") ? undefined : "_blank"}
-                rel={link.href.startsWith("mailto:") ? undefined : "noreferrer"}
-                className="mono-label text-muted-foreground transition-colors hover:text-foreground"
-              >
-                {link.label}
-              </a>
-            ))}
+            {socialLinks.map((link) => {
+              const Icon =
+                link.label === "GitHub"
+                  ? Github
+                  : link.label === "LinkedIn"
+                  ? Linkedin
+                  : Mail;
+
+              return (
+                <a
+                  key={link.label}
+                  href={link.href}
+                  target={link.href.startsWith("mailto:") ? undefined : "_blank"}
+                  rel={link.href.startsWith("mailto:") ? undefined : "noreferrer"}
+                  aria-label={link.label}
+                  className="text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  <Icon size={16} />
+                </a>
+              );
+            })}
           </div>
           <p className="text-sm text-faint">
             © {new Date().getFullYear()} Alp Talha Yazar. {content.copyright}

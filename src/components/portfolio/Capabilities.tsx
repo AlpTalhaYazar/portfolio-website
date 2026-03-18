@@ -19,7 +19,7 @@ export function Capabilities({ content }: CapabilitiesProps) {
           title={content.sectionTitle}
         />
 
-        <div className="grid gap-3 md:grid-cols-2">
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-[2px]">
           {content.groups.map((group, index) => (
             <motion.article
               key={group.category}
@@ -27,7 +27,7 @@ export function Capabilities({ content }: CapabilitiesProps) {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-60px" }}
               transition={{ delay: index * 0.06 }}
-              className="surface-card"
+              className="surface-card h-full"
             >
               <div className="mb-6 flex items-center gap-3 border-b border-border pb-5">
                 <span className="h-1.5 w-1.5 rounded-full bg-accent" />

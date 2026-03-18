@@ -14,8 +14,11 @@ test.describe("Navigation", () => {
     await expect(page).toHaveTitle(/Senior Backend Engineer/i);
     await expect(
       page.getByRole("heading", {
-        name: /I build backend systems that stay reliable under real load\./i,
+        name: /Alp Talha Yazar/i,
       })
+    ).toBeVisible();
+    await expect(
+      page.getByText(/I build backend systems that stay reliable under real load\./i)
     ).toBeVisible();
   });
 

@@ -28,7 +28,7 @@ export function PortfolioPage({ content, locale }: PortfolioPageProps) {
         <Capabilities content={content.capabilities} />
         <ContactSection content={content.contact} />
       </main>
-      <Footer content={content.footer} nav={content.nav} locale={locale} />
+      <Footer content={content.footer} nav={content.nav} />
     </div>
   );
 }
