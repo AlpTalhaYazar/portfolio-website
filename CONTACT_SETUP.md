@@ -27,7 +27,7 @@ This guide explains how to set up the contact form functionality using Gmail's S
 
 ## Step 2: Environment Configuration
 
-Create a `.env.local` file in your project root with the following variables:
+For local development, create a `.env.local` file in your project root with the following variables:
 
 ```env
 # Gmail SMTP Configuration
@@ -35,7 +35,6 @@ GMAIL_USER=your_email@gmail.com
 GMAIL_APP_PASSWORD=your_16_character_app_password
 
 # Email Configuration
-EMAIL_FROM=your_email@gmail.com
 EMAIL_TO=your_email@gmail.com
 ```
 
@@ -45,6 +44,7 @@ EMAIL_TO=your_email@gmail.com
 - Replace `your_16_character_app_password` with the App Password from Step 1
 - Use the App Password, NOT your regular Gmail password
 - The `.env.local` file should never be committed to version control
+- `EMAIL_FROM` is not used by the current application and does not need to be set
 
 ## Step 3: Test the Setup
 
@@ -59,6 +59,22 @@ EMAIL_TO=your_email@gmail.com
 3. **Fill out and submit the form** with test data
 
 4. **Check your Gmail inbox** for the contact form submission
+
+## Production Secrets with dotenvx
+
+The repository keeps production secrets in two places:
+
+- `.env.production.local`: local plaintext production values, ignored by git
+- `.env.production`: encrypted production values, committed to git
+
+Update production secrets with this workflow:
+
+1. Edit `.env.production.local` locally.
+2. Run `npm run sync:env:production`.
+3. Commit the regenerated `.env.production`.
+4. Keep `.env.keys` local only.
+
+For deployment, inject `DOTENV_PRIVATE_KEY_PRODUCTION` from `.env.keys` into your hosting platform and run `npm run vercel-build` or `npm run build:encrypted`.
 
 ## Features
 
@@ -93,7 +109,9 @@ The contact form sends beautifully formatted HTML emails with:
 1. **"Email service not configured" error**:
 
    - Check that all environment variables are set correctly
-   - Verify the `.env.local` file exists in the project root
+   - Verify the correct local env file exists in the project root:
+     development uses `.env.local`
+     production verification uses `.env.production.local` or `dotenvx run --env-file=.env.production -- ...`
 
 2. **"Failed to connect to Gmail SMTP server" error**:
 
@@ -123,14 +141,25 @@ The contact form sends beautifully formatted HTML emails with:
 
 When deploying to production:
 
-1. **Set environment variables** in your hosting platform:
+1. **Commit the encrypted production env file**:
+
+   - Keep real values in `.env.production.local`
+   - Run `npm run sync:env:production`
+   - Commit only `.env.production`
+
+2. **Set the dotenvx private key** in your hosting platform:
 
    - Vercel: Project Settings → Environment Variables
    - Netlify: Site Settings → Environment Variables
    - Heroku: Config Vars in dashboard
 
-2. **Security considerations**:
+   ```bash
+   DOTENV_PRIVATE_KEY_PRODUCTION=your-private-key-from-.env.keys
+   ```
+
+3. **Security considerations**:
    - Never commit `.env.local` or `.env` files
+   - Never commit `.env.production.local` or `.env.keys`
    - Use different App Passwords for different environments
    - Consider implementing rate limiting for production
    - Monitor email usage to stay within Gmail's limits
