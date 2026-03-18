@@ -9,7 +9,7 @@
     "lint": "eslint",
     "vercel-build": "dotenvx run --env-file=.env.production -- npm run validate:env:production && dotenvx run --env-file=.env.production -- next build",
     "type-check": "tsc --noEmit",
-    "validate:env": "tsx scripts/validate-env.ts",
+    "validate:env": "tsx scripts/validate-env.ts --mode=development",
     "validate:env:production": "tsx scripts/validate-env.ts --mode=production",
     "validate:env:production:encrypted": "dotenvx run --env-file=.env.production -- npm run validate:env:production",
     "sync:env:production": "tsx scripts/sync-production-env.ts",

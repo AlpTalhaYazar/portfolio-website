@@ -9,6 +9,7 @@
 
 import { execSync } from "child_process";
 import { relative } from "path";
+import { fileURLToPath } from "url";
 import {
   loadEnvironment,
   resolveEnvironmentMode,
@@ -46,6 +47,25 @@ function formatLoadedFiles(mode: EnvironmentMode, loadedEnvFiles: { path: string
     .join("\n");
 }
 
+export async function withNodeEnv<T>(
+  mode: EnvironmentMode,
+  operation: () => Promise<T> | T
+): Promise<T> {
+  const mutableEnv = process.env as Record<string, string | undefined>;
+  const previousNodeEnv = mutableEnv.NODE_ENV;
+  mutableEnv.NODE_ENV = mode;
+
+  try {
+    return await operation();
+  } finally {
+    if (previousNodeEnv === undefined) {
+      delete mutableEnv.NODE_ENV;
+    } else {
+      mutableEnv.NODE_ENV = previousNodeEnv;
+    }
+  }
+}
+
 async function main(argv = process.argv.slice(2)): Promise<void> {
   const mode = resolveEnvironmentMode(argv);
 
@@ -79,12 +99,16 @@ async function main(argv = process.argv.slice(2)): Promise<void> {
     logSection("Running Environment Validation");
 
     // Import and run validation
-    console.log("🔍 Validating environment variables...");
-    const { validateEnvironmentVariables, printValidationResults } =
-      await import("../src/lib/env-validation");
+    const result = await withNodeEnv(mode, async () => {
+      console.log("🔍 Validating environment variables...");
+      const { validateEnvironmentVariables, printValidationResults } =
+        await import("../src/lib/env-validation");
 
-    const result = validateEnvironmentVariables();
-    printValidationResults(result);
+      const validationResult = validateEnvironmentVariables();
+      printValidationResults(validationResult);
+
+      return validationResult;
+    });
 
     if (!result.isValid) {
       process.exit(1);
@@ -144,11 +168,12 @@ async function main(argv = process.argv.slice(2)): Promise<void> {
   }
 }
 
-// Run the validation if this script is executed directly
-// Use import.meta.main if available (Node.js v20.6.0+), otherwise assume direct execution when using tsx
-const isMain = typeof import.meta.main === "boolean" ? import.meta.main : true;
+function isExecutedDirectly(): boolean {
+  const currentFile = fileURLToPath(import.meta.url);
+  return process.argv[1] === currentFile;
+}
 
-if (isMain) {
+if (isExecutedDirectly()) {
   main().catch((error) => {
     console.error(
       colorize("red", "Unexpected error during validation:"),
