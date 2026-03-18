@@ -1,38 +1,35 @@
-import { dirname } from "path";
-import { fileURLToPath } from "url";
-import { FlatCompat } from "@eslint/eslintrc";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-});
+import nextCoreWebVitals from "eslint-config-next/core-web-vitals";
+import nextTypeScript from "eslint-config-next/typescript";
 
 const eslintConfig = [
-  ...compat.extends("next/core-web-vitals", "next/typescript"),
+  ...nextCoreWebVitals,
+  ...nextTypeScript,
   {
     ignores: [
-      "node_modules/**",
+      ".claude/**",
       ".next/**",
-      "out/**",
+      ".pnpm-store/**",
+      ".worktrees/**",
       "build/**",
       "next-env.d.ts",
+      "node_modules/**",
+      "out/**",
+      "worktrees/**",
     ],
   },
   {
     rules: {
-      // Disable apostrophe escaping rule - it's overly strict for modern React
+      "react-hooks/purity": "off",
+      "react-hooks/set-state-in-effect": "off",
       "react/no-unescaped-entities": "off",
-      // Allow unused vars that start with underscore
-      "@typescript-eslint/no-unused-vars": ["error", { 
-        "argsIgnorePattern": "^_",
-        "varsIgnorePattern": "^_"
-      }],
-      // Allow any in utility functions where type flexibility is needed
-      "@typescript-eslint/no-explicit-any": ["error", { 
-        "ignoreRestArgs": true 
-      }],
+      "@typescript-eslint/no-explicit-any": ["error", { ignoreRestArgs: true }],
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+        },
+      ],
     },
   },
 ];
