@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import type { PortfolioContent, PortfolioLocale } from "@/types/portfolio";
 
 import { LanguageSwitcher } from "./LanguageSwitcher";
+import { PortfolioThemeToggle } from "./PortfolioThemeToggle";
 
 interface HeaderProps {
   nav: PortfolioContent["nav"];
@@ -61,6 +62,7 @@ export function Header({ nav, locale }: HeaderProps) {
               label={nav.languageLabel}
               compact
             />
+            <PortfolioThemeToggle locale={locale} />
             <a href="#contact" className="secondary-button">
               {nav.letsTalkLabel}
             </a>
@@ -72,6 +74,7 @@ export function Header({ nav, locale }: HeaderProps) {
               label={nav.languageLabel}
               compact
             />
+            <PortfolioThemeToggle locale={locale} />
             <button
               type="button"
               className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-surface text-foreground"
