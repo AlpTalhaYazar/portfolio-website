@@ -77,7 +77,7 @@ html {
   background: var(--background);
   color: var(--foreground);
   transition:
-    background-color 300ms ease,
+    background 300ms ease,
     color 300ms ease;
 }
 
@@ -89,7 +89,7 @@ body {
   color: var(--foreground);
   font-family: var(--font-space-grotesk), system-ui, sans-serif;
   transition:
-    background-color 300ms ease,
+    background 300ms ease,
     color 300ms ease;
 }
 
@@ -213,6 +213,7 @@ textarea {
 }
 
 .primary-button:hover {
+  background: var(--accent-hover);
   transform: translateY(-1px);
 }
 

@@ -6,6 +6,8 @@ import { useEffect, useState } from "react";
 
 import type { PortfolioContent, PortfolioLocale } from "@/types/portfolio";
 
+import { usePortfolioTheme } from "@/components/portfolio/theme";
+
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { PortfolioThemeToggle } from "./PortfolioThemeToggle";
 
@@ -15,8 +17,12 @@ interface HeaderProps {
 }
 
 export function Header({ nav, locale }: HeaderProps) {
+  const { isDark } = usePortfolioTheme();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const scrolledBackground = isDark
+    ? "rgba(8, 8, 8, 0.96)"
+    : "rgba(244, 242, 237, 0.96)";
 
   useEffect(() => {
     const onScroll = () => setIsScrolled(window.scrollY > 40);
@@ -36,9 +42,10 @@ export function Header({ nav, locale }: HeaderProps) {
       <header
         className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${
           isScrolled
-            ? "border-b border-border bg-background/90 backdrop-blur-xl"
+            ? "border-b border-border backdrop-blur-xl"
             : "bg-transparent"
         }`}
+        style={isScrolled ? { backgroundColor: scrolledBackground } : undefined}
       >
         <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-5 sm:px-8">
           <a href="#hero" className="mono-label text-foreground">

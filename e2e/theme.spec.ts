@@ -7,11 +7,44 @@ test.describe("Redesign shell", () => {
     await mockCsrfToken(page);
   });
 
-  test("does not expose the legacy theme toggle", async ({ page }) => {
+  test("does not expose the legacy theme toggle and defaults to the dark theme", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      window.localStorage.removeItem("aty-theme");
+    });
     await page.goto("/");
 
     await expect(page.locator(".theme-toggle")).toHaveCount(0);
     await expect(page.locator("html")).not.toHaveClass(/matrix|starwars/);
+    await expect(page.locator("html")).toHaveClass(/dark-theme/);
+    await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute(
+      "content",
+      "#080808"
+    );
+  });
+
+  test("persists the light theme across reloads and 404 routes", async ({ page }) => {
+    await page.goto("/");
+
+    await page.getByRole("button", { name: /switch to light theme/i }).first().click();
+
+    await expect(page.locator("html")).toHaveClass(/light-theme/);
+    await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute(
+      "content",
+      "#F4F2ED"
+    );
+
+    await page.reload();
+    await expect(page.locator("html")).toHaveClass(/light-theme/);
+
+    await page.goto("/missing-route");
+    await expect(
+      page.getByRole("button", { name: /switch to dark theme/i })
+    ).toBeVisible();
+
+    await page.goto("/tr/olmayan-sayfa");
+    await expect(page.locator("html")).toHaveClass(/light-theme/);
   });
 
   test("renders the redesigned 404 page", async ({ page }) => {
@@ -29,5 +62,26 @@ test.describe("Redesign shell", () => {
     await expect(
       page.getByRole("heading", { name: /Rota bulunamadı\./i })
     ).toBeVisible();
+  });
+
+  test("uses the redesign light backdrop tint on the scrolled header", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      window.localStorage.setItem("aty-theme", "light");
+    });
+    await page.goto("/");
+
+    await page.evaluate(() => {
+      window.scrollTo(0, 500);
+    });
+
+    await expect
+      .poll(async () =>
+        page.locator("header").evaluate((element) => {
+          return window.getComputedStyle(element).backgroundColor;
+        })
+      )
+      .toBe("rgba(244, 242, 237, 0.96)");
   });
 });
