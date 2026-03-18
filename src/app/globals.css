@@ -5,14 +5,54 @@
   --foreground: #f0ede8;
   --surface: #111111;
   --surface-2: #171717;
-  --muted: #9b9b9b;
-  --faint: #4b4b4b;
+  --muted: #6b6b6b;
+  --faint: #2e2e2e;
   --border: #1e1e1e;
-  --border-strong: #2c2c2c;
+  --border-strong: #2a2a2a;
   --accent: #c8ff47;
+  --accent-hover: #daff5a;
   --accent-foreground: #080808;
-  --error: #ff6a6a;
+  --error: #ff5454;
+  --accent-bg: rgba(200, 255, 71, 0.07);
+  --accent-border: rgba(200, 255, 71, 0.25);
+  --error-bg: rgba(255, 84, 84, 0.07);
+  --selection-bg: rgba(200, 255, 71, 0.24);
+  --placeholder: #6b6b6b;
+  --body-glow: rgba(200, 255, 71, 0.06);
+  --grid-dot: #1c1c1c;
+  --surface-overlay: rgba(255, 255, 255, 0.02);
+  --focus-border: rgba(200, 255, 71, 0.55);
+  --focus-ring: rgba(200, 255, 71, 0.12);
+  --error-border: rgba(255, 84, 84, 0.55);
+  --error-ring: rgba(255, 84, 84, 0.12);
   --radius: 1.5rem;
+}
+
+html.light-theme {
+  --background: #f4f2ed;
+  --foreground: #100e0b;
+  --surface: #eceae4;
+  --surface-2: #e3e1da;
+  --muted: #6c6558;
+  --faint: #b0aa9f;
+  --border: #d4d0c8;
+  --border-strong: #c0bab1;
+  --accent: #4a7a00;
+  --accent-hover: #3a6200;
+  --accent-foreground: #f4f2ed;
+  --error: #c41c1c;
+  --accent-bg: rgba(74, 122, 0, 0.07);
+  --accent-border: rgba(74, 122, 0, 0.22);
+  --error-bg: rgba(196, 28, 28, 0.07);
+  --selection-bg: rgba(74, 122, 0, 0.16);
+  --placeholder: #a0998f;
+  --body-glow: rgba(74, 122, 0, 0.06);
+  --grid-dot: #ceccbf;
+  --surface-overlay: rgba(16, 14, 11, 0.02);
+  --focus-border: rgba(74, 122, 0, 0.45);
+  --focus-ring: rgba(74, 122, 0, 0.12);
+  --error-border: rgba(196, 28, 28, 0.45);
+  --error-ring: rgba(196, 28, 28, 0.12);
 }
 
 @theme inline {
@@ -36,15 +76,21 @@
 html {
   background: var(--background);
   color: var(--foreground);
+  transition:
+    background-color 300ms ease,
+    color 300ms ease;
 }
 
 body {
   min-height: 100vh;
   background:
-    radial-gradient(circle at top, rgba(200, 255, 71, 0.06), transparent 35%),
+    radial-gradient(circle at top, var(--body-glow), transparent 35%),
     var(--background);
   color: var(--foreground);
   font-family: var(--font-space-grotesk), system-ui, sans-serif;
+  transition:
+    background-color 300ms ease,
+    color 300ms ease;
 }
 
 a,
@@ -66,12 +112,12 @@ textarea {
 }
 
 ::selection {
-  background: rgba(200, 255, 71, 0.24);
+  background: var(--selection-bg);
   color: var(--foreground);
 }
 
 ::placeholder {
-  color: var(--muted);
+  color: var(--placeholder);
 }
 
 .skip-link {
@@ -94,7 +140,7 @@ textarea {
 }
 
 .shell-grid {
-  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+  background-image: radial-gradient(circle, var(--grid-dot) 1px, transparent 1px);
   background-size: 28px 28px;
 }
 
@@ -127,7 +173,7 @@ textarea {
   align-items: center;
   border-radius: 999px;
   border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--surface-overlay);
   padding: 0.35rem 0.7rem;
   font-family: var(--font-jetbrains-mono), monospace;
   font-size: 0.7rem;
@@ -139,8 +185,8 @@ textarea {
   display: inline-flex;
   align-items: center;
   border-radius: 999px;
-  border: 1px solid rgba(200, 255, 71, 0.25);
-  background: rgba(200, 255, 71, 0.09);
+  border: 1px solid var(--accent-border);
+  background: var(--accent-bg);
   padding: 0.35rem 0.7rem;
   font-family: var(--font-jetbrains-mono), monospace;
   font-size: 0.7rem;
@@ -193,13 +239,13 @@ textarea {
 
 .input-shell:focus {
   outline: none;
-  border-color: rgba(200, 255, 71, 0.55);
-  box-shadow: 0 0 0 3px rgba(200, 255, 71, 0.12);
+  border-color: var(--focus-border);
+  box-shadow: 0 0 0 3px var(--focus-ring);
 }
 
 .input-shell[aria-invalid="true"] {
-  border-color: rgba(255, 106, 106, 0.55);
-  box-shadow: 0 0 0 3px rgba(255, 106, 106, 0.12);
+  border-color: var(--error-border);
+  box-shadow: 0 0 0 3px var(--error-ring);
 }
 
 .writing-vertical {
@@ -207,7 +253,7 @@ textarea {
 }
 
 :focus-visible {
-  outline: 2px solid rgba(200, 255, 71, 0.55);
+  outline: 2px solid var(--focus-border);
   outline-offset: 2px;
 }
 
