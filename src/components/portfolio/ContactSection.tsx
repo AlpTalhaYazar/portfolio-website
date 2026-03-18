@@ -1,8 +1,9 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { Github, Linkedin, Mail } from "lucide-react";
 
-import { contactDetails } from "@/lib/site";
+import { siteConfig } from "@/lib/site";
 import type { PortfolioContactContent } from "@/types/portfolio";
 
 import { ContactForm } from "./ContactForm";
@@ -13,6 +14,24 @@ interface ContactSectionProps {
 }
 
 export function ContactSection({ content }: ContactSectionProps) {
+  const contactLinks = [
+    {
+      label: siteConfig.email,
+      href: `mailto:${siteConfig.email}`,
+      icon: Mail,
+    },
+    {
+      label: siteConfig.linkedInUrl.replace(/^https?:\/\//, ""),
+      href: siteConfig.linkedInUrl,
+      icon: Linkedin,
+    },
+    {
+      label: siteConfig.githubUrl.replace(/^https?:\/\//, ""),
+      href: siteConfig.githubUrl,
+      icon: Github,
+    },
+  ] as const;
+
   return (
     <section id="contact" className="section-shell border-t border-border">
       <div className="mx-auto max-w-6xl">
@@ -41,20 +60,24 @@ export function ContactSection({ content }: ContactSectionProps) {
             </div>
 
             <div className="space-y-4">
-              {contactDetails.map((detail) => (
-                <a
-                  key={detail.label}
-                  href={detail.href}
-                  target={detail.href.startsWith("mailto:") ? undefined : "_blank"}
-                  rel={detail.href.startsWith("mailto:") ? undefined : "noreferrer"}
-                  className="flex items-center justify-between rounded-2xl border border-border bg-surface px-5 py-4 transition-colors hover:border-border-strong"
-                >
-                  <span className="mono-label text-muted-foreground">
-                    {detail.label}
-                  </span>
-                  <span className="text-sm text-foreground">↗</span>
-                </a>
-              ))}
+              {contactLinks.map((detail) => {
+                const Icon = detail.icon;
+
+                return (
+                  <a
+                    key={detail.label}
+                    href={detail.href}
+                    target={detail.href.startsWith("mailto:") ? undefined : "_blank"}
+                    rel={detail.href.startsWith("mailto:") ? undefined : "noreferrer"}
+                    className="flex items-center gap-4 rounded-2xl border border-border bg-surface px-5 py-4 transition-colors hover:border-border-strong"
+                  >
+                    <Icon size={16} className="text-muted-foreground" />
+                    <span className="mono-label text-muted-foreground">
+                      {detail.label}
+                    </span>
+                  </a>
+                );
+              })}
             </div>
           </motion.div>
 

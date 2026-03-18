@@ -55,12 +55,10 @@ describe("ContactForm", () => {
     const user = userEvent.setup();
     const nameInput = screen.getByLabelText("Name");
     const emailInput = screen.getByLabelText("Email");
-    const subjectInput = screen.getByLabelText("Subject");
     const messageInput = screen.getByLabelText("Message");
 
     await user.type(nameInput, "Alp Talha Yazar");
     await user.type(emailInput, "alp@example.com");
-    await user.type(subjectInput, "Backend collaboration");
     await user.type(
       messageInput,
       "I would like to discuss a backend engineering opportunity."
@@ -71,9 +69,28 @@ describe("ContactForm", () => {
     expect(mockSubmission.onSubmit).toHaveBeenCalledTimes(1);
     expect(nameInput).toHaveValue("Alp Talha Yazar");
     expect(emailInput).toHaveValue("alp@example.com");
-    expect(subjectInput).toHaveValue("Backend collaboration");
     expect(messageInput).toHaveValue(
       "I would like to discuss a backend engineering opportunity."
     );
+    expect(mockSubmission.onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        subject: "I would like to discuss a backend engineering opportunity",
+      })
+    );
+  });
+
+  it("replaces the form with a success takeover when submission succeeds", () => {
+    mockSubmission.isSubmitted = true;
+
+    render(<ContactForm content={getPortfolioContent("en").contact.form} />);
+
+    expect(
+      screen.getByRole("heading", { name: "Message received." })
+    ).toBeVisible();
+    expect(screen.getByText("I'll get back to you as soon as possible.")).toBeVisible();
+    expect(
+      screen.queryByRole("button", { name: /Send Message/i })
+    ).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Subject")).not.toBeInTheDocument();
   });
 });

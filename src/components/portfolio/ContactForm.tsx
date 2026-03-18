@@ -14,9 +14,21 @@ interface ContactFormProps {
   content: PortfolioContactContent["form"];
 }
 
+function buildMessageSubject(message: string, fallbackSubject: string) {
+  const normalizedMessage = message.replace(/\s+/g, " ").trim();
+  const firstSentenceMatch = normalizedMessage.match(/^(.{5,80}?[.!?])(?:\s|$)/);
+  const candidate =
+    firstSentenceMatch?.[1]?.replace(/[.!?]+$/, "") ||
+    normalizedMessage.slice(0, 80).trim();
+
+  return candidate.length >= 5 ? candidate : fallbackSubject;
+}
+
 export function ContactForm({ content }: ContactFormProps) {
   const security = useCSRFSecurity();
   const submission = useContactSubmission(security);
+  const fallbackSubject = content.placeholders.subject;
+  const [successTitle, successBody] = content.success.split(/(?<=\.)\s+/, 2);
 
   const schema = z.object({
     name: z.string().min(2, content.validation.nameRequired),
@@ -34,10 +46,21 @@ export function ContactForm({ content }: ContactFormProps) {
     formState: { errors, isSubmitting },
   } = useForm<ContactFormData>({
     resolver: zodResolver(schema),
+    defaultValues: {
+      name: "",
+      email: "",
+      subject: fallbackSubject,
+      message: "",
+      honeypot: "",
+      csrfToken: "",
+    },
   });
 
   const onSubmit = handleSubmit(async (data) => {
-    const wasSuccessful = await submission.onSubmit(data);
+    const wasSuccessful = await submission.onSubmit({
+      ...data,
+      subject: buildMessageSubject(data.message, fallbackSubject),
+    });
     if (wasSuccessful) {
       reset();
     }
@@ -49,6 +72,26 @@ export function ContactForm({ content }: ContactFormProps) {
     !security.csrfToken ||
     submission.isBlocked;
 
+  if (submission.isSubmitted) {
+    return (
+      <div className="surface-card flex min-h-[28rem] flex-col items-center justify-center gap-5 text-center">
+        <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-accent/25 bg-accent/10">
+          <CheckCircle size={24} className="text-accent" />
+        </div>
+        <div className="space-y-3">
+          <h3 className="text-2xl font-semibold tracking-[-0.03em] text-foreground">
+            {successTitle}
+          </h3>
+          {successBody ? (
+            <p className="max-w-sm text-base leading-7 text-muted-foreground">
+              {successBody}
+            </p>
+          ) : null}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <form onSubmit={onSubmit} className="surface-card space-y-6">
       <input
@@ -59,6 +102,7 @@ export function ContactForm({ content }: ContactFormProps) {
         className="sr-only"
         aria-hidden="true"
       />
+      <input {...register("subject")} type="hidden" defaultValue={fallbackSubject} />
 
       <div className="grid gap-6 sm:grid-cols-2">
         <Field
@@ -88,18 +132,6 @@ export function ContactForm({ content }: ContactFormProps) {
       </div>
 
       <Field
-        label={content.subjectLabel}
-        error={errors.subject?.message}
-      >
-        <input
-          {...register("subject")}
-          placeholder={content.placeholders.subject}
-          aria-invalid={errors.subject ? true : undefined}
-          className="input-shell"
-        />
-      </Field>
-
-      <Field
         label={content.messageLabel}
         error={errors.message?.message}
       >
@@ -115,9 +147,6 @@ export function ContactForm({ content }: ContactFormProps) {
       <div className="space-y-3">
         {security.isSecurityLoading ? (
           <StatusLine icon={<Shield size={15} />} text={content.securityLoading} />
-        ) : null}
-        {!security.isSecurityLoading && security.csrfToken && !security.securityError ? (
-          <StatusLine icon={<Shield size={15} />} text={content.secured} success />
         ) : null}
         {security.securityError ? (
           <Banner
@@ -140,12 +169,8 @@ export function ContactForm({ content }: ContactFormProps) {
             }
           />
         ) : null}
-        {submission.isSubmitted ? (
-          <Banner
-            icon={<CheckCircle size={16} />}
-            text={content.success}
-            tone="success"
-          />
+        {!security.isSecurityLoading && security.csrfToken && !security.securityError ? (
+          <StatusLine icon={<Shield size={15} />} text={content.secured} success />
         ) : null}
       </div>
 
