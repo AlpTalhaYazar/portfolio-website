@@ -10,6 +10,7 @@ import {
 } from "react";
 
 import {
+  PORTFOLIO_THEME_CLASS,
   PORTFOLIO_THEME_STORAGE_KEY,
   applyPortfolioTheme,
   getStoredPortfolioTheme,
@@ -29,11 +30,19 @@ const PortfolioThemeContext = createContext<
 
 function getInitialTheme(): PortfolioTheme {
   if (typeof document !== "undefined") {
-    if (document.documentElement.classList.contains("light-theme")) {
+    if (
+      document.documentElement.classList.contains(
+        PORTFOLIO_THEME_CLASS.light
+      )
+    ) {
       return "light";
     }
 
-    if (document.documentElement.classList.contains("dark-theme")) {
+    if (
+      document.documentElement.classList.contains(
+        PORTFOLIO_THEME_CLASS.dark
+      )
+    ) {
       return "dark";
     }
   }

@@ -5,6 +5,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { getPortfolioContent } from "@/lib/content/portfolio";
+import { PORTFOLIO_THEME_STORAGE_KEY } from "@/lib/portfolio/theme";
 
 import { Header } from "./Header";
 import { NotFoundPage } from "./NotFoundPage";
@@ -42,7 +43,7 @@ describe("portfolio theme controls", () => {
     await user.click(toggles[0]);
 
     expect(document.documentElement).toHaveClass("light-theme");
-    expect(localStorage.getItem("aty-theme")).toBe("light");
+    expect(localStorage.getItem(PORTFOLIO_THEME_STORAGE_KEY)).toBe("light");
   });
 
   it("renders the labeled 404 toggle in the redesigned top-right position", () => {
