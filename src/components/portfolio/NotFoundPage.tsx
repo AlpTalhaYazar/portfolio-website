@@ -6,6 +6,8 @@ import { motion } from "framer-motion";
 import { buildLocalizedHref } from "@/lib/i18n/routing";
 import type { PortfolioLocale, PortfolioNotFoundContent } from "@/types/portfolio";
 
+import { PortfolioThemeToggle } from "./PortfolioThemeToggle";
+
 interface NotFoundPageProps {
   content: PortfolioNotFoundContent;
   locale: PortfolioLocale;
@@ -15,6 +17,9 @@ export function NotFoundPage({ content, locale }: NotFoundPageProps) {
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden px-5 py-24 sm:px-8">
       <div className="absolute inset-0 shell-grid opacity-50" />
+      <div className="absolute right-5 top-6 z-20 sm:right-8">
+        <PortfolioThemeToggle locale={locale} variant="labeled" />
+      </div>
 
       <motion.div
         initial={{ opacity: 0, y: 24 }}

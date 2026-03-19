@@ -6,7 +6,7 @@ import {
   getRateLimitingMethod,
 } from "@/lib/redis-rate-limit";
 import { buildCSPHeader } from "@/lib/csp";
-import { getLocaleFromPathname } from "@/lib/i18n/routing";
+import { buildRequestContextHeaders } from "@/lib/request-context";
 import type { RateLimitConfig } from "@/types";
 
 // Rate limiting configuration per endpoint
@@ -133,18 +133,17 @@ export async function middleware(request: NextRequest) {
   // Generate nonce for CSP
   const nonce = generateNonce();
 
-  const requestHeaders = new Headers(request.headers);
-  requestHeaders.set("x-locale", getLocaleFromPathname(pathname));
-  requestHeaders.set("x-pathname", pathname);
+  const requestHeaders = buildRequestContextHeaders(
+    request.headers,
+    pathname,
+    nonce
+  );
 
   const response = NextResponse.next({
     request: {
       headers: requestHeaders,
     },
   });
-
-  // Pass nonce to the application via header (will be read by layout.tsx)
-  response.headers.set("x-nonce", nonce);
 
   // Add security headers
   response.headers.set("X-Content-Type-Options", "nosniff");
