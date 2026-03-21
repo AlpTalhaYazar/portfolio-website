@@ -18,7 +18,7 @@ test.describe("Navigation", () => {
       })
     ).toBeVisible();
     await expect(
-      page.getByText(/I build backend systems that stay reliable under real load\./i)
+      page.getByText(/Gerçek yük altında güvenilir kalan backend sistemleri geliştiriyorum\./i)
     ).toBeVisible();
   });
 

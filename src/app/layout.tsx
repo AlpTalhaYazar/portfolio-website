@@ -5,6 +5,7 @@ import { GoogleAnalytics } from "@next/third-parties/google";
 
 import { PortfolioThemeProvider } from "@/components/portfolio/theme";
 import StructuredData from "@/components/utils/StructuredData";
+import { PORTFOLIO_THEME_COLOR } from "@/lib/portfolio/theme";
 import { portfolioThemeScript } from "@/lib/portfolio/theme-script";
 import type { PortfolioLocale } from "@/types/portfolio";
 
@@ -33,14 +34,14 @@ export default async function RootLayout({
   const localeHeader = headersList.get("x-locale");
   const nonce = headersList.get("x-nonce") ?? undefined;
   const requestLocale: PortfolioLocale =
-    localeHeader === "tr" || localeHeader === "es" ? localeHeader : "en";
+    localeHeader === "en" ? "en" : "tr";
 
   return (
     <html lang={requestLocale} className="scroll-smooth" suppressHydrationWarning>
       <head>
         <StructuredData locale={requestLocale} />
         <meta name="format-detection" content="telephone=no" />
-        <meta name="theme-color" content="#080808" />
+        <meta name="theme-color" content={PORTFOLIO_THEME_COLOR.light} />
         <script
           dangerouslySetInnerHTML={{ __html: portfolioThemeScript }}
           id="portfolio-theme-script"

@@ -10,7 +10,7 @@ describe("sitemap", () => {
           url: "https://www.alptalha.dev/",
         }),
         expect.objectContaining({
-          url: "https://www.alptalha.dev/tr/",
+          url: "https://www.alptalha.dev/en/",
         }),
       ])
     );

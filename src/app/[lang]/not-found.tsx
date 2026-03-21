@@ -8,7 +8,7 @@ export default async function LocaleNotFound() {
   const headersList = await headers();
   const localeHeader = headersList.get("x-locale");
   const locale: PortfolioLocale =
-    localeHeader === "tr" || localeHeader === "es" ? localeHeader : "en";
+    localeHeader === "en" ? "en" : "tr";
 
   return <NotFoundPage content={getPortfolioContent(locale).notFound} locale={locale} />;
 }

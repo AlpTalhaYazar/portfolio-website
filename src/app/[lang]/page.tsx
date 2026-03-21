@@ -14,8 +14,8 @@ interface LocalePageProps {
 export async function generateMetadata({ params }: LocalePageProps) {
   const { lang } = await params;
 
-  if (!isSupportedLocale(lang) || lang === "en") {
-    return buildPortfolioMetadata("en");
+  if (!isSupportedLocale(lang) || lang === "tr") {
+    return buildPortfolioMetadata("tr");
   }
 
   return buildPortfolioMetadata(lang);
@@ -23,14 +23,14 @@ export async function generateMetadata({ params }: LocalePageProps) {
 
 export async function generateStaticParams() {
   return publicPortfolioLocales
-    .filter((locale) => locale !== "en")
+    .filter((locale) => locale !== "tr")
     .map((locale) => ({ lang: locale }));
 }
 
 export default async function LocalePage({ params }: LocalePageProps) {
   const { lang } = await params;
 
-  if (!isSupportedLocale(lang) || lang === "en") {
+  if (!isSupportedLocale(lang) || lang === "tr") {
     notFound();
   }
 

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { defaultLanguage } from "@/lib/i18n/config";
 import { publicPortfolioLocales } from "@/lib/i18n/routing";
 import { siteConfig } from "@/lib/site";
 import type { PortfolioLocale } from "@/types/portfolio";
@@ -18,7 +19,9 @@ const localeToOpenGraph = {
 } as const;
 
 export function getCanonicalUrl(locale: PortfolioLocale): string {
-  return locale === "en" ? `${siteConfig.baseUrl}/` : `${siteConfig.baseUrl}/${locale}/`;
+  return locale === defaultLanguage
+    ? `${siteConfig.baseUrl}/`
+    : `${siteConfig.baseUrl}/${locale}/`;
 }
 
 export function buildPortfolioMetadata(locale: PortfolioLocale): Metadata {
@@ -40,8 +43,8 @@ export function buildPortfolioMetadata(locale: PortfolioLocale): Metadata {
     alternates: {
       canonical: getCanonicalUrl(locale),
       languages: {
-        en: `${siteConfig.baseUrl}/`,
-        tr: `${siteConfig.baseUrl}/tr/`,
+        en: `${siteConfig.baseUrl}/en/`,
+        tr: `${siteConfig.baseUrl}/`,
         "x-default": `${siteConfig.baseUrl}/`,
       },
     },

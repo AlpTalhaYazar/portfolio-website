@@ -1,5 +1,6 @@
 import { ImageResponse } from "next/og";
 
+import { defaultLanguage } from "@/lib/i18n/config";
 import { getPortfolioContent } from "@/lib/content/portfolio";
 import { siteConfig } from "@/lib/site";
 import type { PortfolioLocale } from "@/types/portfolio";
@@ -25,7 +26,7 @@ export function getSocialPreviewPath(
   locale: PortfolioLocale,
   kind: "opengraph" | "twitter"
 ) {
-  const prefix = locale === "en" ? "" : `/${locale}`;
+  const prefix = locale === defaultLanguage ? "" : `/${locale}`;
   const slug = kind === "opengraph" ? "opengraph-image" : "twitter-image";
 
   return `${prefix}/${slug}`;

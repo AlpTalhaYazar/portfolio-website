@@ -18,14 +18,14 @@ export function isPortfolioTheme(value: unknown): value is PortfolioTheme {
 
 export function getStoredPortfolioTheme(): PortfolioTheme {
   if (typeof window === "undefined") {
-    return "dark";
+    return "light";
   }
 
   try {
     const storedTheme = window.localStorage.getItem(PORTFOLIO_THEME_STORAGE_KEY);
-    return isPortfolioTheme(storedTheme) ? storedTheme : "dark";
+    return isPortfolioTheme(storedTheme) ? storedTheme : "light";
   } catch {
-    return "dark";
+    return "light";
   }
 }
 

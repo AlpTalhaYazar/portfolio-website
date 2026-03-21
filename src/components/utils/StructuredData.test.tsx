@@ -14,7 +14,7 @@ function getStructuredData(locale: "en" | "tr") {
 
 describe("StructuredData", () => {
   it("matches the root canonical URL format", () => {
-    const data = getStructuredData("en");
+    const data = getStructuredData("tr");
 
     expect(data["@graph"][0].url).toBe("https://www.alptalha.dev/");
     expect(data["@graph"][1].url).toBe("https://www.alptalha.dev/");
@@ -22,10 +22,10 @@ describe("StructuredData", () => {
   });
 
   it("matches localized canonical URL format", () => {
-    const data = getStructuredData("tr");
+    const data = getStructuredData("en");
 
-    expect(data["@graph"][0].url).toBe("https://www.alptalha.dev/tr/");
-    expect(data["@graph"][1].url).toBe("https://www.alptalha.dev/tr/");
-    expect(data["@graph"][2].url).toBe("https://www.alptalha.dev/tr/");
+    expect(data["@graph"][0].url).toBe("https://www.alptalha.dev/en/");
+    expect(data["@graph"][1].url).toBe("https://www.alptalha.dev/en/");
+    expect(data["@graph"][2].url).toBe("https://www.alptalha.dev/en/");
   });
 });

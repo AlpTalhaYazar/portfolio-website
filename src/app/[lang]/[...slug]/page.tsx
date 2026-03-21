@@ -14,7 +14,7 @@ export default async function LocaleCatchAllPage({
 }: LocaleCatchAllPageProps) {
   const { lang } = await params;
 
-  if (!isSupportedLocale(lang) || lang === "en") {
+  if (!isSupportedLocale(lang) || lang === "tr") {
     notFound();
   }
 

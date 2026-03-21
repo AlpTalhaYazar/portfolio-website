@@ -27,7 +27,7 @@ export const languages = {
 export type Language = keyof typeof languages;
 export type LanguageConfig = (typeof languages)[Language];
 
-export const defaultLanguage: Language = "en";
+export const defaultLanguage: Language = "tr";
 export const supportedLanguages: Language[] = Object.keys(
   languages
 ) as Language[];
@@ -38,7 +38,7 @@ export const i18nConfig = {
   languages,
   cookieName: "NEXT_LOCALE",
   storageKey: "preferred-language",
-  fallbackLanguage: "en",
+  fallbackLanguage: "tr",
 } as const;
 
 /**

@@ -16,7 +16,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 1,
     },
     {
-      url: `${siteConfig.baseUrl}/tr/`,
+      url: `${siteConfig.baseUrl}/en/`,
       lastModified,
       changeFrequency: "weekly",
       priority: 0.9,

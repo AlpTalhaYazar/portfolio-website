@@ -118,6 +118,12 @@ async function applyRateLimit(
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  if (pathname === "/tr" || pathname.startsWith("/tr/")) {
+    const canonicalUrl = request.nextUrl.clone();
+    canonicalUrl.pathname = pathname.slice(3) || "/";
+    return NextResponse.redirect(canonicalUrl, 308);
+  }
+
   if (SENSITIVE_PATHS.some((path) => pathname.includes(path))) {
     return new NextResponse("Forbidden", { status: 403 });
   }

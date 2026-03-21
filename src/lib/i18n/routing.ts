@@ -16,13 +16,13 @@ export function getLocaleFromPathname(pathname: string): Language {
 }
 
 export function stripLocaleFromPathname(pathname: string): string {
-  const locale = getLocaleFromPathname(pathname);
+  const [, maybeLocale, ...rest] = pathname.split("/");
 
-  if (locale === defaultLanguage) {
+  if (!maybeLocale || !isSupportedLocale(maybeLocale)) {
     return pathname || "/";
   }
 
-  const stripped = pathname.replace(`/${locale}`, "") || "/";
+  const stripped = `/${rest.join("/")}` || "/";
   return stripped.startsWith("/") ? stripped : `/${stripped}`;
 }
 
