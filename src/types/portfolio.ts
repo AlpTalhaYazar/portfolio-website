@@ -37,9 +37,17 @@ export interface PortfolioProjectItem {
   readonly number: string;
   readonly name: string;
   readonly company: string;
+  readonly contextLabel?: string;
   readonly description: string;
   readonly themes: readonly string[];
   readonly tags: readonly string[];
+  readonly details?: {
+    readonly badgeLabel?: string;
+    readonly note?: string;
+    readonly summary: string;
+    readonly responsibilities: readonly string[];
+    readonly footprint: readonly string[];
+  };
 }
 
 export interface PortfolioCapabilityGroup {
@@ -121,6 +129,19 @@ export interface PortfolioContent {
     readonly sectionNumber: string;
     readonly sectionTitle: string;
     readonly intro: string;
+    readonly expandLabel: string;
+    readonly collapseLabel: string;
+    readonly inspectionEyebrow: string;
+    readonly inspectionHint: string;
+    readonly inspectionActiveLabel: string;
+    readonly previewLabels: {
+      readonly context: string;
+      readonly focus: string;
+      readonly stack: string;
+    };
+    readonly summaryTitle: string;
+    readonly responsibilitiesTitle: string;
+    readonly footprintTitle: string;
     readonly items: readonly PortfolioProjectItem[];
   };
   readonly capabilities: {

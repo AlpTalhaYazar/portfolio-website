@@ -187,7 +187,7 @@ src/
 │           ├── en.ts     # English translations
 │           ├── es.ts     # Spanish translations
 │           └── tr.ts     # Turkish translations
-├── middleware.ts          # Next.js middleware (security, i18n)
+├── proxy.ts               # Next.js proxy (security, i18n)
 ├── types/                # TypeScript definitions
 │   ├── index.ts          # General type definitions
 │   └── contact.ts        # Contact form types

@@ -89,7 +89,7 @@ if (response.status === 429) {
 }
 ```
 
-### Security Middleware (`/src/middleware.ts`)
+### Security Proxy (`/src/proxy.ts`)
 
 ```typescript
 // Security headers
@@ -335,4 +335,3 @@ Track these KPIs:
 **Last Updated**: Current implementation date  
 **Security Level**: Production-Ready with Advanced Protections  
 **Maintenance Required**: Weekly log reviews, monthly testing
-

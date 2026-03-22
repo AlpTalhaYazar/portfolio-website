@@ -155,6 +155,201 @@ textarea {
   border-color: var(--border-strong);
 }
 
+.project-card {
+  position: relative;
+  overflow: hidden;
+  transition:
+    border-color 180ms ease,
+    background-color 180ms ease,
+    transform 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.project-card-inspectable {
+  background:
+    linear-gradient(180deg, var(--surface-overlay), transparent 28%),
+    var(--surface-2);
+}
+
+.project-card-active {
+  border-color: var(--accent-border);
+  box-shadow:
+    0 0 0 1px var(--accent-border),
+    0 28px 80px var(--body-glow);
+}
+
+.project-preview-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.project-preview-cell {
+  min-height: 100%;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background:
+    linear-gradient(180deg, var(--surface-overlay), transparent 70%),
+    var(--surface);
+  padding: 0.9rem 1rem;
+}
+
+.project-inspection-trigger {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border-radius: 1.25rem;
+  border: 1px solid var(--border);
+  background:
+    linear-gradient(180deg, var(--surface-overlay), transparent 100%),
+    var(--surface);
+  padding: 1rem 1.1rem;
+}
+
+.project-inspection-trigger:hover {
+  border-color: var(--border-strong);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 100%),
+    var(--surface);
+}
+
+.project-trigger-indicator {
+  display: inline-flex;
+  height: 2.25rem;
+  width: 2.25rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid var(--accent-border);
+  background: var(--accent-bg);
+  color: var(--accent);
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.project-card-rail {
+  height: 2px;
+  width: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, var(--border), transparent);
+  transition:
+    background 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.project-card-rail-active {
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  box-shadow: 0 0 18px var(--body-glow);
+}
+
+.project-dossier {
+  position: relative;
+  border: 1px solid var(--border-strong);
+  border-radius: calc(var(--radius) + 0.75rem);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 24%),
+    var(--surface);
+  padding: 2rem;
+}
+
+.project-dossier::before {
+  content: "";
+  position: absolute;
+  left: 2rem;
+  right: 2rem;
+  top: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent-border), transparent);
+}
+
+.project-dossier-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.5rem;
+}
+
+.project-dossier-number {
+  display: inline-flex;
+  min-width: 2.5rem;
+  padding-top: 0.2rem;
+}
+
+.project-dossier-chip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  border: 1px solid var(--accent-border);
+  background: var(--accent-bg);
+  padding: 0.45rem 0.75rem;
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.project-dossier-chip-muted {
+  border-color: var(--border);
+  background: var(--surface-overlay);
+  color: var(--muted);
+}
+
+.project-dossier-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+}
+
+.project-dossier-block {
+  border: 1px solid var(--border);
+  border-radius: 1.25rem;
+  background:
+    linear-gradient(180deg, var(--surface-overlay), transparent 110%),
+    var(--surface-2);
+  padding: 1.25rem;
+}
+
+.project-dossier-block-wide {
+  grid-column: 1 / -1;
+}
+
+.project-dossier-list-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.project-dossier-dot {
+  margin-top: 0.7rem;
+  height: 0.4rem;
+  width: 0.4rem;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: var(--accent);
+}
+
+.project-dossier-note {
+  min-height: 100%;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: var(--surface);
+  padding: 1rem;
+}
+
+.project-dossier-footer {
+  margin-top: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  border-top: 1px solid var(--border);
+  padding-top: 1.25rem;
+}
+
 .section-divider {
   height: 1px;
   width: 100%;
@@ -256,6 +451,25 @@ textarea {
 :focus-visible {
   outline: 2px solid var(--focus-border);
   outline-offset: 2px;
+}
+
+@media (max-width: 767px) {
+  .project-preview-grid,
+  .project-dossier-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .project-dossier {
+    padding: 1.25rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .project-dossier-footer {
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: space-between;
+  }
 }
 
 @media (max-width: 640px) {

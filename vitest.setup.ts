@@ -17,6 +17,11 @@ class MockResizeObserver {
 }
 globalThis.ResizeObserver = MockResizeObserver as unknown as typeof ResizeObserver;
 
+Object.defineProperty(globalThis, "scrollTo", {
+  writable: true,
+  value: vi.fn(),
+});
+
 // Mock matchMedia for theme/motion preference tests
 Object.defineProperty(globalThis, "matchMedia", {
   writable: true,

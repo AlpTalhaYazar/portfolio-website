@@ -18,7 +18,7 @@ const nextConfig: NextConfig = {
   compiler: {
     removeConsole: process.env.NODE_ENV === "production",
   },
-  // Security headers now handled by middleware.ts
+  // Security headers now handled by src/proxy.ts
 };
 
 export default withBundleAnalyzer(nextConfig);

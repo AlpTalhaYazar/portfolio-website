@@ -109,13 +109,13 @@ async function applyRateLimit(
     );
   }
 
-  return null; // No rate limit applied, continue to next middleware/route
+  return null; // No rate limit applied, continue to next proxy/route
 }
 
 /**
- * Async middleware with Redis-backed rate limiting and nonce-based CSP
+ * Async proxy with Redis-backed rate limiting and nonce-based CSP
  */
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (pathname === "/tr" || pathname.startsWith("/tr/")) {
