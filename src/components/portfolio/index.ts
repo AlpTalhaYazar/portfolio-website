@@ -8,5 +8,6 @@ export { Hero } from "./Hero";
 export { LanguageSwitcher } from "./LanguageSwitcher";
 export { NotFoundPage } from "./NotFoundPage";
 export { PortfolioPage } from "./PortfolioPage";
+export { PrivacyPage } from "./PrivacyPage";
 export { Projects } from "./Projects";
 export { SectionLabel } from "./SectionLabel";

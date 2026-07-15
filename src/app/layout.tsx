@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { JetBrains_Mono, Space_Grotesk } from "next/font/google";
-import { GoogleAnalytics } from "@next/third-parties/google";
 
+import { AnalyticsConsentProvider } from "@/components/analytics";
 import { PortfolioThemeProvider } from "@/components/portfolio/theme";
-import StructuredData from "@/components/utils/StructuredData";
 import { PORTFOLIO_THEME_COLOR } from "@/lib/portfolio/theme";
 import { portfolioThemeScript } from "@/lib/portfolio/theme-script";
 import type { PortfolioLocale } from "@/types/portfolio";
@@ -39,7 +38,6 @@ export default async function RootLayout({
   return (
     <html lang={requestLocale} className="scroll-smooth" suppressHydrationWarning>
       <head>
-        <StructuredData locale={requestLocale} />
         <meta name="format-detection" content="telephone=no" />
         <meta name="theme-color" content={PORTFOLIO_THEME_COLOR.light} />
         <script
@@ -56,15 +54,17 @@ export default async function RootLayout({
         className={`${spaceGrotesk.variable} ${jetBrainsMono.variable} bg-background text-foreground antialiased`}
       >
         <PortfolioThemeProvider>
-          <a href="#main-content" className="skip-link">
-            Skip to main content
-          </a>
-          {children}
+          <AnalyticsConsentProvider
+            locale={requestLocale}
+            measurementId={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID}
+          >
+            <a href="#main-content" className="skip-link">
+              {requestLocale === "tr" ? "Ana içeriğe geç" : "Skip to main content"}
+            </a>
+            {children}
+          </AnalyticsConsentProvider>
         </PortfolioThemeProvider>
       </body>
-      {process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID ? (
-        <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID} />
-      ) : null}
     </html>
   );
 }
