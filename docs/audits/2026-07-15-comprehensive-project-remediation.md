@@ -5,6 +5,7 @@
 | Field | Value |
 | --- | --- |
 | Remediation date | 2026-07-15 (Europe/Istanbul) |
+| Production verification date | 2026-07-16 (Europe/Istanbul) |
 | Repository | `/Users/alptalhayazarwork/personal/portfolio-website` |
 | Branch | `main` |
 | Pre-remediation HEAD | `1f2964fc6fa5` |
@@ -18,10 +19,11 @@ This report describes the remediation work in the current repository state. It d
 
 ## 2. Outcome
 
-All 21 numbered audit findings are resolved in source. Two additional runtime defects found while validating the remediation were also fixed:
+All 21 numbered audit findings are resolved in source. Three additional runtime and verification defects found while validating the remediation were also fixed:
 
 1. WebKit upgraded HTTP loopback assets to HTTPS because `upgrade-insecure-requests` was emitted for an HTTP `next start` origin.
 2. Same-origin CSRF initialization failed on local production-mode and preview origins whose URL did not equal the configured canonical production URL.
+3. Browser tests contained false skips and desktop-only navigation assumptions.
 
 Open severity counts for the remediated source are:
 
@@ -33,9 +35,9 @@ Open severity counts for the remediated source are:
 
 **Source readiness: Ready with follow-ups.** Lint, type checking, 129 unit/component/integration tests, coverage thresholds, dependency audits, clean npm 12 installation, a placeholder-secret production build, and the four-project Playwright suite pass.
 
-**Local release command: Not ready until configuration is supplied.** The exact `npm run build` and `npm run e2e` commands intentionally fail closed because the current local production environment does not provide `CSRF_SECRET`. No secret was requested, read, printed, or written during remediation. The same commands pass when a process-only verification placeholder is supplied.
+**Local release command: Not ready until configuration is supplied.** The exact `npm run build` and `npm run e2e` commands intentionally fail closed because the current local production environment does not provide `CSRF_SECRET`. No pre-existing secret was requested or read during source remediation. The same commands pass when a process-only verification placeholder is supplied.
 
-**Deployed site: not yet representative of this source tree.** Passive checks show that the public deployment still returns 404 for `/privacy/` and 403 for `robots.txt` and `sitemap.xml`; it therefore predates this remediation. Deployment was not performed because push/deploy authorization was not part of the request.
+**Production deployment: verified on 2026-07-16.** Vercel deployment `2KMTVWBFqjBfpk58GciCWr7ignwP` built commit `64192ea` successfully after an isolated Sensitive `CSRF_SECRET` was supplied and rotated through the deployment platform. The public route, readiness, CSRF-origin, discovery, metadata, and security-header checks in section 8 now match the remediated application. Production and Preview have separate Sensitive CSRF values; their values are intentionally not recorded here.
 
 ## 3. Remediation ledger
 
@@ -169,9 +171,9 @@ The user authorized browser-based GA hardening and asked to be informed immediat
 
 Search Console linking is **not complete**. Google disclosed that creating the link records the account email address and may expose it to authorized GA/Search Console users. Final submission requires explicit confirmation for that data transmission. The wizard was closed without creating a link.
 
-## 8. Production comparison and deployment drift
+## 8. Production comparison and deployment verification
 
-Passive, low-volume checks against `https://www.alptalha.dev` on 2026-07-15 produced:
+The initial passive, low-volume checks against `https://www.alptalha.dev` on 2026-07-15 produced:
 
 | Route/check | Live result | Current source expectation |
 | --- | --- | --- |
@@ -183,14 +185,42 @@ Passive, low-volume checks against `https://www.alptalha.dev` on 2026-07-15 prod
 | `/sitemap.xml` | 403 | 200 App Router metadata route |
 | `/api/health/` | 200 with the former `checks` object | New liveness/readiness contract |
 
-The live root already sends CSP, HSTS, `nosniff`, frame denial, referrer policy, and permissions policy headers. The route and health differences prove deployment drift rather than a remaining current-source defect.
+The live root already sent CSP, HSTS, `nosniff`, frame denial, referrer policy, and permissions policy headers. At that point, the route and health differences proved deployment drift rather than a remaining current-source defect.
+
+### 2026-07-16 production verification
+
+A cryptographically generated CSRF secret was added to Vercel as a Sensitive, Production-only variable. Its initial value appeared once in temporary browser-automation evidence, so it was immediately treated as compromised, rotated without being displayed, and redeployed. A different generated value was added as a Sensitive, Preview-only variable so preview builds do not share the production signing boundary. The active replacement and Preview values were not read back, committed, or included in this report.
+
+The existing application commit was first redeployed without build cache as `C24YoaEL56Vud1y5E8pbWgYTqZwi`. After the immediate secret rotation, Vercel marked replacement deployment `2KMTVWBFqjBfpk58GciCWr7ignwP` **Ready** and **Current**, and assigned `www.alptalha.dev` to it. Post-rotation checks again returned 200 for exact same-origin CSRF issuance, 403 for a cross-origin request, and healthy readiness with email and Redis both `ok`.
+
+| Route/check | Verified result |
+| --- | --- |
+| Deployment source | `main`, commit `64192ea` |
+| `/` | 200; Turkish document language; expected portfolio title and H1 |
+| `/en/` | 200; English document language |
+| `/tr/` | 308 canonical redirect to `/` |
+| `/privacy/` and `/en/privacy/` | 200 with localized titles, headings, and document languages |
+| `/robots.txt` | 200 and references the canonical sitemap |
+| `/sitemap.xml` | 200 and contains canonical Turkish/English portfolio and privacy URLs |
+| `/api/health/` | 200; `healthy` readiness; email and Redis checks both `ok` |
+| `/api/csrf-token/` | 200 for an exact same-origin request; 403 for a cross-origin request |
+| Unknown route | 404 with the localized not-found experience |
+| Root security headers | CSP with a per-response nonce, HSTS, `nosniff`, frame denial, referrer policy, and permissions policy present |
+| Localized metadata | Canonical, English/Turkish/x-default alternates, and locale-correct Open Graph URL/locale present |
+| Browser rendering | Turkish and English portfolio, both privacy pages, and the 404 route rendered with the expected title, H1, and language |
+
+The completed build used Node.js `24.15.0` and npm `11.12.1`. It emitted a non-fatal `EBADENGINE` warning because the repository declares npm `>=12.0.1 <13`; dependency installation, environment validation, the Next.js build, deployment assignment, and live checks still completed successfully. Vercel documents package-manager pinning through Corepack, but marks Corepack experimental and does not list npm 12 in its published supported-version table. Enabling that production flag solely to silence this warning would trade a known warning for an experimental platform dependency, so it was not changed. See Vercel's [package-manager](https://vercel.com/docs/package-managers) and [Corepack build configuration](https://vercel.com/docs/builds/configure-a-build#corepack) documentation (accessed 2026-07-16). Aligning the Vercel installer npm version with the declared package manager remains a tooling-parity follow-up, not a current release blocker.
 
 ## 9. Remaining blockers and unmeasured areas
 
 ### Required before release
 
-1. Inject a strong production `CSRF_SECRET` through the deployment platform or the documented encrypted environment workflow; rerun `npm run validate:env:production`, `npm run build`, and `npm run e2e` without a placeholder.
-2. Review and deploy the committed source; then repeat the passive route matrix to confirm the public site serves privacy, robots, sitemap, and the new health semantics.
+No known release blocker remains for the currently deployed production runtime based on the checks above. Exact local production commands still require a local or process-injected `CSRF_SECRET`; the deployment secret must not be copied out of Vercel for that purpose.
+
+### Operational follow-up
+
+1. Align Vercel's install-time npm version with the repository's declared npm version, or deliberately widen the npm engine range after compatibility verification. Do not enable experimental Corepack in production without first proving npm 12 support in an isolated Preview build. The present mismatch is warning-only.
+2. Exercise one future Preview deployment to prove that its isolated CSRF configuration is consumed correctly; the variable metadata is configured, but no Preview deployment was created solely for this check.
 
 ### Owner confirmation or external action
 
@@ -209,10 +239,10 @@ The live root already sends CSP, HSTS, `nosniff`, frame denial, referrer policy,
 
 ## 10. Smallest release sequence
 
-1. Supply `CSRF_SECRET` in the target environment and run the three unmodified release gates.
-2. Review the atomic commits and deploy them without introducing environment changes into source control.
-3. Verify `/`, `/en/`, `/tr/`, privacy, robots, sitemap, health, CSP, and console/network behavior on the deployed domain.
-4. Run one non-delivering or controlled mailbox smoke test using an explicitly approved test destination; do not use a visitor's data.
+1. Keep Production and Preview CSRF values isolated, Sensitive, and outside source control; rotate them during a security response or planned signing-key rotation.
+2. Resolve the npm installer-parity warning and verify the next build log is warning-free.
+3. Run one non-delivering or controlled mailbox smoke test using an explicitly approved test destination; do not use a visitor's data.
+4. Add monitoring/alert delivery and rehearse rollback before treating operations as fully exercised.
 5. Optionally complete Search Console linking after explicit email-disclosure approval.
 
-With those configuration and deployment steps completed, no numbered source-audit finding remains open.
+No numbered source-audit finding remains open, and the current production application matches the remediated runtime. The explicitly unmeasured operational and external-service areas above remain follow-ups rather than assumed passes.
