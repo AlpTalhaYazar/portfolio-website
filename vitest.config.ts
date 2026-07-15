@@ -24,6 +24,7 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       reporter: ["text", "json", "html"],
+      include: ["src/**/*.{ts,tsx}", "scripts/**/*.ts"],
       exclude: [
         "node_modules/**",
         ".next/**",
@@ -32,7 +33,39 @@ export default defineConfig({
         "**/*.d.ts",
         "**/*.config.*",
         "**/vitest.setup.ts",
+        "**/*.test.*",
+        "**/*.spec.*",
       ],
+      thresholds: {
+        statements: 60,
+        branches: 55,
+        functions: 55,
+        lines: 60,
+        "src/lib/csrf.ts": {
+          statements: 80,
+          branches: 75,
+          functions: 90,
+          lines: 80,
+        },
+        "src/app/api/contact/route.ts": {
+          statements: 70,
+          branches: 60,
+          functions: 80,
+          lines: 70,
+        },
+        "src/lib/redis-rate-limit.ts": {
+          statements: 50,
+          branches: 45,
+          functions: 50,
+          lines: 50,
+        },
+        "src/lib/analytics/consent.ts": {
+          statements: 90,
+          branches: 85,
+          functions: 90,
+          lines: 90,
+        },
+      },
     },
   },
   resolve: {

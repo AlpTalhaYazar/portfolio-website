@@ -34,30 +34,37 @@ export default defineConfig({
 
     // Capture screenshot on failure
     screenshot: "only-on-failure",
+    video: "retain-on-failure",
   },
 
   // Configure projects for major browsers
   projects: [
     {
-      name: "chromium",
+      name: "chromium-desktop",
       use: { ...devices["Desktop Chrome"] },
     },
-    // Uncomment to test on more browsers
-    // {
-    //   name: 'firefox',
-    //   use: { ...devices['Desktop Firefox'] },
-    // },
-    // {
-    //   name: 'webkit',
-    //   use: { ...devices['Desktop Safari'] },
-    // },
+    {
+      name: "chromium-mobile",
+      use: { ...devices["Pixel 5"] },
+    },
+    {
+      name: "firefox-desktop",
+      use: { ...devices["Desktop Firefox"] },
+    },
+    {
+      name: "webkit-desktop",
+      use: { ...devices["Desktop Safari"] },
+    },
   ],
 
   // Run your local dev server before starting the tests
   webServer: {
-    command: "npm run dev",
+    command: process.env.PLAYWRIGHT_USE_DEV_SERVER
+      ? "npm run dev"
+      : "npm run start",
     url: "http://localhost:3000",
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer:
+      Boolean(process.env.PLAYWRIGHT_USE_DEV_SERVER) && !process.env.CI,
     timeout: 120 * 1000, // 2 minutes to start dev server
   },
 });

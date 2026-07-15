@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  CI: true
+  GMAIL_USER: ci@example.com
+  GMAIL_APP_PASSWORD: ci-placeholder-password
+  EMAIL_TO: ci@example.com
+  CSRF_SECRET: ci-only-placeholder-secret-at-least-32-characters
+  NEXT_PUBLIC_BASE_URL: https://www.alptalha.dev
+  NEXT_PUBLIC_SITE_URL: https://www.alptalha.dev
+  NEXT_PUBLIC_FULL_NAME: Alp Talha Yazar
+  NEXT_PUBLIC_CONTACT_EMAIL: ci@example.com
+  NEXT_PUBLIC_CONTACT_LOCATION: Istanbul, Türkiye
+  NEXT_PUBLIC_GITHUB_URL: https://github.com/alptalha
+  NEXT_PUBLIC_LINKEDIN_URL: https://linkedin.com/in/alptalha
+  NEXT_PUBLIC_GA_MEASUREMENT_ID: G-CI123456
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm install --global npm@12.0.1
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run type-check
+      - run: npm run validate:env
+      - run: npm run validate:env:production
+      - run: npm run audit:dependencies
+      - run: npm run test:coverage
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium firefox webkit
+      - run: npx playwright test

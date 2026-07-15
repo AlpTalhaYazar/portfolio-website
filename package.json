@@ -2,7 +2,11 @@
   "name": "portfolio-website",
   "version": "0.1.0",
   "private": true,
-  "packageManager": "npm@11.8.0",
+  "packageManager": "npm@12.0.1",
+  "engines": {
+    "node": ">=24.15.0 <25",
+    "npm": ">=12.0.1 <13"
+  },
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "npm run validate:env:production && next build --turbopack",
@@ -17,52 +21,74 @@
     "test": "vitest",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
+    "audit:dependencies": "npm audit --audit-level=high && npm audit --omit=dev --audit-level=moderate",
     "analyze": "ANALYZE=true next build",
     "build:encrypted": "dotenvx run --env-file=.env.production -- npm run build",
-    "e2e": "playwright test",
+    "e2e": "npm run build && playwright test",
+    "e2e:dev": "PLAYWRIGHT_USE_DEV_SERVER=1 playwright test",
     "e2e:ui": "playwright test --ui",
     "e2e:headed": "playwright test --headed",
     "pre-commit": "npm run lint && npm run type-check && npm run validate:env && npm run test:run"
   },
   "dependencies": {
-    "@hookform/resolvers": "^5.2.2",
-    "@next/env": "16.1.7",
-    "@next/third-parties": "^16.1.7",
-    "@types/nodemailer": "^7.0.11",
+    "@hookform/resolvers": "^5.4.0",
+    "@next/env": "^16.2.10",
+    "@next/third-parties": "^16.2.10",
     "@upstash/ratelimit": "^2.0.8",
-    "@upstash/redis": "^1.37.0",
+    "@upstash/redis": "^1.38.0",
     "clsx": "^2.1.1",
-    "framer-motion": "^12.38.0",
-    "lucide-react": "^0.577.0",
-    "next": "^16.1.7",
-    "nodemailer": "^8.0.2",
-    "react": "19.2.4",
-    "react-dom": "19.2.4",
-    "react-hook-form": "^7.71.2",
-    "tailwind-merge": "^3.5.0",
-    "zod": "^4.3.6"
+    "framer-motion": "^12.42.2",
+    "lucide-react": "^1.24.0",
+    "next": "^16.2.10",
+    "nodemailer": "^9.0.3",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "react-hook-form": "^7.81.0",
+    "tailwind-merge": "^3.6.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@dotenvx/dotenvx": "^1.55.1",
-    "@eslint/eslintrc": "^3.3.5",
-    "@next/bundle-analyzer": "^16.1.7",
-    "@playwright/test": "^1.58.2",
-    "@tailwindcss/postcss": "^4.2.1",
+    "@axe-core/playwright": "^4.12.1",
+    "@dotenvx/dotenvx": "^2.10.0",
+    "@eslint/eslintrc": "^3.3.6",
+    "@next/bundle-analyzer": "^16.2.10",
+    "@playwright/test": "^1.61.1",
+    "@tailwindcss/postcss": "^4.3.2",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
-    "@types/node": "^25.5.0",
-    "@types/react": "^19.2.14",
+    "@types/node": "^26.1.1",
+    "@types/nodemailer": "^8.0.1",
+    "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^6.0.1",
-    "dotenv": "^17.3.1",
-    "eslint": "^9.39.4",
-    "eslint-config-next": "16.1.7",
-    "jsdom": "^29.0.0",
-    "tailwindcss": "^4.2.1",
-    "tsx": "^4.21.0",
-    "typescript": "^5.9.3",
-    "vite": "^8.0.0",
-    "vitest": "^4.1.0"
+    "@vitejs/plugin-react": "^6.0.3",
+    "@vitest/coverage-v8": "^4.1.10",
+    "dotenv": "^17.4.2",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "^16.2.10",
+    "jsdom": "^29.1.1",
+    "tailwindcss": "^4.3.2",
+    "tsx": "^4.23.1",
+    "typescript": "^6.0.3",
+    "vite": "^8.1.4",
+    "vitest": "^4.1.10"
+  },
+  "allowScripts": {
+    "esbuild@0.28.1": true,
+    "sharp@0.34.5": true,
+    "unrs-resolver@1.12.2": true,
+    "fsevents": false
+  },
+  "overrides": {
+    "postcss": "8.5.19",
+    "minimatch@3.1.5": {
+      "brace-expansion": "1.1.13"
+    },
+    "flat-cache": {
+      "flatted": "3.4.2"
+    },
+    "webpack-bundle-analyzer": {
+      "ws": "7.5.12"
+    }
   }
 }

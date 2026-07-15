@@ -15,9 +15,6 @@ const nextConfig: NextConfig = {
     formats: ["image/webp", "image/avif"],
     // Remove unoptimized for Vercel deployment (Vercel can optimize images)
   },
-  compiler: {
-    removeConsole: process.env.NODE_ENV === "production",
-  },
   // Security headers now handled by src/proxy.ts
 };
 

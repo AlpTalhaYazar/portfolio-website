@@ -11,6 +11,7 @@ const eslintConfig = [
       ".pnpm-store/**",
       ".worktrees/**",
       "build/**",
+      "coverage/**",
       "next-env.d.ts",
       "node_modules/**",
       "out/**",
