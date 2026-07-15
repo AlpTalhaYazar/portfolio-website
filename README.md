@@ -1,369 +1,190 @@
-# Alp Talha Yazar - Portfolio Website
+# Alp Talha Yazar — Portfolio
 
-A modern, responsive portfolio website built with Next.js 15, TypeScript, and Tailwind CSS, showcasing my experience as a Backend Developer and Full Stack Engineer.
+A bilingual, consent-aware personal portfolio for Alp Talha Yazar. The site presents backend and full-stack engineering work, exposes a protected contact flow, and publishes localized SEO and social metadata.
 
-## 🌟 Features
+Production is expected at [www.alptalha.dev](https://www.alptalha.dev). Turkish is the canonical default at `/`; English is served at `/en/`.
 
-- **Modern Design**: Clean, professional design with smooth animations and theme effects
-- **Fully Responsive**: Optimized for all screen sizes and devices
-- **Multi-language Support**: Internationalization (i18n) with English, Spanish, and Turkish
-- **Dark/Light Mode**: Advanced theme system with automatic switching and custom effects
-- **Contact System**: Secure contact form with email integration using Nodemailer
-- **Security Features**: CSRF protection, rate limiting, spam detection, and security headers
-- **Performance Optimized**: Fast loading with Next.js 15 and Turbopack optimizations
-- **SEO Friendly**: Comprehensive meta tags, sitemap, structured data, and robots.txt
-- **Type Safe**: Built with TypeScript and Zod validation for better developer experience
-- **Accessible**: WCAG compliant with proper ARIA labels and keyboard navigation
-- **Analytics Integration**: Google Analytics support with privacy-focused implementation
+## What the project includes
 
-## 🛠️ Tech Stack
+- Turkish and English portfolio content with locale-specific metadata, canonicals, hreflang, social previews, sitemap, and privacy pages
+- Responsive light and dark themes with persisted preference and reduced-motion handling
+- Keyboard-operable navigation, labeled forms, announced validation state, skip navigation, and automated accessibility checks
+- Consent-first Google Analytics: no Analytics component is mounted before an explicit opt-in
+- A contact API with signed CSRF credentials, strict origin checks, schema validation, a honeypot, bounded payloads, rate limiting, escaped email output, and truthful delivery errors
+- Redis-backed rate limiting when Upstash is configured, with endpoint-specific degraded-mode policy
+- Liveness and dependency-readiness health probes
+- Unit/integration coverage thresholds, cross-browser Playwright tests, dependency auditing, and GitHub Actions CI
 
-- **Framework**: Next.js 15 (App Router with Turbopack)
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS v4 with custom CSS variables
-- **Animations**: Framer Motion
-- **Icons**: Lucide React (with custom SVG icons)
-- **Forms**: React Hook Form with Zod validation
-- **Email**: Nodemailer for contact form functionality
-- **Security**: Custom middleware with CSRF protection and rate limiting
-- **Internationalization**: Custom i18n system with context API
-- **Analytics**: Google Analytics integration
-- **Deployment**: Vercel (production deployment)
+These controls improve the tested quality baseline; they are not a blanket accessibility, security, privacy, or legal-compliance certification.
 
-## 🚀 Getting Started
+## Runtime and toolchain
 
-### Prerequisites
+| Area | Supported project version |
+| --- | --- |
+| Node.js | 24 LTS, `>=24.15.0 <25` |
+| npm | 12, `>=12.0.1 <13` |
+| Next.js | 16.2.x App Router |
+| React | 19.2.x |
+| TypeScript | 6.0.x |
+| Tailwind CSS | 4.3.x |
+| Vitest / Vite | 4.1.x / 8.1.x |
+| Playwright | 1.61.x |
 
-- Node.js 18+
-- npm
+ESLint 9 and TypeScript 6 are intentionally the newest versions accepted by the current Next.js lint dependency graph. Do not force ESLint 10 or TypeScript 7 until every installed peer declares support.
 
-### Installation
+The exact resolved versions live in the npm lockfile. Use npm only; no other package-manager lockfile is supported.
 
-1. Clone the repository:
+## Local setup
+
+1. Install Node 24 and npm 12. If you use nvm, `nvm use` reads the committed runtime version.
+2. Install exactly the locked dependency graph:
+
+   ```bash
+   npm ci
+   ```
+
+3. Copy the public template to a local, ignored development file:
+
+   ```bash
+   cp .env.example .env.local
+   ```
+
+4. Replace every required placeholder. Never commit plaintext credentials or a dotenvx private key.
+5. Validate the development contract and start the app:
+
+   ```bash
+   npm run validate:env
+   npm run dev
+   ```
+
+The development server is available at `http://localhost:3000`.
+
+## Environment contract
+
+Required server-only values:
+
+- `GMAIL_USER`
+- `GMAIL_APP_PASSWORD`
+- `CSRF_SECRET` in production; it must contain at least 32 characters
+- `EMAIL_TO` is optional and defaults to `GMAIL_USER`
+
+Required public values:
+
+- `NEXT_PUBLIC_BASE_URL`
+- `NEXT_PUBLIC_SITE_URL`
+- `NEXT_PUBLIC_FULL_NAME`
+- `NEXT_PUBLIC_CONTACT_EMAIL`
+- `NEXT_PUBLIC_CONTACT_LOCATION`
+- `NEXT_PUBLIC_GITHUB_URL`
+- `NEXT_PUBLIC_LINKEDIN_URL`
+
+Optional integrations:
+
+- `NEXT_PUBLIC_GA_MEASUREMENT_ID`
+- `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`; configure both or neither
+
+Anything prefixed with `NEXT_PUBLIC_` is compiled into browser-visible code. Never put a credential, private token, or private identifier in that namespace.
+
+### Environment-file precedence
+
+- Development validation: `.env.development.local`, `.env.local`, `.env.development`, then `.env`
+- Production validation: `.env.production.local`, then `.env.production`
+- Test validation: `.env.test.local`, `.env.test`, then `.env`
+- Values already present in the process environment take precedence
+
+The normal local production build consumes ignored plaintext values from `.env.production.local`. The encrypted deployment workflow consumes the committed ciphertext in `.env.production` and requires `DOTENV_PRIVATE_KEY_PRODUCTION` from the deployment environment. The local `.env.keys` file must never be committed or shared.
+
+See [Contact setup](CONTACT_SETUP.md) for the mail and encrypted-production workflow.
+
+## Commands
+
+| Command | Purpose |
+| --- | --- |
+| `npm run dev` | Start the Turbopack development server |
+| `npm run lint` | Run the Next.js ESLint rules |
+| `npm run type-check` | Run TypeScript without emitting files |
+| `npm run validate:env` | Validate the development environment |
+| `npm run validate:env:production` | Validate plaintext local production configuration |
+| `npm run validate:env:production:encrypted` | Validate encrypted production configuration through dotenvx |
+| `npm run test:run` | Run the Vitest suite once |
+| `npm run test:coverage` | Run tests and enforce global and critical-module coverage thresholds |
+| `npm run audit:dependencies` | Block high-severity full-tree advisories and moderate production advisories |
+| `npm run build` | Validate plaintext production configuration and create a Turbopack production build |
+| `npm run build:encrypted` | Build after decrypting the committed production env at process start |
+| `npm run e2e` | Build and run the production-mode Playwright matrix |
+| `npm run e2e:dev` | Run Playwright against the development server |
+| `npm run analyze` | Generate a bundle analysis build |
+| `npm run sync:env:production` | Replace the encrypted production env from local plaintext input |
+
+The E2E workflow mocks contact submission; it must not send mail. Production contact-form testing requires a deliberately isolated mailbox and explicit operator approval.
+
+## Architecture
+
+### Request flow
+
+Every matched request passes through the Next.js proxy. The proxy canonicalizes the Turkish default route, blocks sensitive dotfile/admin paths, applies endpoint-specific rate limits, generates a CSP nonce, propagates request context, and attaches security headers before the App Router or API handler responds.
+
+### Locale flow
+
+The root route renders Turkish. English uses the `/en/` prefix. The `/tr/` alias redirects permanently to the canonical root. Unsupported locale-like routes return a noindex 404. Content, metadata, social images, privacy pages, sitemap entries, and language switching share the same two-locale contract.
+
+### Contact flow
+
+The browser obtains a short-lived signed CSRF credential and host-scoped HTTP-only cookie, then submits the credential, session identifier, and validated form fields to the contact endpoint. The endpoint verifies origin, size, schema, CSRF signature/cookie/session binding, honeypot, and rate policy before constructing escaped text and HTML mail. A success response means the configured SMTP provider accepted the message.
+
+### Analytics flow
+
+The server renders no GA script by default. After hydration, the browser reads a versioned local decision. Accepting grants analytics storage only and mounts the optimized GA integration. Rejecting or withdrawing keeps Analytics disabled and sets the GA disable flag. Advertising storage, ad personalization, ad user data, and Google Signals remain denied by application code.
+
+## Quality gates
+
+CI runs on pull requests and pushes to `main` with read-only repository permission. It installs the pinned Node/npm toolchain and locked dependencies, then runs:
+
+1. lint and type checking
+2. development and production environment validation using non-secret CI placeholders
+3. dependency audit gates
+4. Vitest with coverage thresholds
+5. a production build
+6. Chromium, mobile Chromium, Firefox, and WebKit Playwright tests
+
+The browser suite covers routing, navigation, contact validation with a mocked backend, consent behavior, privacy pages, responsive navigation, and automated axe checks. Manual assistive-technology and real-device review remain separate release activities.
+
+## Deployment
+
+Vercel is the maintained deployment target.
+
+- The apex host redirects permanently to `https://www.alptalha.dev`.
+- The deployment build command is `npm run vercel-build`.
+- Inject `DOTENV_PRIVATE_KEY_PRODUCTION` as a protected production value.
+- Do not add permissive static CORS headers. The APIs are same-origin and enforce origin policy in route code.
+- Configure both Upstash variables for distributed production rate limiting. Without Redis, instances use bounded in-memory limits and readiness is degraded.
+- Configure a unique production `CSRF_SECRET`; the build must fail if it is absent.
+
+After deployment, verify canonical redirects, localized metadata, `/robots.txt`, `/sitemap.xml`, liveness, readiness, consent behavior, and a controlled contact delivery path.
+
+## Operational documentation
+
+- [Contact and email setup](CONTACT_SETUP.md)
+- [Analytics and consent](GOOGLE_ANALYTICS_INTEGRATION.md)
+- [Security model and runbook](SECURITY_GUIDE.md)
+- [Comprehensive audit](docs/audits/2026-07-15-comprehensive-project-audit.md)
+
+## Change checklist
+
+Before opening a pull request:
 
 ```bash
-git clone https://github.com/alptalhayazar/portfolio-website.git
-cd portfolio-website
-```
-
-2. Install dependencies:
-
-```bash
-npm install
-```
-
-3. Copy the development template and fill in your local values:
-
-```bash
-cp .env.example .env.local
-```
-
-4. Validate your local development env:
-
-```bash
+npm run lint
+npm run type-check
 npm run validate:env
+npm run test:coverage
+npm run audit:dependencies
 ```
 
-5. Start the development server:
+Run `npm run build` with a valid local production environment and `npm run e2e` for changes that affect routing, rendering, APIs, accessibility, consent, or deployment.
 
-```bash
-npm run dev
-```
+Keep Turkish and English content, metadata, privacy copy, and tests in sync. Treat new browser storage, third-party requests, public environment variables, or contact fields as privacy/security changes that require documentation and negative-path tests.
 
-6. Open [http://localhost:3000](http://localhost:3000) in your browser
+## Ownership and licensing
 
-### Available Scripts
-
-- `npm run dev` - Start the development server with Turbopack
-- `npm run validate:env` - Validate the local development env contract
-- `npm run validate:env:production` - Validate local production values from `.env.production.local`
-- `npm run validate:env:production:encrypted` - Validate the committed encrypted production file through `dotenvx`
-- `npm run sync:env:production` - Rebuild the encrypted `.env.production` file from local plaintext `.env.production.local`
-- `npm run build` - Validate local production env values and build with Turbopack
-- `npm run build:encrypted` - Build with the committed encrypted `.env.production` file via `dotenvx`
-- `npm run start` - Start the production server
-- `npm run lint` - Run ESLint
-- `npm run vercel-build` - Validate and build with encrypted production env values for deployment
-- `npm run type-check` - Run TypeScript type checking without emitting files
-
-## 🔐 Environment Strategy
-
-This repository uses a split env strategy so development stays simple while production secrets stay committed only in encrypted form:
-
-- `.env.local`: local plaintext development values. Ignored by git.
-- `.env.production.local`: local plaintext production values for local verification and `npm run build`. Ignored by git.
-- `.env.production`: encrypted production values generated by `dotenvx`. This file is committed.
-- `.env.keys`: local private decryption keys generated by `dotenvx`. Never commit this file.
-
-The runtime contract is defined in `src/lib/env-validation.ts`. Validation and build scripts load env values through the same shared loader, so local development, local production verification, and `dotenvx`-preloaded production builds all use the same contract.
-
-Two provided production values are intentionally not part of runtime validation because the app does not currently consume them:
-
-- `EMAIL_FROM`
-- `CONTACT_SECRET`
-
-Keep them only in `.env.production.local` and the encrypted `.env.production` until the application gets a real consumer for them.
-
-### Development Workflow
-
-1. Copy `.env.example` to `.env.local`.
-2. Fill in the required variables.
-3. Run `npm run validate:env`.
-4. Run `npm run dev`.
-
-### Production Workflow
-
-1. Store plaintext production values locally in `.env.production.local`.
-2. Run `npm run sync:env:production` to regenerate the committed encrypted `.env.production`.
-3. Commit only `.env.production`. Do not commit `.env.production.local` or `.env.keys`.
-4. Inject `DOTENV_PRIVATE_KEY_PRODUCTION` in your CI or hosting platform.
-5. Run `npm run validate:env:production:encrypted` or `npm run vercel-build` in deployment.
-
-## 📁 Project Structure
-
-```
-src/
-├── app/                    # Next.js App Router
-│   ├── api/               # API routes
-│   │   ├── contact/       # Contact form endpoint
-│   │   ├── csrf-token/    # CSRF token endpoint
-│   │   └── health/        # Health check endpoint
-│   ├── globals.css        # Global styles
-│   ├── layout.tsx         # Root layout
-│   ├── page.tsx           # Home page
-│   ├── not-found.tsx      # 404 page
-│   ├── sitemap.ts         # Dynamic sitemap
-│   ├── robots.txt         # Robots file
-│   └── favicon.ico        # Site favicon
-├── components/            # React components (organized by purpose)
-│   ├── analytics/         # Analytics components
-│   │   └── GoogleAnalytics.tsx
-│   ├── layout/            # Layout-related components
-│   │   ├── Header.tsx     # Navigation header
-│   │   ├── Footer.tsx     # Site footer
-│   │   └── ScrollToTop.tsx
-│   ├── pages/             # Page section components
-│   │   ├── Hero.tsx       # Hero section
-│   │   ├── About.tsx      # About section
-│   │   ├── Experience.tsx # Work experience
-│   │   ├── Skills.tsx     # Technical skills
-│   │   ├── Projects.tsx   # Featured projects
-│   │   ├── Contact.tsx    # Contact section
-│   │   ├── ContactForm.tsx # Contact form component
-│   │   └── ContactInfo.tsx # Contact information
-│   ├── theme/             # Theme and visual effects
-│   │   ├── ThemeProvider.tsx # Theme context provider
-│   │   ├── StarField.tsx  # Background star animation
-│   │   ├── MatrixRain.tsx # Matrix-style animation
-│   │   └── ForceGlow.tsx  # Glowing effect component
-│   ├── ui/                # Reusable UI components
-│   │   ├── ThemeToggle.tsx # Dark/light mode toggle
-│   │   ├── LanguageToggle.tsx # Language switcher
-│   │   ├── LoadingSpinner.tsx # Loading indicator
-│   │   ├── HologramCard.tsx # 3D card effect
-│   │   └── LightsaberButton.tsx # Animated button
-│   └── utils/             # Utility components
-│       ├── ErrorBoundary.tsx # Error handling
-│       ├── StructuredData.tsx # SEO structured data
-│       └── LazyWrapper.tsx # Lazy loading wrapper
-├── hooks/                 # Custom React hooks
-│   ├── useContactSubmission.ts # Contact form handling
-│   └── useCSRFSecurity.ts # CSRF token management
-├── lib/                   # Utility functions and configurations
-│   ├── data.ts           # Portfolio data (experiences, projects, skills)
-│   ├── utils.ts          # Helper functions
-│   ├── security.ts       # Security utilities
-│   ├── performance.ts    # Performance monitoring
-│   ├── logger.ts         # Logging utilities
-│   ├── email-templates/  # Email template system
-│   │   ├── builder.ts    # Email builder
-│   │   ├── components.ts # Email components
-│   │   └── styles.ts     # Email styles
-│   └── i18n/             # Internationalization
-│       ├── config.ts     # i18n configuration
-│       ├── context.tsx   # Language context
-│       ├── proxy.ts      # Translation proxy
-│       └── translations/ # Translation files
-│           ├── en.ts     # English translations
-│           ├── es.ts     # Spanish translations
-│           └── tr.ts     # Turkish translations
-├── proxy.ts               # Next.js proxy (security, i18n)
-├── types/                # TypeScript definitions
-│   ├── index.ts          # General type definitions
-│   └── contact.ts        # Contact form types
-└── test/                 # Test files and utilities
-```
-
-## 🎨 Customization
-
-### Update Personal Information
-
-1. **Contact Information**: Update email, phone, and location in `src/lib/data.ts`
-2. **Social Links**: Modify GitHub, LinkedIn, and other social links in the socialLinks array
-3. **Experience**: Add or modify work experience entries in the experiences array
-4. **Projects**: Update featured projects with your own work in the projects array
-5. **Skills**: Adjust skill categories and proficiency levels in the skills array
-6. **Translations**: Update personal information in all language files (`src/lib/i18n/translations/`)
-
-### Update SEO & Metadata
-
-1. **Domain**: Update domain references to `www.alptalha.dev` in `src/app/layout.tsx` and `src/app/sitemap.ts`
-2. **Social Handles**: Update Twitter handle in metadata
-3. **Verification Codes**: Add Google Search Console verification code
-4. **Analytics**: Configure Google Analytics tracking ID in `src/components/analytics/GoogleAnalytics.tsx`
-5. **Structured Data**: Update personal and professional information in `src/components/utils/StructuredData.tsx`
-
-### Styling
-
-The website uses Tailwind CSS v4 with custom CSS variables for theming. Colors and spacing can be customized in:
-
-- `src/app/globals.css` - CSS variables and custom styles
-- `tailwind.config.ts` - Tailwind configuration (if needed)
-
-### Contact Form Setup
-
-The contact form uses Gmail SMTP for email delivery with automatic configuration:
-
-1. **Gmail Configuration**: Automatically configured for Gmail service (smtp.gmail.com:587) with TLS
-2. **Environment Variables**: Uses `GMAIL_USER`, `GMAIL_APP_PASSWORD`, and optional `EMAIL_TO`
-3. **Security**: The form includes CSRF protection, rate limiting, spam detection, and origin verification
-4. **Email Templates**: Professional HTML email templates with responsive design in `src/lib/email-templates/`
-5. **Gmail Requirements**: 2FA must be enabled and App Password generated for authentication
-6. **Verification**: Automatic SMTP connection verification on startup
-
-### Internationalization (i18n)
-
-The portfolio supports multiple languages:
-
-1. **Default Language**: English (en)
-2. **Supported Languages**: Spanish (es), Turkish (tr)
-3. **Language Switching**: Automatic browser detection with manual override
-4. **Adding Languages**: Add new translation files in `src/lib/i18n/translations/`
-5. **Translation Management**: Use the translation proxy system for type-safe translations
-
-## 🚀 Deployment
-
-### Vercel (Current Production Deployment)
-
-This portfolio is currently deployed on Vercel and accessible at:
-
-- **Primary Domain**: [www.alptalha.dev](https://www.alptalha.dev)
-- **Redirect Domain**: [alptalha.dev](https://alptalha.dev) (redirects to www.alptalha.dev)
-
-#### Deploy to Vercel
-
-1. Push your code to GitHub
-2. Connect your repository to Vercel
-3. Configure environment variables (see Environment Variables section below)
-4. Deploy automatically on push to main branch
-
-The `vercel.json` configuration file includes:
-
-- API CORS headers for contact form
-- Next.js framework detection
-- Automatic deployments
-
-#### Environment Variables
-
-For production, keep the actual Gmail values inside `.env.production.local`, regenerate `.env.production`, commit the encrypted file, and set only this decryption key in Vercel:
-
-```bash
-DOTENV_PRIVATE_KEY_PRODUCTION=your-private-key-from-.env.keys
-```
-
-The committed `.env.production` file already contains the encrypted production values. Vercel should run `npm run vercel-build` so `dotenvx` decrypts that file at build time.
-
-For local development, use `.env.local` with:
-
-```env
-GMAIL_USER=your-gmail-address@gmail.com
-GMAIL_APP_PASSWORD=your-gmail-app-password
-EMAIL_TO=your-gmail-address@gmail.com
-```
-
-**Gmail Setup:**
-
-1. Enable 2-Factor Authentication on your Gmail account
-2. Generate an App Password for the application
-3. Use the App Password (not your regular Gmail password) for `GMAIL_APP_PASSWORD`
-4. The system automatically uses Gmail's SMTP settings (smtp.gmail.com:587)
-5. Set `EMAIL_TO` to specify where contact emails should be sent (optional)
-
-### Other Platforms
-
-1. Build the project:
-
-```bash
-npm run build
-```
-
-2. For encrypted production builds, use:
-
-```bash
-npm run build:encrypted
-```
-
-3. Deploy the output or run the production server
-4. Ensure `DOTENV_PRIVATE_KEY_PRODUCTION` is configured outside git
-
-## 📝 Content Guidelines
-
-### Experience Section
-
-- Use clear, achievement-focused descriptions
-- Include specific technologies and metrics
-- Highlight business impact and technical accomplishments
-
-### Projects Section
-
-- Showcase diverse technical skills
-- Include key features and technologies used
-- Emphasize problem-solving and innovation
-
-### Skills Section
-
-- Organize by categories (Backend, Frontend, Database, Tools)
-- Be honest about proficiency levels
-- Include both technical and soft skills
-
-## 🔧 Performance Optimizations
-
-- **Build Tool**: Turbopack for faster development and builds
-- **Image Optimization**: Next.js automatic image optimization with WebP/AVIF support
-- **Code Splitting**: Automatic with Next.js App Router and lazy loading components
-- **Font Optimization**: Using Next.js font optimization for better loading performance
-- **Bundle Analysis**: Optimized imports for Lucide React and Framer Motion
-- **Security Headers**: Comprehensive security middleware with XSS protection and CSRF tokens
-- **Caching**: Efficient caching strategies for static assets and API responses
-- **Internationalization**: Efficient language switching without page reloads
-
-## 🌐 Browser Support
-
-- Chrome (latest)
-- Firefox (latest)
-- Safari (latest)
-- Edge (latest)
-
-## 📄 License
-
-This project is open source and available under the [MIT License](LICENSE).
-
-## 🤝 Contributing
-
-While this is a personal portfolio, suggestions and improvements are welcome! Feel free to:
-
-1. Fork the project
-2. Create a feature branch
-3. Submit a pull request
-
-## 📞 Contact
-
-**Alp Talha Yazar**
-
-- Email: alptalhayazar@gmail.com
-- LinkedIn: [linkedin.com/in/alptalhayazar](https://linkedin.com/in/alptalhayazar)
-- GitHub: [github.com/alptalhayazar](https://github.com/alptalhayazar)
-
----
-
-_Built with ❤️ using Next.js, TypeScript & Tailwind CSS_
+Portfolio claims and personal details are owner-supplied and should be confirmed by the owner before publication. This repository currently has no license file; do not assume permission to redistribute its code or content without owner review.

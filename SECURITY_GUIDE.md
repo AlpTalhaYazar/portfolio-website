@@ -1,337 +1,212 @@
-# 🛡️ Contact Form Security Implementation Guide
+# Security Model and Operations Guide
 
-## Overview
+This guide documents the controls currently implemented in the portfolio and the checks maintainers must perform when changing or operating them. It is an engineering description, not a penetration-test report, legal opinion, or guarantee of security.
 
-This guide documents comprehensive security measures implemented for the portfolio contact form to prevent abuse, spam, and malicious attacks.
+## Scope and trust boundaries
 
-## 🚨 Security Threats Addressed
+The main boundaries are:
 
-### 1. Public API Access
+1. an untrusted public browser crossing the Next.js proxy
+2. the browser calling same-origin CSRF, contact, and health APIs
+3. server code calling Gmail SMTP and optional Upstash Redis
+4. build/deployment code loading plaintext or encrypted environment configuration
+5. application logs leaving the process for an external platform
+6. an accepted browser session loading Google Analytics
 
-**Problem**: Anyone can call `/api/contact/` directly
-**Solutions Implemented**:
+User-controlled input includes URL paths, headers, locale segments, contact fields, cookies, JSON bodies, and analytics choices. SMTP, Redis, Vercel, Google Analytics, DNS, and mailbox retention are external systems with independent configuration and failure modes.
 
-- ✅ Origin verification (requests must come from your domain)
-- ✅ Rate limiting (5 requests per 15 minutes per IP)
-- ✅ Security logging and monitoring
+## Request protection
 
-### 2. Rate Limiting & Abuse Prevention
+The proxy applies controls before matched pages and APIs:
 
-**Problem**: Users can spam your email with multiple requests
-**Solutions Implemented**:
+- canonical redirect for the default Turkish locale
+- segment-aware blocking of `.git`, `.env`, and admin paths, including encoded or malformed paths
+- endpoint-specific rate limiting
+- per-request cryptographic CSP nonce propagated to server rendering
+- `nosniff`, frame denial, referrer, HSTS in production, permissions policy, and nonce-based CSP
+- structured request-context headers
 
-- ✅ IP-based rate limiting with configurable windows
-- ✅ Graceful error handling with retry-after headers
-- ✅ Frontend shows user-friendly rate limit messages
+Static Next.js assets and the favicon are excluded from the proxy matcher. Robots and sitemap remain public.
 
-### 3. Bot and Spam Detection
+The CSP permits the minimum currently required Google Analytics destinations plus local application resources. Inline styles remain allowed because the current styling/runtime stack requires them; this is residual XSS hardening debt, not evidence of a known injection path. Do not add `unsafe-inline` to scripts.
 
-**Problem**: Automated bots and spam submissions
-**Solutions Implemented**:
+## Origin and CORS policy
 
-- ✅ Honeypot field (invisible to humans, filled by bots)
-- ✅ Content analysis for spam patterns
-- ✅ Input sanitization and length limits
-- ✅ Link count validation
+APIs are same-origin. Contact and CSRF handlers compare the parsed `Origin` or `Referer` origin against the configured site/base origins. Production rejects missing, malformed, lookalike, subdomain, or port-mismatched origins.
 
-## 🔧 Security Features Implemented
+Development allows exact loopback hostnames. It does not use suffix matching.
 
-### API Route Protection (`/src/app/api/contact/route.ts`)
+Vercel does not add broad static CORS headers. If a future cross-origin client is required, design a specific authenticated API contract and test preflight, allowed headers, credentials, caching, and origin variation. Do not solve it with `Access-Control-Allow-Origin: *`.
 
-```typescript
-// 1. Origin Verification
-const allowedOrigins = [
-  process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
-  "https://your-domain.com",
-];
+## CSRF lifecycle
 
-// 2. Rate Limiting
-const rateLimit = checkRateLimit(request, 15 * 60 * 1000, 5);
+CSRF credentials are stateless HMAC-SHA256 tokens signed with `CSRF_SECRET`. Each token contains a random session identifier, nonce, issuance time, and one-hour expiry.
 
-// 3. Honeypot Validation
-if (!validateHoneypot(honeypot)) {
-  // Silently reject bots
-}
+Validation requires all of the following:
 
-// 4. Input Sanitization
-const sanitizedData = {
-  name: sanitizeInput(name),
-  email: sanitizeInput(email),
-  // ...
-};
+- a token in the JSON payload
+- the same token in an HTTP-only strict same-site cookie
+- a valid HMAC signature checked with timing-safe comparison
+- a supported version and well-formed payload
+- current time within the token lifetime
+- an `x-session-id` header matching the signed session identifier
 
-// 5. Spam Detection
-if (detectSpam(sanitizedData)) {
-  // Log and silently reject
-}
-```
+Production uses a secure `__Host-` cookie. The client refreshes before the final five minutes. Because the token is stateless and signed by a shared secret, independent serverless instances can issue and verify it consistently.
 
-### Frontend Security (`/src/components/pages/Contact.tsx`)
+`CSRF_SECRET` is required in production and must be unique, random, at least 32 characters, and server-only. Rotating it invalidates outstanding tokens.
 
-```tsx
-// Hidden honeypot field
-<input
-  {...register("honeypot")}
-  type="text"
-  style={{
-    position: "absolute",
-    left: "-9999px",
-    opacity: 0,
-  }}
-  aria-hidden="true"
-/>;
+## Contact validation and email safety
 
-// Rate limit error handling
-if (response.status === 429) {
-  const retryAfter = response.headers.get("retry-after");
-  const minutes = Math.ceil(parseInt(retryAfter) / 60);
-  throw new Error(`Too many requests. Please wait ${minutes} minutes.`);
-}
-```
+The contact endpoint:
 
-### Security Proxy (`/src/proxy.ts`)
+- limits declared payload size to 16 KiB
+- catches malformed JSON and returns a stable 400 response
+- validates type, trimming, email format, and field lengths with a strict schema
+- uses a hidden honeypot for basic automation resistance
+- normalizes CR/LF from subject/header values
+- escapes untrusted content in HTML templates
+- produces a plain-text alternative
+- uses the submitted email only as `replyTo`
+- disables Nodemailer file and URL access
+- enforces TLS certificate validation and short SMTP timeouts
+- returns success only after SMTP accepts the message
+- maps delivery failures to a generic 503 without provider detail
 
-```typescript
-// Security headers
-response.headers.set("X-Content-Type-Options", "nosniff");
-response.headers.set("X-Frame-Options", "DENY");
-response.headers.set("X-XSS-Protection", "1; mode=block");
-response.headers.set("Strict-Transport-Security", "max-age=31536000");
+The honeypot intentionally returns a generic 200 acknowledgement to automation but does not send mail. Do not add broad keyword filters that silently discard plausible human messages.
 
-// Content Security Policy
-response.headers.set("Content-Security-Policy", cspHeader);
+## Rate limiting
 
-// Block sensitive paths
-if (request.nextUrl.pathname.includes("/.env")) {
-  return new NextResponse("Forbidden", { status: 403 });
-}
-```
+| Policy | Limit | Window | Redis failure behavior |
+| --- | ---: | ---: | --- |
+| Contact | 5 | 15 minutes | Fail closed with 503 |
+| CSRF issuance | 10 | 5 minutes | Bounded memory fallback |
+| Health | 30 | 1 minute | Bounded memory fallback |
+| Other API routes | 20 | 10 minutes | Bounded memory fallback |
 
-## 🔍 Security Monitoring
+The limiter prefers Vercel, Cloudflare, forwarded, then real-IP headers. It derives a fixed-length HMAC identifier using the CSRF secret; logs and limiter state do not retain the raw address. This still relies on the deployment platform to sanitize forwarded headers.
 
-### Logging Implementation
+Redis policy keys include the endpoint policy name, so unrelated endpoints do not consume one another's quota. In-memory state is capped and expired entries are removed. Memory mode is per process and therefore cannot guarantee a global serverless quota.
 
-All security events are logged with details:
+Configure both Upstash values or neither. Partial configuration is invalid. Production contact protection should use Redis when cross-instance consistency matters.
 
-```typescript
-logSecurityEvent({
-  type: "rate_limit" | "csrf_violation" | "spam_detected" | "origin_violation",
-  ip: clientIP,
-  userAgent: userAgent,
-  details: {
-    /* relevant data */
-  },
-});
-```
+## Secrets and environment loading
 
-### What Gets Logged:
+Server secrets:
 
-- ❌ Rate limit violations
-- ❌ Invalid origins
-- ❌ Spam attempts
-- ❌ Bot detection (honeypot)
-- ✅ Successful submissions
+- Gmail App Password
+- CSRF signing secret
+- Upstash token
+- dotenvx production private key
 
-## 🚀 Production Deployment Security
+Public build values use `NEXT_PUBLIC_` and must be assumed visible to every visitor.
 
-### Environment Variables
+Development and production validation use separate file precedence. Production does not read `.env.local`, preventing a developer's local values from masking missing deployment configuration.
 
-Create `.env.local` with:
+The committed production env is encrypted ciphertext. The private key remains outside git and is injected at deployment. Never print, paste, decrypt for review, or commit plaintext production values. If a key or credential appears in a terminal, screenshot, issue, commit, or chat, rotate it.
 
-```env
-# Gmail Configuration
-GMAIL_USER=your_email@gmail.com
-GMAIL_APP_PASSWORD=your_app_password
+npm 12 blocks unreviewed install scripts. The project explicitly allows only pinned versions required by `esbuild`, `sharp`, and `unrs-resolver`, and denies `fsevents` lifecycle scripts. Review this allowlist on every dependency update.
 
-# Security Configuration
-NEXT_PUBLIC_SITE_URL=https://your-domain.com
-```
+## Logging and privacy
 
-### Domain Configuration
+Application events are structured JSON and remain enabled in production. The logger recursively redacts:
 
-Update allowed origins in `/src/app/api/contact/route.ts`:
+- token, secret, credential, authorization, cookie, session, and CSRF-like keys
+- email addresses and IP-like values
+- message/body/content-like keys
+- Error objects beyond their name
+- deeply nested, circular, or oversized data
 
-```typescript
-const allowedOrigins = [
-  "https://your-domain.com",
-  "https://www.your-domain.com",
-  // Add all your production domains
-];
-```
+Security events use stable names and privacy-minimized metadata. Do not log contact payloads, mail addresses, raw client identifiers, complete third-party errors, environment objects, request cookies, or tokens.
 
-## 🔒 Advanced Security Measures
+Logging is not monitoring. The deployment still needs retention policy, access control, alert routing, and dashboards for delivery failures, unhealthy readiness, repeated rate limits, and origin/CSRF rejection trends.
 
-### 1. CAPTCHA Integration (Recommended)
+## Health semantics
 
-For high-traffic sites, consider adding reCAPTCHA:
+`GET /api/health?probe=liveness` reports process availability without contacting dependencies.
+
+`GET /api/health` is readiness. It actively verifies SMTP and, when configured, Redis with bounded timeouts. Results are cached for 30 seconds:
+
+- `healthy`: SMTP and Redis are available
+- `degraded`: SMTP is available and Redis is intentionally disabled
+- `unhealthy`: SMTP fails, Redis configuration is invalid, or a configured dependency fails
+
+Unhealthy readiness returns 503 and `Retry-After`. The response exposes dependency categories, not endpoints, credentials, or provider error detail.
+
+## Failure-mode expectations
+
+| Failure | Expected behavior |
+| --- | --- |
+| Missing production CSRF secret | Validation/build failure |
+| Malformed or expired CSRF token | 403, no email |
+| Oversized or invalid contact payload | 413 or 422, no email |
+| Redis outage on contact | 503 fail-closed |
+| Redis outage while rate-limiting CSRF/health | Bounded degraded memory limiting; readiness still reports the dependency failure |
+| SMTP configuration or delivery failure | 503, generic client message |
+| Invalid locale or nested route | noindex 404 |
+| Analytics rejected or unset | no GA component or Google request |
+| Logger receives PII-shaped data | recursively redacted output |
+
+## Dependency and CI controls
+
+The lockfile is the install source of truth. CI uses `npm ci`, checks peer validity through normal installation, runs lint/type/tests/build/E2E, and enforces:
+
+- no high-or-higher advisory in the complete tree
+- no moderate-or-higher advisory in production dependencies
+- global and critical-module coverage thresholds
+
+An audit result is a time-bound registry snapshot. Re-run it before releases and review overrides after upstream packages publish fixed dependencies.
+
+## Verification matrix
+
+Run after security-sensitive changes:
 
 ```bash
-npm install react-google-recaptcha
+npm run lint
+npm run type-check
+npm run validate:env
+npm run validate:env:production
+npm run test:coverage
+npm run audit:dependencies
+npm run build
+npm run e2e
 ```
 
-```tsx
-import ReCAPTCHA from "react-google-recaptcha";
+Also verify locally:
 
-const [captchaValue, setCaptchaValue] = useState<string | null>(null);
+- exact and lookalike origins
+- missing, mismatched, tampered, future, and expired CSRF credentials
+- malformed JSON, 16 KiB boundary, and field-length boundaries
+- honeypot acknowledgement without SMTP
+- Redis configured, absent, partial, and unavailable states
+- SMTP timeout/failure without error disclosure
+- liveness versus readiness
+- CSP nonce propagation and security headers
+- no analytics network request before consent
+- keyboard and screen-reader behavior for form errors and consent controls
 
-// In form
-<ReCAPTCHA
-  sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!}
-  onChange={setCaptchaValue}
-/>;
-```
+Use mocks for email, Redis failures, and browser analytics. Do not run brute force, load tests, real production form submissions, or intrusive scanners against the public site.
 
-### 2. Database Rate Limiting
+## Residual risks and owner decisions
 
-For production, replace in-memory storage with Redis:
+- In-memory rate limits are not global across serverless instances.
+- Forwarded-IP trust depends on the hosting edge.
+- The contact API has no idempotency key; a user retry after an ambiguous network failure could deliver twice.
+- Honeypot and rate limits are the current spam controls; there is no CAPTCHA or challenge.
+- Gmail and the destination mailbox determine message retention and access.
+- CSP still permits inline styles.
+- GA property retention, enhanced measurement, filters, and linking live outside source control.
+- There is no repository license or formal incident-response owner documented.
 
-```typescript
-// Instead of Map, use Redis
-import { Redis } from "@upstash/redis";
-const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL!,
-  token: process.env.UPSTASH_REDIS_REST_TOKEN!,
-});
+These are not automatic release blockers in every context. The owner should assign risk, retention, alerting, and operational responsibilities before treating the service as unattended production infrastructure.
 
-export async function checkRateLimit(ip: string) {
-  const key = `rate_limit:${ip}`;
-  const current = await redis.get(key);
-  // ... rate limiting logic
-}
-```
+## Incident response
 
-### 3. IP Whitelisting/Blacklisting
+If abuse, leakage, or suspicious behavior is suspected:
 
-```typescript
-const BLOCKED_IPS = new Set([
-  "192.168.1.100", // Example blocked IP
-  // Add IPs from security logs
-]);
-
-const ALLOWED_IPS = new Set([
-  "203.0.113.0", // Example allowed IP
-  // Add trusted IPs if needed
-]);
-
-export function checkIPAccess(ip: string): boolean {
-  if (BLOCKED_IPS.has(ip)) return false;
-  if (ALLOWED_IPS.size > 0 && !ALLOWED_IPS.has(ip)) return false;
-  return true;
-}
-```
-
-## 🔍 Security Testing
-
-### Test Rate Limiting
-
-```bash
-# Test rate limiting (should fail after 5 requests)
-for i in {1..10}; do
-  curl -X POST http://localhost:3000/api/contact/ \
-    -H "Content-Type: application/json" \
-    -d '{"name":"Test","email":"test@example.com","subject":"Test","message":"Test message"}'
-  echo "Request $i"
-done
-```
-
-### Test Honeypot
-
-```bash
-# This should be silently rejected
-curl -X POST http://localhost:3000/api/contact/ \
-  -H "Content-Type: application/json" \
-  -d '{"name":"Bot","email":"bot@example.com","subject":"Spam","message":"Spam message","honeypot":"filled_by_bot"}'
-```
-
-### Test Spam Detection
-
-```bash
-# This should be detected as spam
-curl -X POST http://localhost:3000/api/contact/ \
-  -H "Content-Type: application/json" \
-  -d '{"name":"Spammer","email":"spam@example.com","subject":"URGENT LOAN OFFER!!!","message":"GET RICH QUICK WITH BITCOIN INVESTMENT!!!!! CLICK HERE: http://scam1.com http://scam2.com http://scam3.com"}'
-```
-
-## 🚨 Security Monitoring & Alerts
-
-### Production Monitoring
-
-Set up alerts for:
-
-- High rate of blocked requests
-- Spam detection triggers
-- Origin violations
-- Unusual traffic patterns
-
-### Log Analysis
-
-Monitor security logs for patterns:
-
-```bash
-# Example log analysis
-grep "SECURITY" logs/app.log | grep "rate_limit" | wc -l
-grep "SECURITY" logs/app.log | grep "spam_detected" | head -10
-```
-
-## 📊 Security Metrics
-
-Track these KPIs:
-
-- **Legitimate vs Blocked Requests Ratio**
-- **Spam Detection Accuracy**
-- **Rate Limit Effectiveness**
-- **Origin Violations**
-
-## 🔄 Regular Security Maintenance
-
-### Weekly Tasks:
-
-- Review security logs
-- Update blocked IP list if needed
-- Check for new spam patterns
-
-### Monthly Tasks:
-
-- Review and test all security measures
-- Update dependencies
-- Audit environment variables
-
-### Quarterly Tasks:
-
-- Security penetration testing
-- Review and update security policies
-- Performance impact analysis
-
-## 🆘 Incident Response
-
-### If Security Breach Detected:
-
-1. **Immediate Response**:
-
-   - Block malicious IPs
-   - Increase rate limiting
-   - Review logs for damage assessment
-
-2. **Investigation**:
-
-   - Analyze attack patterns
-   - Check for data exposure
-   - Document incident
-
-3. **Prevention**:
-   - Update security measures
-   - Patch vulnerabilities
-   - Enhance monitoring
-
-## 📞 Support & Updates
-
-- Keep this document updated with new threats
-- Regular security audits recommended
-- Monitor security advisories for dependencies
-- Consider professional security testing for high-value sites
-
----
-
-**Last Updated**: Current implementation date  
-**Security Level**: Production-Ready with Advanced Protections  
-**Maintenance Required**: Weekly log reviews, monthly testing
+1. preserve relevant structured logs without copying secrets or message content
+2. disable the affected integration or fail the route closed
+3. rotate exposed Gmail, Redis, CSRF, or dotenvx credentials
+4. check deployment environment history and repository history
+5. verify readiness and the negative-path test matrix
+6. document scope, timeline, containment, and follow-up owners
+7. obtain specialist or legal review when personal data or regulatory obligations may be involved

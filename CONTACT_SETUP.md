@@ -1,214 +1,197 @@
-# Gmail Contact Form Setup Guide
+# Contact and Email Setup
 
-## Overview
+This runbook is for maintainers who need to configure, verify, deploy, or rotate the portfolio contact integration without exposing credentials or accidentally sending test mail.
 
-This guide explains how to set up the contact form functionality using Gmail's SMTP service to send emails from your portfolio website.
+## Behavior at a glance
 
-## Prerequisites
+The public form:
 
-- Gmail account
-- Gmail App Password (not your regular Gmail password)
+1. fetches a signed, one-hour CSRF credential
+2. keeps the matching token in an HTTP-only cookie that is Secure in production
+3. validates fields in the browser for usability
+4. submits JSON with a session identifier to the same-origin contact API
+5. receives success only after the configured SMTP provider accepts the message
 
-## Step 1: Generate Gmail App Password
+The server independently verifies origin, request size, JSON shape, field limits, CSRF signature/cookie/session binding, honeypot state, and rate policy. It normalizes mail headers, escapes all untrusted HTML, disables file/URL access in Nodemailer, and applies short connection/socket timeouts.
 
-1. **Enable 2-Factor Authentication** (if not already enabled):
+The application does not persist contact submissions in its own database. The destination mailbox and email provider control downstream retention.
 
-   - Go to your Google Account settings
-   - Navigate to "Security" → "2-Step Verification"
-   - Follow the setup process
+## Contact-critical configuration
 
-2. **Create App Password**:
-   - Go to Google Account settings
-   - Navigate to "Security" → "App passwords"
-   - Select "Mail" as the app
-   - Select "Other (Custom name)" as the device
-   - Name it something like "Portfolio Website"
-   - Copy the generated 16-character app password
+The table below highlights the values that directly govern the contact flow. The full application validator also requires the public portfolio identity and social-link values listed in `.env.example`; begin from that complete template instead of constructing an env file from this table alone.
 
-## Step 2: Environment Configuration
+| Variable | Exposure | Requirement |
+| --- | --- | --- |
+| `GMAIL_USER` | Server only | Gmail or Google Workspace sender address |
+| `GMAIL_APP_PASSWORD` | Server only | App Password; never the account password |
+| `EMAIL_TO` | Server only | Optional destination; defaults to `GMAIL_USER` |
+| `CSRF_SECRET` | Server only | Required in production; unique random value of at least 32 characters |
+| `NEXT_PUBLIC_BASE_URL` | Public | Canonical HTTPS site URL |
+| `NEXT_PUBLIC_SITE_URL` | Public | Allowed same-origin site URL |
+| `UPSTASH_REDIS_REST_URL` | Server only | Optional; must be paired with the token |
+| `UPSTASH_REDIS_REST_TOKEN` | Server only | Optional; must be paired with the URL |
 
-For local development, create a `.env.local` file in your project root with the following variables:
+`GMAIL_APP_PASSWORD`, `CSRF_SECRET`, Redis credentials, and dotenvx private keys must never use a `NEXT_PUBLIC_` prefix.
 
-```env
-# Gmail SMTP Configuration
-GMAIL_USER=your_email@gmail.com
-GMAIL_APP_PASSWORD=your_16_character_app_password
+## Prepare the Gmail account
 
-# Email Configuration
-EMAIL_TO=your_email@gmail.com
+1. Enable two-step verification on the sender account.
+2. Create a dedicated App Password for this portfolio deployment.
+3. Store the generated App Password only in ignored local env files and the deployment secret store.
+4. Use a dedicated sender/mailbox when possible so rotation, retention, and access can be managed independently.
+
+If App Passwords are unavailable, check the account type and organization policy. Do not weaken account security or put a normal Google password in the application.
+
+## Local development
+
+Create the ignored local file from the public template:
+
+```bash
+cp .env.example .env.local
 ```
 
-**Important Notes:**
+Populate all required values, then run:
 
-- Replace `your_email@gmail.com` with your actual Gmail address
-- Replace `your_16_character_app_password` with the App Password from Step 1
-- Use the App Password, NOT your regular Gmail password
-- The `.env.local` file should never be committed to version control
-- `EMAIL_FROM` is not used by the current application and does not need to be set
+```bash
+npm run validate:env
+npm run dev
+```
 
-## Step 3: Test the Setup
+The UI can be exercised safely without sending mail by running the automated tests:
 
-1. **Start the development server**:
+```bash
+npm run test:run -- src/app/api/contact/route.test.ts
+npm run e2e
+```
 
-   ```bash
-   npm run dev
-   ```
+The Playwright contact flow intercepts the API request. Do not replace that mock with a real mailbox in routine CI.
 
-2. **Navigate to the contact section** of your website
+## Production configuration
 
-3. **Fill out and submit the form** with test data
+The repository supports two deliberate production paths.
 
-4. **Check your Gmail inbox** for the contact form submission
+### Local plaintext verification
 
-## Production Secrets with dotenvx
+Keep production values in ignored `.env.production.local`, then run:
 
-The repository keeps production secrets in two places:
+```bash
+npm run validate:env:production
+npm run build
+```
 
-- `.env.production.local`: local plaintext production values, ignored by git
-- `.env.production`: encrypted production values, committed to git
+Production validation intentionally ignores `.env.local`; development values cannot silently satisfy the production contract.
 
-Update production secrets with this workflow:
+### Encrypted repository workflow
 
-1. Edit `.env.production.local` locally.
-2. Run `npm run sync:env:production`.
-3. Commit the regenerated `.env.production`.
-4. Keep `.env.keys` local only.
+The committed `.env.production` file contains dotenvx ciphertext, not plaintext. The local `.env.keys` file contains private decryption material and must remain ignored.
 
-For deployment, inject `DOTENV_PRIVATE_KEY_PRODUCTION` from `.env.keys` into your hosting platform and run `npm run vercel-build` or `npm run build:encrypted`.
+To replace the encrypted production file:
 
-## Features
+1. review `.env.production.local` for the complete intended production set
+2. confirm `.env.keys` is present locally and protected
+3. run `npm run sync:env:production`
+4. inspect only the encrypted diff and variable names; never paste values into logs or reviews
+5. validate with `npm run validate:env:production:encrypted`
 
-### Email Template
+For Vercel, store `DOTENV_PRIVATE_KEY_PRODUCTION` in the protected production environment and use `npm run vercel-build`. Rotate the key if it is ever copied to an untrusted location.
 
-The contact form sends beautifully formatted HTML emails with:
+## API contract
 
-- Professional styling
-- Contact information table
-- Formatted message content
-- Timestamp
-- Reply-to functionality (replies go directly to the contact person)
+### CSRF endpoint
 
-### Error Handling
+`GET /api/csrf-token` returns a signed token, session identifier, absolute expiry, and TTL. It also sets a strict same-site HTTP-only cookie. Production uses a `__Host-` cookie name, requires HTTPS, and scopes the cookie to `/`.
 
-- Form validation using Zod
-- SMTP connection verification
-- User-friendly error messages
-- Server-side error logging
+Expected responses:
 
-### Security Features
+| Status | Meaning |
+| --- | --- |
+| 200 | Credential issued |
+| 403 | Origin missing, malformed, or not allowed |
+| 429 | Endpoint rate limit exceeded |
+| 503 | Credential signing or request protection unavailable |
 
-- Input sanitization
-- Environment variable validation
-- Secure SMTP connection (TLS)
-- Rate limiting ready (can be added)
+### Contact endpoint
+
+`POST /api/contact` accepts `name`, `email`, `subject`, `message`, optional `honeypot`, and `csrfToken`. The `x-session-id` header must match the signed token payload.
+
+Limits:
+
+- request body: 16 KiB maximum
+- name: 2–100 characters
+- email: valid address, 254 characters maximum
+- subject: 5–200 characters
+- message: 10–5,000 characters
+- CSRF token: 4,096 characters maximum
+
+Expected responses:
+
+| Status | Meaning |
+| --- | --- |
+| 200 | SMTP accepted the mail, or an automation honeypot received a generic acknowledgement |
+| 400 | Invalid JSON |
+| 403 | Origin or CSRF validation failed |
+| 413 | Request body too large |
+| 422 | Field validation failed |
+| 429 | Contact rate limit exceeded |
+| 503 | Rate-limit protection, mail configuration, or SMTP delivery unavailable |
+
+A 503 delivery response includes a short `Retry-After` value. Clients must not display a success state for it.
+
+## Rate limiting
+
+The contact policy allows five requests per 15 minutes per privacy-minimized client identifier. Identifiers are HMAC-derived and raw IP/user-agent values are not stored by the limiter.
+
+- With both Upstash values present, the limit is shared across serverless instances.
+- With neither value present, a bounded per-process memory limiter is used.
+- With partial Redis configuration or a Redis outage, contact submission fails closed with 503.
+- CSRF and health policies may degrade to the bounded memory limiter.
+
+Production should configure Redis when consistent cross-instance abuse protection is required.
+
+## Safe verification
+
+Run these checks after any contact/security change:
+
+```bash
+npm run lint
+npm run type-check
+npm run validate:env
+npm run validate:env:production
+npm run test:coverage
+npm run build
+npm run e2e
+```
+
+For a real delivery smoke test, obtain explicit operator approval, use a staging or dedicated mailbox, submit only synthetic data, and verify exactly one message. Never submit the production contact form as part of automated auditing.
 
 ## Troubleshooting
 
-### Common Issues
+### Production validation reports a missing CSRF secret
 
-1. **"Email service not configured" error**:
+Set a unique 32+ character `CSRF_SECRET` in the production source or deployment environment. Do not reuse the development fallback.
 
-   - Check that all environment variables are set correctly
-   - Verify the correct local env file exists in the project root:
-     development uses `.env.local`
-     production verification uses `.env.production.local` or `dotenvx run --env-file=.env.production -- ...`
+### The form reports security initialization failure
 
-2. **"Failed to connect to Gmail SMTP server" error**:
+Verify the request is using the exact configured origin, the CSRF endpoint is reachable, cookies are enabled, and the token/session header have not expired. Do not relax same-origin checks.
 
-   - Verify your Gmail App Password is correct
-   - Ensure 2-Factor Authentication is enabled on your Gmail account
-   - Check that the App Password was created specifically for this application
+### The form reports temporary delivery failure
 
-3. **"Authentication failed" error**:
+Check structured server logs for the event name, then verify the Gmail account, App Password, network egress, and destination address. Logs intentionally redact addresses, tokens, content, IPs, and error details.
 
-   - Double-check your Gmail address in `GMAIL_USER`
-   - Verify you're using the App Password, not your regular password
-   - Try generating a new App Password
+### Requests receive 429
 
-4. **Emails not being received**:
-   - Check your Gmail spam folder
-   - Verify the `EMAIL_TO` environment variable
-   - Test with a different recipient email address
+Respect `Retry-After`. Confirm whether Redis is configured and whether the same client is repeatedly exercising the endpoint. Do not increase limits before reviewing abuse and conversion data.
 
-### Testing Tips
+### Readiness is unhealthy
 
-- Start with your own email address as the recipient
-- Test with different form inputs to ensure validation works
-- Check browser console for any client-side errors
-- Monitor server logs for detailed error information
+The readiness probe actively verifies SMTP and, when configured, Redis. Use the liveness probe to distinguish process availability from dependency availability. Readiness results are cached briefly to avoid turning health checks into dependency load.
 
-## Production Deployment
+## Rotation checklist
 
-When deploying to production:
-
-1. **Commit the encrypted production env file**:
-
-   - Keep real values in `.env.production.local`
-   - Run `npm run sync:env:production`
-   - Commit only `.env.production`
-
-2. **Set the dotenvx private key** in your hosting platform:
-
-   - Vercel: Project Settings → Environment Variables
-   - Netlify: Site Settings → Environment Variables
-   - Heroku: Config Vars in dashboard
-
-   ```bash
-   DOTENV_PRIVATE_KEY_PRODUCTION=your-private-key-from-.env.keys
-   ```
-
-3. **Security considerations**:
-   - Never commit `.env.local` or `.env` files
-   - Never commit `.env.production.local` or `.env.keys`
-   - Use different App Passwords for different environments
-   - Consider implementing rate limiting for production
-   - Monitor email usage to stay within Gmail's limits
-
-## Gmail Limits
-
-Gmail SMTP has the following limits:
-
-- **500 emails per day** for regular Gmail accounts
-- **2000 emails per day** for Google Workspace accounts
-- **100 recipients per message**
-
-For higher volume needs, consider:
-
-- Google Workspace upgrade
-- Professional email service (SendGrid, Mailgun, etc.)
-- Multiple Gmail accounts with load balancing
-
-## API Endpoint
-
-The contact form uses a Next.js API route at `/api/contact` with:
-
-- **Method**: POST
-- **Content-Type**: application/json
-- **Body**: `{ name, email, subject, message }`
-- **Response**: JSON with success/error status
-
-## File Structure
-
-```
-src/
-├── app/
-│   └── api/
-│       └── contact/
-│           └── route.ts          # API endpoint for handling form submissions
-└── components/
-    └── pages/
-        └── Contact.tsx           # Contact form component
-```
-
-## Support
-
-If you encounter issues:
-
-1. Check this guide first
-2. Review server logs for detailed error messages
-3. Test with a minimal example
-4. Verify all environment variables are correctly set
-
----
-
-**Security Note**: Keep your App Password secure and never share it publicly. If compromised, generate a new one immediately.
+1. create a new Gmail App Password or Redis token
+2. update the ignored local production source and deployment secret
+3. regenerate encrypted production configuration when applicable
+4. validate and deploy
+5. confirm readiness
+6. revoke the old credential
+7. review logs for unexpected failures without printing credential values

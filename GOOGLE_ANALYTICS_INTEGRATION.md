@@ -1,107 +1,101 @@
-# Google Analytics Integration
+# Google Analytics and Consent
 
-This document describes the Google Analytics 4 (GA4) integration implemented in this Next.js portfolio website.
+This document describes the portfolio's current Google Analytics 4 integration and the separate GA property settings an operator must maintain.
 
-## Implementation Details
+## Privacy model
 
-### Files Added/Modified:
+Analytics is optional and disabled by default.
 
-1. **`src/components/analytics/GoogleAnalytics.tsx`** - Main Google Analytics component
-2. **`src/components/analytics/index.ts`** - Export file for analytics components
-3. **`src/components/index.ts`** - Updated to include analytics exports
-4. **`src/app/layout.tsx`** - Integrated Google Analytics component
-5. **`.env.local`** - Added GA measurement ID
-6. **`.env.example`** - Template for environment variables
+- The GA component is not mounted before an explicit acceptance.
+- Rejection sends no Analytics script request.
+- Acceptance grants `analytics_storage` only.
+- `ad_storage`, `ad_user_data`, and `ad_personalization` remain denied.
+- Withdrawing consent unmounts Analytics, records a rejection, and sets the GA disable flag for the measurement ID.
+- A changed consent-policy version causes the site to ask again instead of silently reusing an old decision.
 
-### Environment Variables
+The application does not claim that these controls alone satisfy every privacy regime. The owner must review the deployed behavior, privacy notice, mailbox practices, GA property configuration, and applicable requirements.
 
-```env
-NEXT_PUBLIC_GA_MEASUREMENT_ID=G-7HHPX0QPME
+## Configuration
+
+Set the optional public variable:
+
+```dotenv
+NEXT_PUBLIC_GA_MEASUREMENT_ID=G-XXXXXXXXXX
 ```
 
-The Google Analytics Measurement ID is configured as a public environment variable because:
+A GA measurement ID is public by design; it is not an authentication secret. If the variable is absent, analytics preference controls are not rendered and the GA component is never mounted.
 
-- It's required on the client-side
-- It's not sensitive information (visible in the browser anyway)
-- Following Next.js best practices for client-side configuration
+The value must match the GA4 `G-` format accepted by environment validation.
 
-### Features
+## Browser behavior
 
-1. **Production-Only Loading**: Analytics only loads in production environment
-2. **Modern Privacy Settings**: Uses current GA4 privacy controls (`allow_google_signals: false`, `allow_ad_personalization_signals: false`)
-3. **TypeScript Support**: Properly typed with custom window interface extensions
-4. **Custom Hooks**: `useGoogleAnalytics` hook for tracking custom events with flexible measurement ID support
-5. **Next.js Optimized**: Uses Next.js `Script` component with `afterInteractive` strategy
+After hydration, the consent provider reads `aty-analytics-consent` from local storage. The stored object contains only:
 
-### Usage
+- consent policy version
+- `accepted` or `rejected`
+- update timestamp
 
-#### Basic Setup
+Malformed, unavailable, or stale storage is treated as no valid decision. If browser storage is blocked, the in-memory decision still controls the current page but may not survive a reload.
 
-The Google Analytics component is automatically included in the layout and will track page views.
+The first-time prompt is a non-modal region so visitors can continue reading before choosing. The footer and privacy page reopen a modal preferences panel with trapped focus, Escape handling, background inertness, and focus restoration.
 
-#### Custom Event Tracking
+## Data minimization
 
-```tsx
-import { useGoogleAnalytics } from "@/components/analytics";
+Application code does not enable advertising signals, ad personalization, user-provided data collection, or custom event tracking. The localized privacy pages describe the currently implemented data flow and provide a persistent preference entry point.
 
-function MyComponent() {
-  const { trackEvent } = useGoogleAnalytics();
+GA property settings exist outside this repository and can override or expand collection behavior. Keep the property aligned with the application:
 
-  const handleButtonClick = () => {
-    trackEvent("button_click", "engagement", "header_cta");
-  };
+- Google Signals and user-provided data collection: off
+- advertising personalization: off
+- query-parameter redaction: configured for sensitive parameters used by the site or future campaigns
+- enhanced measurement: enable only events that have an explicit product purpose
+- retention: choose the shortest period that supports the documented purpose
+- internal/developer traffic filters: validate before activating
+- Search Console link: optional, but useful for privacy-reviewed organic-search analysis
 
-  return <button onClick={handleButtonClick}>Click me</button>;
-}
+Record any change to collection purpose, storage, retention, or sharing in the privacy notice and consent policy version.
+
+## Verification
+
+### Automated
+
+```bash
+npm run test:run -- src/components/analytics/AnalyticsConsentProvider.test.tsx
+npm run e2e
 ```
 
-#### Page View Tracking
+The tests verify no load before consent, rejection persistence, analytics-only consent, withdrawal, policy-version re-prompting, modal keyboard behavior, and absence of GA network requests after rejection. E2E intercepts Google endpoints so local verification never sends analytics data.
 
-```tsx
-import { useGoogleAnalytics } from "@/components/analytics";
-import { useRouter, usePathname } from "next/navigation";
-import { useEffect } from "react";
+### Manual local check
 
-function MyApp() {
-  // Option 1: Use default measurement ID from environment
-  const { trackPageView } = useGoogleAnalytics();
+1. open a fresh browser context with local storage cleared
+2. load Turkish and English routes
+3. confirm no request to Google Analytics or Tag Manager before choosing
+4. reject and reload; confirm the script remains absent
+5. reopen preferences from the footer; verify keyboard containment, Escape, and restored focus
+6. accept; confirm one GA integration is mounted and advertising consent remains denied
+7. withdraw from preferences and confirm new collection stops
 
-  // Option 2: Use specific measurement ID
-  // const { trackPageView } = useGoogleAnalytics("G-XXXXXXXXXX");
+Use browser developer tools to inspect network destinations and console errors. Do not infer consent behavior from the presence of a banner alone.
 
-  const router = useRouter();
-  const pathname = usePathname();
+### Production check
 
-  useEffect(() => {
-    // Track page view for App Router
-    trackPageView(pathname);
-  }, [pathname, trackPageView]);
-}
-```
+Use a synthetic, consented browser session and GA DebugView or Realtime only after deployment approval. Do not submit the production contact form. Verify that:
 
-### Security Considerations
+- the deployed measurement ID is the intended property
+- consent is denied before choice
+- only the documented events appear
+- query strings do not expose form or personal data
+- the privacy page and preferences control are reachable in both locales
 
-- The GA Measurement ID is not considered sensitive data
-- Analytics only loads in production to avoid development noise
-- Modern GA4 privacy settings are enabled:
-  - `allow_google_signals: false` - Disables Google Signals for enhanced privacy
-  - `allow_ad_personalization_signals: false` - Disables ad personalization signals
-- Compatible with GDPR and other privacy regulations
+## Change rules
 
-### Testing
+Treat any of the following as a privacy-sensitive change:
 
-To test the implementation:
+- adding a custom event, user property, advertising feature, or new Google destination
+- collecting full URLs with new query parameters
+- changing storage, retention, consent defaults, or policy version
+- loading analytics before interaction
+- adding another analytics or session-replay provider
 
-1. Build the project: `npm run build`
-2. Start production server: `npm start`
-3. Check browser developer tools Network tab for GA requests
-4. Verify in Google Analytics real-time reports
-
-### Next Steps
-
-Consider implementing:
-
-- Cookie consent management
-- Enhanced e-commerce tracking
-- Custom dimensions for user segmentation
-- Privacy-compliant data collection based on user consent
+Such changes require code tests, browser/network verification, updated privacy copy, and owner/compliance review before deployment.
