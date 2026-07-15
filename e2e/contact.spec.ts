@@ -5,7 +5,7 @@ import { mockCsrfToken } from "./support/mockCsrf";
 test.describe("Contact form", () => {
   test.beforeEach(async ({ page }) => {
     await mockCsrfToken(page);
-    await page.goto("/");
+    await page.goto("/en");
     await page.locator("#contact").scrollIntoViewIfNeeded();
   });
 
@@ -59,4 +59,24 @@ test.describe("Contact form", () => {
       page.getByText("I'll get back to you as soon as possible.")
     ).toBeVisible();
   });
+});
+
+test("initializes contact security from the same-origin CSRF endpoint", async ({
+  context,
+  page,
+}) => {
+  const csrfResponse = page.waitForResponse(
+    (response) =>
+      new URL(response.url()).pathname === "/api/csrf-token/" &&
+      response.request().method() === "GET"
+  );
+
+  await page.goto("/en");
+
+  await expect.poll(async () => (await csrfResponse).status()).toBe(200);
+  await expect(
+    page.locator("#contact").getByRole("button", { name: /Send Message/i })
+  ).toBeEnabled();
+  expect((await context.cookies()).some((cookie) => cookie.name === "portfolio-csrf"))
+    .toBe(true);
 });

@@ -43,10 +43,41 @@ test.describe("Navigation", () => {
   }) => {
     await page.goto("/");
 
-    await page.locator('header a[href="#contact"]').first().click();
+    let contactLink = page.locator('header a[href="#contact"]:visible').first();
+
+    if (!(await contactLink.isVisible())) {
+      await page
+        .getByRole("button", { name: /navigasyonu aç|open navigation/i })
+        .click();
+      contactLink = page
+        .getByRole("dialog")
+        .locator('a[href="#contact"]')
+        .first();
+    }
+
+    await contactLink.click();
     await page.waitForTimeout(300);
 
     await expect(page.locator("#contact")).toBeInViewport({ ratio: 0.1 });
+  });
+
+  test("mobile navigation contains focus and closes with Escape", async ({
+    page,
+  }, testInfo) => {
+    test.skip(!testInfo.project.name.includes("mobile"), "mobile project only");
+    await page.goto("/en");
+
+    const trigger = page.getByRole("button", { name: "Open navigation" });
+    await trigger.click();
+    const dialog = page.getByRole("dialog", { name: "Mobile navigation" });
+    await expect(dialog).toBeVisible();
+    await expect(
+      dialog.getByRole("button", { name: "Close navigation" })
+    ).toBeFocused();
+
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+    await expect(trigger).toBeFocused();
   });
 
   test("renders canonical and structured data", async ({ page }) => {

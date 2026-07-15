@@ -1,6 +1,26 @@
 import type { Page } from "@playwright/test";
 
-export async function mockCsrfToken(page: Page) {
+export async function mockCsrfToken(
+  page: Page,
+  options: { analyticsDecision?: "accepted" | "rejected" | null } = {}
+) {
+  const analyticsDecision = Object.hasOwn(options, "analyticsDecision")
+    ? options.analyticsDecision
+    : "rejected";
+
+  if (analyticsDecision) {
+    await page.addInitScript((decision) => {
+      window.localStorage.setItem(
+        "aty-analytics-consent",
+        JSON.stringify({
+          version: 1,
+          decision,
+          updatedAt: new Date().toISOString(),
+        })
+      );
+    }, analyticsDecision);
+  }
+
   await page.route("**/api/csrf-token/", async (route) => {
     await route.fulfill({
       status: 200,
