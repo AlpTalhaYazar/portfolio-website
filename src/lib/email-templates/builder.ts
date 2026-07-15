@@ -34,6 +34,11 @@ import {
 } from "./types";
 import { generateBaseStyles } from "./styles";
 import {
+  escapeHtml,
+  normalizeHeaderValue,
+  normalizePlainText,
+} from "./escape";
+import {
   headerComponent,
   contactInfoComponent,
   messageComponent,
@@ -318,7 +323,7 @@ export class EmailTemplateBuilder {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="x-apple-disable-message-reformatting">
-  <title>Email from ${this.branding.siteName}</title>
+  <title>Email from ${escapeHtml(this.branding.siteName)}</title>
   <!--[if mso]>
   <noscript>
     <xml>
@@ -373,11 +378,13 @@ export class EmailTemplateBuilder {
     // Try to get subject from contact info component
     const contactData = this.componentData.get("contactInfo");
     if (contactData && "subject" in contactData && contactData.subject) {
-      return `${this.branding.siteName}: ${contactData.subject}`;
+      return normalizeHeaderValue(
+        `${this.branding.siteName}: ${contactData.subject}`
+      );
     }
 
     // Fallback to generic subject
-    return `New message from ${this.branding.siteName}`;
+    return normalizeHeaderValue(`New message from ${this.branding.siteName}`);
   }
 }
 
@@ -507,13 +514,15 @@ export function previewTemplate(template: EmailTemplate): string {
   return `
     <div style="padding: 20px; background: #f5f5f5;">
       <h2>Email Preview</h2>
-      <p><strong>Subject:</strong> ${template.subject}</p>
+      <p><strong>Subject:</strong> ${escapeHtml(template.subject)}</p>
       <div style="margin: 20px 0; border: 1px solid #ddd;">
         ${template.html}
       </div>
       <details>
         <summary>Text Version</summary>
-        <pre style="background: white; padding: 15px; border: 1px solid #ddd; white-space: pre-wrap;">${template.text}</pre>
+        <pre style="background: white; padding: 15px; border: 1px solid #ddd; white-space: pre-wrap;">${escapeHtml(
+          normalizePlainText(template.text)
+        )}</pre>
       </details>
     </div>
   `;

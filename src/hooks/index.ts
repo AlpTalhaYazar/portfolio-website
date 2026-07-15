@@ -8,6 +8,5 @@ export {
 // Re-export commonly used types from main types file
 export type {
   ContactFormData,
-  SecurityError,
   CSRFTokenResponse,
 } from "@/types";

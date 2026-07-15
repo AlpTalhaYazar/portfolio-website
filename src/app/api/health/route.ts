@@ -1,117 +1,99 @@
+import { Redis } from "@upstash/redis";
+import nodemailer from "nodemailer";
+import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
-interface HealthStatus {
-  status: "healthy" | "degraded" | "unhealthy";
-  timestamp: string;
-  version: string;
-  environment: string;
-  checks: {
-    email: { status: "ok" | "warning" | "error"; message: string };
-    redis: { status: "ok" | "warning" | "error"; message: string };
-    analytics: { status: "ok" | "warning" | "error"; message: string };
-  };
-  uptime: number;
+import {
+  createHealthService,
+  type DependencyConfigState,
+} from "@/lib/health";
+import { logger } from "@/lib/logger";
+
+function resolvePairState(
+  first: string | undefined,
+  second: string | undefined
+): DependencyConfigState {
+  if (!first && !second) return "unconfigured";
+  return first && second ? "configured" : "invalid";
 }
 
-// Track server start time for uptime calculation
-const startTime = Date.now();
+const emailState = resolvePairState(
+  process.env.GMAIL_USER,
+  process.env.GMAIL_APP_PASSWORD
+);
+const redisState = resolvePairState(
+  process.env.UPSTASH_REDIS_REST_URL,
+  process.env.UPSTASH_REDIS_REST_TOKEN
+);
 
-/**
- * Health check endpoint for monitoring and load balancer health probes
- *
- * Returns:
- * - 200: All systems operational
- * - 503: One or more critical systems are down
- */
-export async function GET() {
-  const checks = {
-    email: checkEmailConfig(),
-    redis: checkRedisConfig(),
-    analytics: checkAnalyticsConfig(),
-  };
+const healthService = createHealthService({
+  emailState,
+  redisState,
+  probeEmail: async () => {
+    const user = process.env.GMAIL_USER;
+    const pass = process.env.GMAIL_APP_PASSWORD;
+    if (!user || !pass) throw new Error("Email configuration is incomplete");
 
-  // Determine overall status
-  const hasErrors = Object.values(checks).some((c) => c.status === "error");
-  const hasWarnings = Object.values(checks).some((c) => c.status === "warning");
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      host: "smtp.gmail.com",
+      port: 587,
+      secure: false,
+      auth: { user, pass },
+      tls: { rejectUnauthorized: true },
+      connectionTimeout: 2_500,
+      greetingTimeout: 2_500,
+      socketTimeout: 3_000,
+      disableFileAccess: true,
+      disableUrlAccess: true,
+    });
 
-  const overallStatus: HealthStatus["status"] = hasErrors
-    ? "unhealthy"
-    : hasWarnings
-    ? "degraded"
-    : "healthy";
+    try {
+      await transporter.verify();
+    } finally {
+      transporter.close();
+    }
+  },
+  probeRedis: async () => {
+    const url = process.env.UPSTASH_REDIS_REST_URL;
+    const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+    if (!url || !token) throw new Error("Redis configuration is incomplete");
 
-  const healthStatus: HealthStatus = {
-    status: overallStatus,
-    timestamp: new Date().toISOString(),
-    version: process.env.npm_package_version || "0.1.0",
-    environment: process.env.NODE_ENV || "development",
-    checks,
-    uptime: Math.floor((Date.now() - startTime) / 1000),
-  };
+    await new Redis({ url, token }).ping();
+  },
+  timeoutMs: 3_000,
+  cacheTtlMs: 30_000,
+});
 
-  const httpStatus = overallStatus === "unhealthy" ? 503 : 200;
+export async function GET(request?: NextRequest) {
+  const isLiveness = request?.nextUrl.searchParams.get("probe") === "liveness";
 
-  return NextResponse.json(healthStatus, {
-    status: httpStatus,
-    headers: {
-      "Cache-Control": "no-store, max-age=0",
+  if (isLiveness) {
+    return NextResponse.json(
+      {
+        status: "healthy",
+        probe: "liveness",
+        timestamp: new Date().toISOString(),
+      },
+      { headers: { "Cache-Control": "no-store, max-age=0" } }
+    );
+  }
+
+  const readiness = await healthService.checkReadiness();
+  logger.info("health.readiness", readiness);
+
+  return NextResponse.json(
+    {
+      ...readiness,
+      probe: "readiness",
+      timestamp: new Date().toISOString(),
     },
-  });
-}
-
-function checkEmailConfig(): HealthStatus["checks"]["email"] {
-  // Use direct env access to avoid validation errors during health check
-  const hasGmailUser = Boolean(process.env.GMAIL_USER);
-  const hasGmailPassword = Boolean(process.env.GMAIL_APP_PASSWORD);
-
-  if (hasGmailUser && hasGmailPassword) {
-    return { status: "ok", message: "Email configuration complete" };
-  }
-
-  if (hasGmailUser || hasGmailPassword) {
-    return {
-      status: "warning",
-      message: "Partial email configuration (missing credentials)",
-    };
-  }
-
-  return {
-    status: "warning",
-    message: "Email not configured (contact form will not work)",
-  };
-}
-
-function checkRedisConfig(): HealthStatus["checks"]["redis"] {
-  const hasRedisUrl = Boolean(process.env.UPSTASH_REDIS_REST_URL);
-  const hasRedisToken = Boolean(process.env.UPSTASH_REDIS_REST_TOKEN);
-
-  if (hasRedisUrl && hasRedisToken) {
-    return { status: "ok", message: "Redis configured" };
-  }
-
-  return {
-    status: "warning",
-    message: "Redis not configured (rate limiting uses in-memory storage)",
-  };
-}
-
-function checkAnalyticsConfig(): HealthStatus["checks"]["analytics"] {
-  const hasAnalytics = Boolean(process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID);
-  const isProduction = process.env.NODE_ENV === "production";
-
-  if (hasAnalytics) {
-    return { status: "ok", message: "Google Analytics enabled" };
-  }
-
-  if (isProduction) {
-    return {
-      status: "warning",
-      message: "Analytics not configured for production",
-    };
-  }
-
-  return {
-    status: "ok",
-    message: "Analytics disabled (development mode)",
-  };
+    {
+      status: readiness.status === "unhealthy" ? 503 : 200,
+      headers: {
+        "Cache-Control": "no-store, max-age=0",
+        ...(readiness.status === "unhealthy" ? { "Retry-After": "30" } : {}),
+      },
+    }
+  );
 }

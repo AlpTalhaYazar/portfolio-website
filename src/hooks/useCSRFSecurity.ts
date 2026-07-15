@@ -71,7 +71,7 @@ export interface UseCSRFSecurityReturn {
   securityError: string | null;
 
   // Functions
-  fetchCSRFToken: () => Promise<boolean>;
+  fetchCSRFToken: () => Promise<CSRFTokenResponse | null>;
   clearSecurityError: () => void;
 
   // Token validation helpers
@@ -118,11 +118,12 @@ export const useCSRFSecurity = (): UseCSRFSecurityReturn => {
   }, [csrfToken, sessionId, isTokenExpired]);
 
   // CSRF Token fetching function
-  const fetchCSRFToken = useCallback(async (): Promise<boolean> => {
+  const fetchCSRFToken = useCallback(
+    async (): Promise<CSRFTokenResponse | null> => {
     // Prevent multiple simultaneous calls
     if (isFetchingRef.current) {
       logger.dev.log("CSRF token fetch already in progress, skipping...");
-      return false;
+      return null;
     }
 
     try {
@@ -169,7 +170,7 @@ export const useCSRFSecurity = (): UseCSRFSecurityReturn => {
       });
       setIsSecurityLoading(false);
 
-      return true;
+      return data;
     } catch (error) {
       logger.error("Failed to fetch CSRF token:", error);
 
@@ -181,11 +182,13 @@ export const useCSRFSecurity = (): UseCSRFSecurityReturn => {
       clearPersistedSecurityState();
 
       setIsSecurityLoading(false);
-      return false;
+      return null;
     } finally {
       isFetchingRef.current = false;
     }
-  }, []); // Empty dependency array: all relevant dynamic state values are accessed via refs to avoid stale closures; other values (setters, logger) are stable
+    },
+    []
+  ); // Dynamic session state is read through refs; React setters and logger are stable.
 
   // Initialize security on hook mount
   useEffect(() => {

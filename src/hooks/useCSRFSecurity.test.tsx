@@ -1,4 +1,4 @@
-import { renderHook, waitFor } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { SECURITY_CONSTANTS } from "@/types";
@@ -50,5 +50,42 @@ describe("useCSRFSecurity", () => {
     expect(result.current.csrfToken).toBe("persisted-token");
     expect(result.current.sessionId).toBe("persisted-session");
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("returns freshly fetched credentials to the caller", async () => {
+    const initialExpires =
+      Date.now() + SECURITY_CONSTANTS.CSRF_REFRESH_THRESHOLD + 60_000;
+    sessionStorage.setItem(
+      SECURITY_STORAGE_KEY,
+      JSON.stringify({
+        csrfToken: "persisted-token",
+        sessionId: "persisted-session",
+        tokenExpires: initialExpires,
+      })
+    );
+
+    const freshCredential = {
+      success: true,
+      token: "fresh-token",
+      sessionId: "fresh-session",
+      expires: Date.now() + 3_600_000,
+      expiresIn: 3_600,
+    };
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => freshCredential,
+    }) as typeof fetch;
+
+    const { result } = renderHook(() => useCSRFSecurity());
+    await waitFor(() => expect(result.current.isSecurityLoading).toBe(false));
+
+    let returnedCredential: unknown;
+    await act(async () => {
+      returnedCredential = await result.current.fetchCSRFToken();
+    });
+
+    expect(returnedCredential).toEqual(freshCredential);
+    expect(result.current.csrfToken).toBe(freshCredential.token);
+    expect(result.current.sessionId).toBe(freshCredential.sessionId);
   });
 });

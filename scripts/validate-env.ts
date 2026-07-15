@@ -77,15 +77,12 @@ async function main(argv = process.argv.slice(2)): Promise<void> {
   try {
     logSection("Checking TypeScript Compilation");
 
-    // First, compile the TypeScript validation module
-    console.log("📦 Compiling TypeScript validation module...");
-    execSync(
-      "npx tsc --noEmit --skipLibCheck src/lib/env-validation.ts src/lib/env-loading.ts",
-      {
-        stdio: "pipe",
-        cwd: process.cwd(),
-      }
-    );
+    // Use the project tsconfig so validation and CI enforce one type contract.
+    console.log("📦 Type-checking the project...");
+    execSync("npm run type-check", {
+      stdio: "pipe",
+      cwd: process.cwd(),
+    });
     console.log(colorize("green", "✅ TypeScript compilation successful"));
 
     logSection("Loading Environment Variables");

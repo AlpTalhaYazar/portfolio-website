@@ -1,105 +1,128 @@
-/**
- * Secure development logging utility
- * Prevents sensitive information from being logged in production
- */
+import type { SecurityEvent } from "@/types";
 
-import { SecurityEvent } from "@/types";
+type LogLevel = "debug" | "info" | "warn" | "error" | "security";
+
+const SENSITIVE_KEY_PATTERN =
+  /(token|password|passphrase|secret|credential|authorization|auth|cookie|session|csrf|email|mailaddress|ipaddress|clientip|useragent|message|body|content)/i;
+const EMAIL_PATTERN = /\b[^\s@]+@[^\s@]+\.[^\s@]+\b/;
+const IP_PATTERN = /^(?:\d{1,3}\.){3}\d{1,3}$|^[a-f0-9:]{3,}$/i;
+const MAX_DEPTH = 6;
+
+function redactValue(
+  value: unknown,
+  key: string | undefined,
+  depth: number,
+  seen: WeakSet<object>
+): unknown {
+  if (key && SENSITIVE_KEY_PATTERN.test(key)) {
+    return "[REDACTED]";
+  }
+
+  if (
+    value === null ||
+    typeof value === "number" ||
+    typeof value === "boolean"
+  ) {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    if (EMAIL_PATTERN.test(value) || IP_PATTERN.test(value)) {
+      return "[REDACTED]";
+    }
+    return value.length > 1_000 ? `${value.slice(0, 1_000)}…[TRUNCATED]` : value;
+  }
+
+  if (typeof value === "undefined") {
+    return undefined;
+  }
+
+  if (typeof value === "bigint") {
+    return value.toString();
+  }
+
+  if (typeof value === "function" || typeof value === "symbol") {
+    return `[${typeof value}]`;
+  }
+
+  if (value instanceof Error) {
+    return { name: value.name || "Error" };
+  }
+
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+
+  if (depth >= MAX_DEPTH) {
+    return "[MAX_DEPTH]";
+  }
+
+  if (typeof value === "object") {
+    if (seen.has(value)) {
+      return "[CIRCULAR]";
+    }
+    seen.add(value);
+
+    if (Array.isArray(value)) {
+      return value.map((item) => redactValue(item, undefined, depth + 1, seen));
+    }
+
+    return Object.fromEntries(
+      Object.entries(value).map(([childKey, childValue]) => [
+        childKey,
+        redactValue(childValue, childKey, depth + 1, seen),
+      ])
+    );
+  }
+
+  return String(value);
+}
+
+export function redactLogValue(value: unknown): unknown {
+  return redactValue(value, undefined, 0, new WeakSet());
+}
+
+function writeLog(level: LogLevel, event: string, data: unknown[]): void {
+  const entry = {
+    timestamp: new Date().toISOString(),
+    level,
+    event,
+    ...(data.length === 0
+      ? {}
+      : { data: redactLogValue(data.length === 1 ? data[0] : data) }),
+  };
+  const output = JSON.stringify(entry);
+
+  if (level === "error") {
+    console.error(output);
+  } else if (level === "warn" || level === "security") {
+    console.warn(output);
+  } else {
+    console.log(output);
+  }
+}
 
 const isDevelopment = process.env.NODE_ENV === "development";
 
 export const logger = {
-  /**
-   * Development-only logging
-   */
   dev: {
-    log: (...args: unknown[]) => {
-      if (isDevelopment) {
-        console.log(...args);
-      }
+    log: (event: string, ...data: unknown[]) => {
+      if (isDevelopment) writeLog("debug", event, data);
     },
-    warn: (...args: unknown[]) => {
-      if (isDevelopment) {
-        console.warn(...args);
-      }
+    warn: (event: string, ...data: unknown[]) => {
+      if (isDevelopment) writeLog("warn", event, data);
     },
-    error: (...args: unknown[]) => {
-      if (isDevelopment) {
-        console.error(...args);
-      }
+    error: (event: string, ...data: unknown[]) => {
+      if (isDevelopment) writeLog("error", event, data);
     },
   },
-
-  /**
-   * Production-safe logging (always logs but sanitizes sensitive data)
-   */
-  info: (...args: unknown[]) => {
-    console.log(...args);
-  },
-  warn: (...args: unknown[]) => {
-    console.warn(...args);
-  },
-  error: (...args: unknown[]) => {
-    console.error(...args);
-  },
-
-  /**
-   * Security-focused logging that sanitizes sensitive information
-   */
+  info: (event: string, ...data: unknown[]) => writeLog("info", event, data),
+  warn: (event: string, ...data: unknown[]) => writeLog("warn", event, data),
+  error: (event: string, ...data: unknown[]) => writeLog("error", event, data),
   security: (
-    message: string,
+    event: string,
     data?: Record<string, unknown> | SecurityEvent
-  ) => {
-    if (isDevelopment) {
-      console.log(`[SECURITY DEV] ${message}`, data);
-    } else {
-      // In production, log only non-sensitive information
-      const sanitizedData = data ? sanitizeLogData(data) : undefined;
-      console.log(`[SECURITY] ${message}`, sanitizedData);
-    }
-  },
+  ) => writeLog("security", event, data === undefined ? [] : [data]),
 };
-
-/**
- * Sanitize log data to remove sensitive information in production
- */
-function sanitizeLogData(
-  data: Record<string, unknown> | SecurityEvent
-): Record<string, unknown> {
-  const sensitiveKeys = [
-    "token",
-    "sessionId",
-    "password",
-    "secret",
-    "key",
-    "auth",
-    "csrf",
-    "session",
-    "cookie",
-    "header",
-    "authorization",
-  ];
-
-  const sanitized: Record<string, unknown> = {};
-
-  for (const [key, value] of Object.entries(data)) {
-    const lowerKey = key.toLowerCase();
-    const isSensitive = sensitiveKeys.some((sensitiveKey) =>
-      lowerKey.includes(sensitiveKey)
-    );
-
-    if (isSensitive) {
-      if (typeof value === "string") {
-        sanitized[key] =
-          value.length > 0 ? `[REDACTED:${value.length}chars]` : "[EMPTY]";
-      } else {
-        sanitized[key] = "[REDACTED]";
-      }
-    } else {
-      sanitized[key] = value;
-    }
-  }
-
-  return sanitized;
-}
 
 export default logger;

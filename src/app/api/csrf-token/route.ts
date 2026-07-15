@@ -1,165 +1,111 @@
 import { NextRequest, NextResponse } from "next/server";
+
 import {
-  generateSessionId,
-  generateCSRFToken,
-  refreshCSRFToken,
-  getClientIP,
-  verifyOrigin,
-  logSecurityEvent,
-  cleanupExpiredTokens,
-} from "@/lib/security";
+  getCsrfCookieName,
+  getCsrfSecret,
+  issueCsrfCredential,
+} from "@/lib/csrf";
 import { logger } from "@/lib/logger";
+import { isSecureRequest, verifyOrigin } from "@/lib/security";
 
-/**
- * CSRF Token API Endpoint
- * Provides secure CSRF tokens for form submissions
- */
-export async function GET(request: NextRequest) {
-  const clientIP = getClientIP(request);
-  const userAgent = request.headers.get("user-agent") || "unknown";
+function getAllowedOrigins(): string[] {
+  return [
+    process.env.NEXT_PUBLIC_SITE_URL,
+    process.env.NEXT_PUBLIC_BASE_URL,
+    process.env.NODE_ENV === "development" ? "http://localhost:3000" : undefined,
+  ].flatMap((value) => {
+    if (!value) {
+      return [];
+    }
 
-  logger.security("[CSRF API] Request received", {
-    clientIP,
-    origin: request.headers.get("origin"),
-    referer: request.headers.get("referer"),
+    try {
+      return [new URL(value).origin];
+    } catch {
+      return [];
+    }
   });
+}
 
-  try {
-    // 1. Origin verification
-    const allowedOrigins = [
-      process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
-      process.env.NEXT_PUBLIC_BASE_URL || "",
-      `https://www.${
-        process.env.NEXT_PUBLIC_BASE_URL?.replace("https://www.", "") || ""
-      }`,
-    ];
-
-    const originVerified = verifyOrigin(request, allowedOrigins);
-    logger.dev.log("[CSRF API] Origin verification result:", originVerified);
-
-    if (!originVerified) {
-      logger.error("[CSRF API] Origin verification failed");
-      logSecurityEvent({
-        type: "origin_violation",
-        ip: clientIP,
-        userAgent,
-        severity: "high",
-        timestamp: new Date().toISOString(),
-        details: {
-          endpoint: "/api/csrf-token",
-          origin: request.headers.get("origin"),
-          referer: request.headers.get("referer"),
-        },
-      });
-      return NextResponse.json(
-        { error: "Unauthorized request origin" },
-        { status: 403 }
-      );
-    }
-
-    // 2. Clean up expired tokens periodically
-    cleanupExpiredTokens();
-
-    // 3. Check for existing session ID from headers
-    const existingSessionId = request.headers.get("x-session-id");
-    logger.security("[CSRF API] Session check", {
-      hasExistingSession: !!existingSessionId,
-      sessionId: existingSessionId,
-    });
-
-    let csrfToken;
-    let sessionId;
-
-    if (existingSessionId) {
-      logger.dev.log("[CSRF API] Attempting to refresh existing token");
-      // Try to refresh existing token
-      const refreshedToken = refreshCSRFToken(existingSessionId);
-      if (refreshedToken) {
-        logger.dev.log("[CSRF API] Token refreshed successfully");
-        csrfToken = refreshedToken;
-        sessionId = existingSessionId;
-      } else {
-        logger.dev.log(
-          "[CSRF API] Token refresh failed, generating new session"
-        );
-        // Generate new session if refresh failed
-        sessionId = generateSessionId(request);
-        csrfToken = generateCSRFToken(sessionId);
-      }
-    } else {
-      logger.dev.log("[CSRF API] No existing session, generating new session");
-      // Generate new session and token
-      sessionId = generateSessionId(request);
-      csrfToken = generateCSRFToken(sessionId);
-    }
-
-    logger.security("[CSRF API] Token generated", {
-      sessionId,
-      tokenLength: csrfToken.token.length,
-      expires: new Date(csrfToken.expires),
-      tokenType: "csrf",
-    });
-
-    // 4. Log successful token generation (low severity)
-    logSecurityEvent({
-      type: "token_generated",
-      ip: clientIP,
-      userAgent,
-      severity: "low",
-      timestamp: new Date().toISOString(),
-      details: {
-        action: "token_generated",
-        sessionId,
-        isRefresh: !!existingSessionId,
-      },
-    });
-
-    const response = {
-      success: true,
-      token: csrfToken.token,
-      sessionId: csrfToken.sessionId,
-      expires: csrfToken.expires,
-      expiresIn: Math.floor((csrfToken.expires - Date.now()) / 1000), // seconds
-    };
-
-    logger.security("[CSRF API] Sending successful response", {
-      success: response.success,
-      tokenLength: response.token.length,
-      sessionId: response.sessionId,
-      expiresIn: response.expiresIn,
-      tokenGenerated: true,
-    });
-
-    return NextResponse.json(response);
-  } catch (error) {
-    logger.error("Error generating CSRF token:", error);
-
-    logSecurityEvent({
-      type: "token_expired", // Better type for token generation failures
-      ip: clientIP,
-      userAgent,
-      severity: "medium",
-      timestamp: new Date().toISOString(),
-      details: {
-        action: "token_generation_failed",
-        error: error instanceof Error ? error.message : "Unknown error",
-      },
+export async function GET(request: NextRequest) {
+  if (!verifyOrigin(request, getAllowedOrigins())) {
+    logger.warn("csrf.origin_forbidden", {
+      path: request.nextUrl.pathname,
     });
 
     return NextResponse.json(
       {
-        error: "Failed to generate security token. Please try again.",
-        details:
-          error instanceof Error ? error.message : "Unknown error occurred",
+        success: false,
+        code: "origin_forbidden",
+        error: "Request origin is not allowed.",
       },
-      { status: 500 }
+      {
+        status: 403,
+        headers: { "Cache-Control": "no-store" },
+      }
+    );
+  }
+
+  try {
+    const credential = issueCsrfCredential({ secret: getCsrfSecret() });
+    const secureRequest = isSecureRequest(request);
+    const response = NextResponse.json(
+      {
+        success: true,
+        token: credential.token,
+        sessionId: credential.sessionId,
+        expires: credential.expires,
+        expiresIn: credential.expiresIn,
+      },
+      {
+        headers: {
+          "Cache-Control": "no-store, max-age=0",
+          Pragma: "no-cache",
+          Vary: "Origin",
+        },
+      }
+    );
+
+    response.cookies.set(
+      getCsrfCookieName(secureRequest),
+      credential.token,
+      {
+        httpOnly: true,
+        secure: secureRequest,
+        sameSite: "strict",
+        path: "/",
+        maxAge: credential.expiresIn,
+      }
+    );
+
+    return response;
+  } catch (error) {
+    logger.error("csrf.issue_failed", {
+      errorName: error instanceof Error ? error.name : "UnknownError",
+    });
+
+    return NextResponse.json(
+      {
+        success: false,
+        code: "csrf_unavailable",
+        error: "Security initialization is temporarily unavailable.",
+      },
+      {
+        status: 503,
+        headers: {
+          "Cache-Control": "no-store",
+          "Retry-After": "5",
+        },
+      }
     );
   }
 }
 
-/**
- * OPTIONS handler for CORS preflight
- */
 export async function OPTIONS() {
-  return NextResponse.json({}, { status: 200 });
+  return new NextResponse(null, {
+    status: 204,
+    headers: {
+      Allow: "GET, OPTIONS",
+      "Cache-Control": "no-store",
+    },
+  });
 }

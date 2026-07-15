@@ -25,4 +25,20 @@ describe("buildCSPHeader", () => {
     );
     expect(productionHeader).not.toContain("'unsafe-eval'");
   });
+
+  it("upgrades subresources only for secure origins", () => {
+    const secureHeader = buildCSPHeader({
+      nonce: "secure-nonce",
+      isDevelopment: false,
+      upgradeInsecureRequests: true,
+    });
+    const localHttpHeader = buildCSPHeader({
+      nonce: "local-http-nonce",
+      isDevelopment: false,
+      upgradeInsecureRequests: false,
+    });
+
+    expect(secureHeader).toContain("upgrade-insecure-requests");
+    expect(localHttpHeader).not.toContain("upgrade-insecure-requests");
+  });
 });

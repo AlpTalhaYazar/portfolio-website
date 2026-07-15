@@ -1,11 +1,13 @@
 interface BuildCSPHeaderOptions {
   nonce: string;
   isDevelopment?: boolean;
+  upgradeInsecureRequests?: boolean;
 }
 
 export function buildCSPHeader({
   nonce,
   isDevelopment = process.env.NODE_ENV !== "production",
+  upgradeInsecureRequests = false,
 }: BuildCSPHeaderOptions): string {
   const scriptSources = [
     "'self'",
@@ -32,9 +34,12 @@ export function buildCSPHeader({
     "base-uri 'self'",
     "form-action 'self'",
     "frame-ancestors 'none'",
-    "connect-src 'self' https://www.google-analytics.com https://analytics.google.com https://region1.google-analytics.com",
-    "upgrade-insecure-requests",
+    "connect-src 'self' https://www.googletagmanager.com https://www.google-analytics.com https://analytics.google.com https://region1.google-analytics.com",
   ];
+
+  if (upgradeInsecureRequests) {
+    cspDirectives.push("upgrade-insecure-requests");
+  }
 
   return cspDirectives.join("; ");
 }

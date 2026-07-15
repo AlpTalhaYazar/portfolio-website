@@ -17,6 +17,13 @@ import {
   StatusBadgeComponentData,
   DividerComponentData,
 } from "./types";
+import {
+  escapeHtml,
+  escapeHtmlWithLineBreaks,
+  normalizePlainText,
+  safeExternalUrl,
+  safeMailto,
+} from "./escape";
 
 /**
  * Email Header Component
@@ -29,20 +36,26 @@ export const headerComponent: EmailComponent<HeaderComponentData> = {
       ${
         data.branding.logoUrl
           ? `
-        <img src="${data.branding.logoUrl}" alt="${data.branding.siteName}" style="max-height: 40px; margin-bottom: 15px;" />
+        <img src="${safeExternalUrl(data.branding.logoUrl)}" alt="${escapeHtml(
+              data.branding.siteName
+            )}" style="max-height: 40px; margin-bottom: 15px;" />
       `
           : ""
       }
-      <h1>${data.title}</h1>
-      ${data.subtitle ? `<div class="subtitle">${data.subtitle}</div>` : ""}
+      <h1>${escapeHtml(data.title)}</h1>
+      ${
+        data.subtitle
+          ? `<div class="subtitle">${escapeHtml(data.subtitle)}</div>`
+          : ""
+      }
     </div>
   `,
   renderText: (data: HeaderComponentData) => `
-    ${data.branding.siteName.toUpperCase()}
+    ${normalizePlainText(data.branding.siteName).toUpperCase()}
     ${"=".repeat(data.branding.siteName.length)}
     
-    ${data.title}
-    ${data.subtitle ? `${data.subtitle}\n` : ""}
+    ${normalizePlainText(data.title)}
+    ${data.subtitle ? `${normalizePlainText(data.subtitle)}\n` : ""}
   `,
 };
 
@@ -58,19 +71,19 @@ export const contactInfoComponent: EmailComponent<ContactInfoComponentData> = {
       <table class="info-table">
         <tr>
           <td class="label"><strong>Name:</strong></td>
-          <td class="value">${data.name}</td>
+          <td class="value">${escapeHtml(data.name)}</td>
         </tr>
         <tr>
           <td class="label"><strong>Email:</strong></td>
           <td class="value">
-            <a href="mailto:${data.email}" style="color: inherit; text-decoration: none;">
-              ${data.email}
+            <a href="${safeMailto(data.email)}" style="color: inherit; text-decoration: none;">
+              ${escapeHtml(data.email)}
             </a>
           </td>
         </tr>
         <tr>
           <td class="label"><strong>Subject:</strong></td>
-          <td class="value">${data.subject}</td>
+          <td class="value">${escapeHtml(data.subject)}</td>
         </tr>
       </table>
     </div>
@@ -80,11 +93,11 @@ export const contactInfoComponent: EmailComponent<ContactInfoComponentData> = {
     Contact Details:
     ================
     
-    Name: ${data.name}
+    Name: ${normalizePlainText(data.name)}
     
-    Email: ${data.email}
+    Email: ${normalizePlainText(data.email)}
     
-    Subject: ${data.subject}
+    Subject: ${normalizePlainText(data.subject)}
   `,
 };
 
@@ -98,7 +111,9 @@ export const messageComponent: EmailComponent<MessageComponentData> = {
     <div class="section">
       <h3 class="section-title">💬 Message</h3>
       <div class="message-box">
-        <div class="message-content">${data.message}</div>
+        <div class="message-content">${escapeHtmlWithLineBreaks(
+          data.message
+        )}</div>
       </div>
     </div>
     <br/><br/>
@@ -107,7 +122,7 @@ export const messageComponent: EmailComponent<MessageComponentData> = {
     Message:
     ========
     
-    ${data.message}
+    ${normalizePlainText(data.message)}
   `,
 };
 
@@ -121,12 +136,12 @@ export const securityInfoComponent: EmailComponent<SecurityInfo> = {
     <div class="security-info">
       <h4>🔒 Security Information</h4>
       <p>
-      <strong>IP Address:</strong> ${data.ipAddress}<br/>
-      <strong>User Agent:</strong> ${data.userAgent}<br/>
-      <strong>Timestamp:</strong> ${data.timestamp}
+      <strong>IP Address:</strong> ${escapeHtml(data.ipAddress)}<br/>
+      <strong>User Agent:</strong> ${escapeHtml(data.userAgent)}<br/>
+      <strong>Timestamp:</strong> ${escapeHtml(data.timestamp)}
       ${
         data.sessionId
-          ? `<br/><strong>Session ID:</strong> ${data.sessionId}`
+          ? `<br/><strong>Session ID:</strong> ${escapeHtml(data.sessionId)}`
           : ""
       }
       </p>
@@ -136,10 +151,10 @@ export const securityInfoComponent: EmailComponent<SecurityInfo> = {
     Security Information:
     ====================
     
-    IP Address: ${data.ipAddress}
-    User Agent: ${data.userAgent}
-    Timestamp: ${data.timestamp}
-    ${data.sessionId ? `Session ID: ${data.sessionId}` : ""}
+    IP Address: ${normalizePlainText(data.ipAddress)}
+    User Agent: ${normalizePlainText(data.userAgent)}
+    Timestamp: ${normalizePlainText(data.timestamp)}
+    ${data.sessionId ? `Session ID: ${normalizePlainText(data.sessionId)}` : ""}
   `,
 };
 
@@ -151,15 +166,15 @@ export const ctaButtonComponent: EmailComponent<CTAButtonComponentData> = {
   name: "ctaButton",
   render: (data: CTAButtonComponentData) => `
     <div style="text-align: center; margin: 25px 0;">
-      <a href="${data.url}" class="cta-button ${
+      <a href="${safeExternalUrl(data.url)}" class="cta-button ${
     data.variant || "primary"
   }" target="_blank" rel="noopener noreferrer">
-        ${data.text}
+        ${escapeHtml(data.text)}
       </a>
     </div>
   `,
   renderText: (data: CTAButtonComponentData) => `
-    ${data.text}: ${data.url}
+    ${normalizePlainText(data.text)}: ${normalizePlainText(data.url)}
   `,
 };
 
@@ -177,11 +192,11 @@ export const socialLinksComponent: EmailComponent<SocialLinksComponentData> = {
         ${data.socialLinks
           .map(
             (link) => `
-          <a href="${
+          <a href="${safeExternalUrl(
             link.url
-          }" class="social-link" target="_blank" rel="noopener noreferrer" aria-label="${
+          )}" class="social-link" target="_blank" rel="noopener noreferrer" aria-label="${escapeHtml(
               link.name
-            }">
+            )}">
             ${getSocialIcon(link.icon || link.name.toLowerCase())}
           </a>
         `
@@ -195,7 +210,12 @@ export const socialLinksComponent: EmailComponent<SocialLinksComponentData> = {
 
     return `
     Social Links:
-    ${data.socialLinks.map((link) => `${link.name}: ${link.url}`).join("\n")}
+    ${data.socialLinks
+      .map(
+        (link) =>
+          `${normalizePlainText(link.name)}: ${normalizePlainText(link.url)}`
+      )
+      .join("\n")}
     `;
   },
 };
@@ -209,12 +229,12 @@ export const footerComponent: EmailComponent<FooterComponentData> = {
   render: (data: FooterComponentData) => `
     <div class="email-footer">
       <div class="footer-links">
-        <a href="${
+        <a href="${safeExternalUrl(
           data.branding.websiteUrl
-        }" class="footer-link" target="_blank" rel="noopener noreferrer">
+        )}" class="footer-link" target="_blank" rel="noopener noreferrer">
           Visit Website
         </a>
-        <a href="mailto:${data.branding.contactEmail}" class="footer-link">
+        <a href="${safeMailto(data.branding.contactEmail)}" class="footer-link">
           Contact Us
         </a>
         ${
@@ -238,18 +258,20 @@ export const footerComponent: EmailComponent<FooterComponentData> = {
       }
       
       <div class="footer-text">
-        This email was sent from ${data.branding.siteName}<br>
-        <a href="${data.branding.websiteUrl}" style="color: inherit;">${
+        This email was sent from ${escapeHtml(data.branding.siteName)}<br>
+        <a href="${safeExternalUrl(
+          data.branding.websiteUrl
+        )}" style="color: inherit;">${escapeHtml(
     data.branding.websiteUrl
-  }</a>
+  )}</a>
       </div>
     </div>
   `,
   renderText: (data: FooterComponentData) => `
     
     ---
-    ${data.branding.siteName}
-    ${data.branding.websiteUrl}
+    ${normalizePlainText(data.branding.siteName)}
+    ${normalizePlainText(data.branding.websiteUrl)}
     
     ${
       data.branding.socialLinks
@@ -260,7 +282,7 @@ export const footerComponent: EmailComponent<FooterComponentData> = {
         : ""
     }
     
-    This email was sent from ${data.branding.siteName}
+    This email was sent from ${normalizePlainText(data.branding.siteName)}
   `,
 };
 
@@ -288,11 +310,11 @@ export const statusBadgeComponent: EmailComponent<StatusBadgeComponentData> = {
     <div class="status-${
       data.status
     }" style="text-align: center; margin: 20px 0;">
-      ${getStatusIcon(data.status)} ${data.text}
+      ${getStatusIcon(data.status)} ${escapeHtml(data.text)}
     </div>
   `,
   renderText: (data: StatusBadgeComponentData) => `
-    [${data.status.toUpperCase()}] ${data.text}
+    [${data.status.toUpperCase()}] ${normalizePlainText(data.text)}
   `,
 };
 

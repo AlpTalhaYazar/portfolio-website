@@ -1,283 +1,223 @@
-import { NextRequest, NextResponse } from "next/server";
 import nodemailer from "nodemailer";
+import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import {
-  getClientIP,
-  verifyOrigin,
-  validateHoneypot,
-  sanitizeInput,
-  detectSpam,
-  logSecurityEvent,
-  verifyCSRFToken,
-  cleanupExpiredTokens,
-} from "@/lib/security";
-import { logger } from "@/lib/logger";
-import { createContactEmail } from "@/lib/email-templates";
-import { serverEnv, clientEnv } from "@/lib/env";
 
-// Validation schema
+import {
+  getCsrfCookieName,
+  getCsrfSecret,
+  verifyCsrfCredential,
+} from "@/lib/csrf";
+import { createContactEmail } from "@/lib/email-templates";
+import { clientEnv, serverEnv } from "@/lib/env";
+import { logger } from "@/lib/logger";
+import {
+  isSecureRequest,
+  validateHoneypot,
+  verifyOrigin,
+} from "@/lib/security";
+
+const MAX_REQUEST_BYTES = 16_384;
+
 const contactSchema = z.object({
-  name: z.string().min(2, "Name is required").max(100, "Name too long"),
-  email: z.string().email("Invalid email address").max(255, "Email too long"),
+  name: z.string().trim().min(2, "Name is required").max(100, "Name too long"),
+  email: z
+    .string()
+    .trim()
+    .email("Invalid email address")
+    .max(254, "Email too long"),
   subject: z
     .string()
+    .trim()
     .min(5, "Subject must be at least 5 characters")
     .max(200, "Subject too long"),
   message: z
     .string()
+    .trim()
     .min(10, "Message must be at least 10 characters")
     .max(5000, "Message too long"),
-  honeypot: z.string().optional(), // Hidden field for bot detection
-  csrfToken: z.string().min(1, "Security token is required"), // CSRF protection
+  honeypot: z.string().max(200).optional(),
+  csrfToken: z.string().min(1).max(4096),
 });
 
+function jsonError(code: string, error: string, status: number) {
+  return NextResponse.json(
+    { success: false, code, error },
+    { status, headers: { "Cache-Control": "no-store" } }
+  );
+}
+
+function getAllowedOrigins(): string[] {
+  return [clientEnv.siteUrl, clientEnv.baseUrl].flatMap((value) => {
+    try {
+      return [new URL(value).origin];
+    } catch {
+      return [];
+    }
+  });
+}
+
+function normalizeHeaderText(value: string): string {
+  return value.replace(/[\r\n]+/g, " ").trim();
+}
+
 export async function POST(request: NextRequest) {
-  const clientIP = getClientIP(request);
-  const userAgent = request.headers.get("user-agent") || "unknown";
+  if (!verifyOrigin(request, getAllowedOrigins())) {
+    logger.warn("contact.origin_forbidden", { path: request.nextUrl.pathname });
+    return jsonError(
+      "origin_forbidden",
+      "Request origin is not allowed.",
+      403
+    );
+  }
+
+  const declaredLength = Number(request.headers.get("content-length") ?? "0");
+  if (Number.isFinite(declaredLength) && declaredLength > MAX_REQUEST_BYTES) {
+    return jsonError("payload_too_large", "Request body is too large.", 413);
+  }
+
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return jsonError(
+      "invalid_json",
+      "Request body must be valid JSON.",
+      400
+    );
+  }
+
+  const parsedBody = contactSchema.safeParse(body);
+  if (!parsedBody.success) {
+    return jsonError(
+      "validation_failed",
+      "Please review the submitted fields and try again.",
+      422
+    );
+  }
+
+  const { name, email, subject, message, honeypot, csrfToken } = parsedBody.data;
+  const sessionId = request.headers.get("x-session-id");
+  const csrfVerification = verifyCsrfCredential({
+    secret: getCsrfSecret(),
+    token: csrfToken,
+    cookieToken: request.cookies.get(
+      getCsrfCookieName(isSecureRequest(request))
+    )?.value,
+    sessionId,
+  });
+
+  if (!csrfVerification.valid) {
+    logger.warn("contact.csrf_invalid", {
+      reason: csrfVerification.reason,
+      path: request.nextUrl.pathname,
+    });
+    return jsonError(
+      "csrf_invalid",
+      "Security validation failed. Refresh the page and try again.",
+      403
+    );
+  }
+
+  if (!validateHoneypot(honeypot)) {
+    logger.warn("contact.automation_rejected", { signal: "honeypot" });
+    return NextResponse.json(
+      { success: true, message: "Message sent successfully." },
+      { headers: { "Cache-Control": "no-store" } }
+    );
+  }
+
+  const gmailUser = serverEnv.gmailUser;
+  const gmailAppPassword = serverEnv.gmailAppPassword;
+  const emailTo = serverEnv.emailTo;
+
+  if (!gmailUser || !gmailAppPassword || !emailTo) {
+    logger.error("contact.email_not_configured");
+    return jsonError(
+      "email_unavailable",
+      "Message delivery is temporarily unavailable. Please try again later.",
+      503
+    );
+  }
+
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    host: "smtp.gmail.com",
+    port: 587,
+    secure: false,
+    auth: {
+      user: gmailUser,
+      pass: gmailAppPassword,
+    },
+    tls: { rejectUnauthorized: true },
+    connectionTimeout: 5_000,
+    greetingTimeout: 5_000,
+    socketTimeout: 10_000,
+    disableFileAccess: true,
+    disableUrlAccess: true,
+  });
 
   try {
-    // 0. Clean up expired tokens periodically
-    cleanupExpiredTokens();
+    await transporter.verify();
 
-    // 1. Origin verification
-    const allowedOrigins = [
-      clientEnv.siteUrl || "http://localhost:3000",
-      clientEnv.baseUrl || "",
-      `https://www.${clientEnv.baseUrl?.replace("https://www.", "") || ""}`,
-    ];
-
-    if (!verifyOrigin(request, allowedOrigins)) {
-      logSecurityEvent({
-        type: "origin_violation",
-        ip: clientIP,
-        userAgent,
-        severity: "high",
-        timestamp: new Date().toISOString(),
-        details: {
-          origin: request.headers.get("origin"),
-          referer: request.headers.get("referer"),
-        },
-      });
-      return NextResponse.json(
-        { error: "Unauthorized request origin" },
-        { status: 403 }
-      );
-    }
-
-    // 2. Rate limiting now handled in middleware for all API routes
-
-    // Parse request body
-    const body = await request.json();
-
-    // Validate input data
-    const validatedData = contactSchema.parse(body);
-    const { name, email, subject, message, honeypot, csrfToken } =
-      validatedData;
-
-    // 2. CSRF Token verification
-    const sessionId = request.headers.get("x-session-id");
-    if (!sessionId) {
-      logSecurityEvent({
-        type: "csrf_violation",
-        ip: clientIP,
-        userAgent,
-        severity: "high",
-        timestamp: new Date().toISOString(),
-        details: { reason: "missing_session_id" },
-      });
-      return NextResponse.json(
-        { error: "Invalid request. Missing session information." },
-        { status: 403 }
-      );
-    }
-
-    const csrfVerification = verifyCSRFToken(csrfToken, sessionId);
-    if (!csrfVerification.valid) {
-      logSecurityEvent({
-        type: "csrf_violation",
-        ip: clientIP,
-        userAgent,
-        severity: "high",
-        timestamp: new Date().toISOString(),
-        details: {
-          reason: csrfVerification.reason,
-          sessionId,
-          providedToken: csrfToken ? "present" : "missing",
-        },
-      });
-      return NextResponse.json(
-        {
-          error:
-            "Security validation failed. Please refresh the page and try again.",
-        },
-        { status: 403 }
-      );
-    }
-
-    // 3. Honeypot validation (bot detection)
-    if (!validateHoneypot(honeypot)) {
-      logSecurityEvent({
-        type: "spam_detected",
-        ip: clientIP,
-        userAgent,
-        severity: "medium",
-        timestamp: new Date().toISOString(),
-        details: { reason: "honeypot_filled", honeypot },
-      });
-      // Return success to fool bots
-      return NextResponse.json({
-        success: true,
-        message: "Message sent successfully!",
-      });
-    }
-
-    // 4. Sanitize inputs
-    const sanitizedData = {
-      name: sanitizeInput(name),
-      email: sanitizeInput(email),
-      subject: sanitizeInput(subject),
-      message: sanitizeInput(message),
-    };
-
-    // 5. Spam detection
-    if (detectSpam(sanitizedData)) {
-      logSecurityEvent({
-        type: "spam_detected",
-        ip: clientIP,
-        userAgent,
-        severity: "medium",
-        timestamp: new Date().toISOString(),
-        details: { reason: "content_analysis", data: sanitizedData },
-      });
-      // Return success to fool spammers
-      return NextResponse.json({
-        success: true,
-        message: "Message sent successfully!",
-      });
-    }
-
-    // Check for required environment variables
-    const gmailUser = serverEnv.gmailUser;
-    const gmailAppPassword = serverEnv.gmailAppPassword;
-    const emailTo = serverEnv.emailTo;
-
-    if (!gmailUser || !gmailAppPassword) {
-      logger.error("Gmail credentials not configured properly");
-
-      return NextResponse.json(
-        {
-          error:
-            "Email service not configured. Please contact the administrator.",
-          details: "Missing Gmail credentials in environment variables",
-        },
-        { status: 500 }
-      );
-    }
-
-    // Create nodemailer transporter for Gmail
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      host: "smtp.gmail.com",
-      port: 587,
-      secure: false, // true for 465, false for other ports
-      auth: {
-        user: gmailUser,
-        pass: gmailAppPassword,
-      },
-      tls: {
-        rejectUnauthorized: true,
-      },
-    });
-
-    // Verify connection configuration
-    try {
-      await transporter.verify();
-
-      logger.dev.log("Gmail SMTP connection verified successfully");
-    } catch (verifyError) {
-      logger.error("Gmail SMTP verification failed:", verifyError);
-
-      return NextResponse.json(
-        {
-          error: "Email service configuration error",
-          details: "Failed to connect to Gmail SMTP server",
-        },
-        { status: 500 }
-      );
-    }
-
-    // Use sanitized data for email
-    const {
-      name: cleanName,
-      email: cleanEmail,
-      subject: cleanSubject,
-      message: cleanMessage,
-    } = sanitizedData;
-
-    // Generate professional email template
     const emailTemplate = createContactEmail(
       {
-        name: cleanName,
-        email: cleanEmail,
-        subject: cleanSubject,
-        message: cleanMessage,
+        name,
+        email,
+        subject: normalizeHeaderText(subject),
+        message,
       },
       {
         _type: "securityInfo" as const,
-        ipAddress: clientIP,
-        userAgent,
-        timestamp: new Date().toLocaleString(),
-        sessionId,
+        ipAddress: "Not retained",
+        userAgent: "Not retained",
+        timestamp: new Date().toISOString(),
+        sessionId: "Not retained",
       }
     );
 
-    // Email options with professional template
-    const mailOptions = {
-      from: `"${cleanName} via Portfolio" <${gmailUser}>`, // sender address
-      to: emailTo, // recipient
-      replyTo: cleanEmail, // reply to the contact person
-      subject: emailTemplate.subject,
+    await transporter.sendMail({
+      from: `"Portfolio Contact" <${gmailUser}>`,
+      to: emailTo,
+      replyTo: email,
+      subject: normalizeHeaderText(emailTemplate.subject),
       text: emailTemplate.text,
       html: emailTemplate.html,
-    };
-
-    // Send email
-    const info = await transporter.sendMail(mailOptions);
-
-    logger.dev.log("Email sent successfully:", info.messageId);
-
-    return NextResponse.json({
-      success: true,
-      message: "Email sent successfully!",
-      messageId: info.messageId,
+      disableFileAccess: true,
+      disableUrlAccess: true,
     });
   } catch (error) {
-    logger.error("Error sending email:", error);
-
-    // Handle validation errors
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        {
-          error: "Validation failed",
-          details: error.issues.map((e) => e.message).join(", "),
-        },
-        { status: 400 }
-      );
-    }
-
-    // Handle other errors
+    logger.error("contact.delivery_failed", {
+      errorName: error instanceof Error ? error.name : "UnknownError",
+    });
     return NextResponse.json(
       {
-        error: "Failed to send email. Please try again later.",
-        details:
-          error instanceof Error ? error.message : "Unknown error occurred",
+        success: false,
+        code: "delivery_unavailable",
+        error: "Message delivery is temporarily unavailable. Please try again.",
       },
-      { status: 500 }
+      {
+        status: 503,
+        headers: {
+          "Cache-Control": "no-store",
+          "Retry-After": "30",
+        },
+      }
     );
   }
+
+  logger.info("contact.delivery_succeeded");
+  return NextResponse.json(
+    { success: true, message: "Message sent successfully." },
+    { headers: { "Cache-Control": "no-store" } }
+  );
 }
 
-// Handle OPTIONS request for CORS
 export async function OPTIONS() {
-  return NextResponse.json({}, { status: 200 });
+  return new NextResponse(null, {
+    status: 204,
+    headers: {
+      Allow: "POST, OPTIONS",
+      "Cache-Control": "no-store",
+    },
+  });
 }

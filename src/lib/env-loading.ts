@@ -1,4 +1,6 @@
-import { loadEnvConfig } from "@next/env";
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
+import { parse } from "dotenv";
 
 export type EnvironmentMode = "development" | "production" | "test";
 
@@ -50,29 +52,32 @@ export function loadEnvironment({
   mode = "development",
 }: LoadEnvironmentOptions = {}): LoadEnvironmentResult {
   const mutableEnv = process.env as Record<string, string | undefined>;
-  const existingEnv = { ...mutableEnv };
   const previousNodeEnv = mutableEnv.NODE_ENV;
 
   mutableEnv.NODE_ENV = mode;
 
   try {
-    const result = loadEnvConfig(
-      directory,
-      mode === "development",
-      {
-        info: () => undefined,
-        error: () => undefined,
-      },
-      true
-    );
+    const fileNames = getEnvironmentFileNames(mode);
+    const loadedEnvFiles: LoadedEnvFile[] = [];
 
-    for (const [key, value] of Object.entries(existingEnv)) {
-      process.env[key] = value;
+    for (const fileName of fileNames) {
+      const path = join(directory, fileName);
+      if (!existsSync(path)) continue;
+
+      const contents = readFileSync(path, "utf8");
+      const env = parse(contents);
+      loadedEnvFiles.push({ path, contents, env });
+
+      for (const [key, value] of Object.entries(env)) {
+        if (mutableEnv[key] === undefined) {
+          mutableEnv[key] = value;
+        }
+      }
     }
 
     return {
       mode,
-      loadedEnvFiles: result.loadedEnvFiles as LoadedEnvFile[],
+      loadedEnvFiles,
       combinedEnv: process.env,
     };
   } finally {
@@ -82,4 +87,16 @@ export function loadEnvironment({
       mutableEnv.NODE_ENV = previousNodeEnv;
     }
   }
+}
+
+function getEnvironmentFileNames(mode: EnvironmentMode): string[] {
+  if (mode === "production") {
+    return [".env.production.local", ".env.production"];
+  }
+
+  if (mode === "test") {
+    return [".env.test.local", ".env.test", ".env"];
+  }
+
+  return [".env.development.local", ".env.local", ".env.development", ".env"];
 }

@@ -53,12 +53,16 @@ describe("loadEnvironment", () => {
     ]);
   });
 
-  it("loads local production plaintext before committed production env", () => {
+  it("loads only production-specific files in production mode", () => {
     const directory = createTempEnvDir();
     tempDirs.push(directory);
 
     writeEnvFile(directory, ".env", "TEST_FALLBACK=from-env\n");
-    writeEnvFile(directory, ".env.local", "TEST_PRIORITY=from-dev-local\n");
+    writeEnvFile(
+      directory,
+      ".env.local",
+      "TEST_DEVELOPMENT_ONLY=from-dev-local\n"
+    );
     writeEnvFile(
       directory,
       ".env.production",
@@ -73,12 +77,11 @@ describe("loadEnvironment", () => {
     const result = loadEnvironment({ directory, mode: "production" });
 
     expect(process.env.TEST_PRIORITY).toBe("from-production-local");
-    expect(process.env.TEST_FALLBACK).toBe("from-env");
+    expect(process.env.TEST_FALLBACK).toBeUndefined();
+    expect(process.env.TEST_DEVELOPMENT_ONLY).toBeUndefined();
     expect(result.loadedEnvFiles.map((file) => basename(file.path))).toEqual([
       ".env.production.local",
-      ".env.local",
       ".env.production",
-      ".env",
     ]);
   });
 

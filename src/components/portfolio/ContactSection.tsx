@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Github, Linkedin, Mail } from "lucide-react";
+import { BriefcaseBusiness, Code2, Mail } from "lucide-react";
 
 import { siteConfig } from "@/lib/site";
 import type { PortfolioContactContent } from "@/types/portfolio";
@@ -23,12 +23,12 @@ export function ContactSection({ content }: ContactSectionProps) {
     {
       label: siteConfig.linkedInUrl.replace(/^https?:\/\//, ""),
       href: siteConfig.linkedInUrl,
-      icon: Linkedin,
+      icon: BriefcaseBusiness,
     },
     {
       label: siteConfig.githubUrl.replace(/^https?:\/\//, ""),
       href: siteConfig.githubUrl,
-      icon: Github,
+      icon: Code2,
     },
   ] as const;
 

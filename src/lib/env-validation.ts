@@ -11,10 +11,6 @@ import { z } from "zod";
 const emailSchema = z.string().email("Invalid email format");
 const urlSchema = z.string().url("Invalid URL format");
 const nonEmptyStringSchema = z.string().min(1, "Cannot be empty");
-const optionalStringSchema = z.string().optional();
-const phoneSchema = z
-  .string()
-  .regex(/^[\+]?[1-9][\d\s\-\(\)]{0,20}$/, "Invalid phone number format");
 
 // Server-side environment variables schema
 const serverEnvSchema = z.object({
@@ -26,6 +22,12 @@ const serverEnvSchema = z.object({
 
   // Optional Email Configuration
   EMAIL_TO: emailSchema.optional(),
+
+  // Required in production. Development and test use an explicit local fallback.
+  CSRF_SECRET: z
+    .string()
+    .min(32, "CSRF secret must be at least 32 characters")
+    .optional(),
 
   // System Environment
   NODE_ENV: z
@@ -41,23 +43,16 @@ const clientEnvSchema = z.object({
 
   // Required Personal Information
   NEXT_PUBLIC_FULL_NAME: nonEmptyStringSchema,
-  NEXT_PUBLIC_JOB_TITLE: nonEmptyStringSchema,
-  NEXT_PUBLIC_COMPANY: nonEmptyStringSchema,
 
   // Required Contact Information
   NEXT_PUBLIC_CONTACT_EMAIL: emailSchema,
   NEXT_PUBLIC_CONTACT_LOCATION: nonEmptyStringSchema,
-  NEXT_PUBLIC_CONTACT_PHONE: nonEmptyStringSchema,
-  NEXT_PUBLIC_CONTACT_PHONE_WITHOUT_SPACE: phoneSchema,
 
   // Required Social Media Links
   NEXT_PUBLIC_GITHUB_URL: urlSchema,
   NEXT_PUBLIC_LINKEDIN_URL: urlSchema,
 
-  // Optional Social Media
-  NEXT_PUBLIC_TWITTER_HANDLE: optionalStringSchema,
-
-  // Optional Analytics & Verification
+  // Optional Analytics
   NEXT_PUBLIC_GA_MEASUREMENT_ID: z
     .string()
     .regex(
@@ -65,22 +60,43 @@ const clientEnvSchema = z.object({
       "Invalid Google Analytics Measurement ID format (should start with G-)"
     )
     .optional(),
-  NEXT_PUBLIC_GOOGLE_VERIFICATION: optionalStringSchema,
-
-  // Optional Security (Future Implementation)
-  NEXT_PUBLIC_RECAPTCHA_SITE_KEY: optionalStringSchema,
 });
 
 // Optional server-side variables (for future features)
 const optionalServerEnvSchema = z.object({
   UPSTASH_REDIS_REST_URL: urlSchema.optional(),
-  UPSTASH_REDIS_REST_TOKEN: optionalStringSchema,
+  UPSTASH_REDIS_REST_TOKEN: nonEmptyStringSchema.optional(),
 });
 
 // Combined schema
 const envSchema = serverEnvSchema
   .merge(clientEnvSchema)
-  .merge(optionalServerEnvSchema);
+  .merge(optionalServerEnvSchema)
+  .superRefine((env, context) => {
+    if (env.NODE_ENV === "production" && !env.CSRF_SECRET) {
+      context.addIssue({
+        code: "custom",
+        path: ["CSRF_SECRET"],
+        message: "CSRF_SECRET is required in production",
+      });
+    }
+
+    const hasRedisUrl = Boolean(env.UPSTASH_REDIS_REST_URL);
+    const hasRedisToken = Boolean(env.UPSTASH_REDIS_REST_TOKEN);
+
+    if (hasRedisUrl !== hasRedisToken) {
+      context.addIssue({
+        code: "custom",
+        path: [
+          hasRedisUrl
+            ? "UPSTASH_REDIS_REST_TOKEN"
+            : "UPSTASH_REDIS_REST_URL",
+        ],
+        message:
+          "UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN must be configured together",
+      });
+    }
+  });
 
 export type EnvConfig = z.infer<typeof envSchema>;
 
@@ -107,21 +123,15 @@ const ENV_CATEGORIES = {
   GMAIL_USER: "Gmail SMTP Configuration",
   GMAIL_APP_PASSWORD: "Gmail SMTP Configuration",
   EMAIL_TO: "Email Configuration",
+  CSRF_SECRET: "Security",
   NEXT_PUBLIC_BASE_URL: "Site Configuration",
   NEXT_PUBLIC_SITE_URL: "Site Configuration",
   NEXT_PUBLIC_FULL_NAME: "Personal Information",
-  NEXT_PUBLIC_JOB_TITLE: "Personal Information",
-  NEXT_PUBLIC_COMPANY: "Personal Information",
   NEXT_PUBLIC_CONTACT_EMAIL: "Contact Information",
   NEXT_PUBLIC_CONTACT_LOCATION: "Contact Information",
-  NEXT_PUBLIC_CONTACT_PHONE: "Contact Information",
-  NEXT_PUBLIC_CONTACT_PHONE_WITHOUT_SPACE: "Contact Information",
   NEXT_PUBLIC_GITHUB_URL: "Social Media Links",
   NEXT_PUBLIC_LINKEDIN_URL: "Social Media Links",
-  NEXT_PUBLIC_TWITTER_HANDLE: "Social Media (Optional)",
   NEXT_PUBLIC_GA_MEASUREMENT_ID: "Analytics & Verification",
-  NEXT_PUBLIC_GOOGLE_VERIFICATION: "Analytics & Verification",
-  NEXT_PUBLIC_RECAPTCHA_SITE_KEY: "Security (Optional)",
   UPSTASH_REDIS_REST_URL: "Security (Optional)",
   UPSTASH_REDIS_REST_TOKEN: "Security (Optional)",
 } as const;
@@ -129,7 +139,9 @@ const ENV_CATEGORIES = {
 /**
  * Validates environment variables and returns detailed results
  */
-export function validateEnvironmentVariables(): ValidationResult {
+export function validateEnvironmentVariables(
+  env: Readonly<Record<string, string | undefined>> = process.env
+): ValidationResult {
   const result: ValidationResult = {
     isValid: true,
     errors: [],
@@ -138,7 +150,7 @@ export function validateEnvironmentVariables(): ValidationResult {
 
   try {
     // Validate the environment variables
-    const validatedEnv = envSchema.parse(process.env);
+    const validatedEnv = envSchema.parse(env);
 
     // Check for potential issues and add warnings
     addWarnings(result, validatedEnv);
@@ -150,14 +162,13 @@ export function validateEnvironmentVariables(): ValidationResult {
       for (const issue of error.issues) {
         const variable = issue.path[0] as string;
         const category =
-          ENV_CATEGORIES[variable as keyof typeof ENV_CATEGORIES];
+          ENV_CATEGORIES[variable as keyof typeof ENV_CATEGORIES] ??
+          "Environment Configuration";
 
         // Determine error type
         let errorCategory: "required" | "format" | "missing" = "format";
         if (
-          issue.code === z.ZodIssueCode.invalid_type &&
-          "received" in issue &&
-          issue.received === "undefined"
+          issue.code === z.ZodIssueCode.invalid_type && env[variable] === undefined
         ) {
           errorCategory = "missing";
         } else if (

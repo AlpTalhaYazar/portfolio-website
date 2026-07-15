@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { type ContactFormData, type SecurityError } from "@/types";
+import { type ContactFormData } from "@/types";
 import { logger } from "@/lib/logger";
 import { type UseCSRFSecurityReturn } from "./useCSRFSecurity";
 
@@ -8,8 +8,6 @@ export interface UseContactSubmissionReturn {
   // Submission state
   isSubmitted: boolean;
   submitError: string | null;
-  isBlocked: boolean;
-  blockInfo: { escalationLevel?: number } | null;
 
   // Functions
   onSubmit: (data: ContactFormData) => Promise<boolean>;
@@ -17,20 +15,31 @@ export interface UseContactSubmissionReturn {
   resetSubmissionState: () => void;
 }
 
+export interface ContactSubmissionMessages {
+  readonly security: string;
+  readonly rateLimited: string;
+  readonly unavailable: string;
+  readonly failed: string;
+}
+
+const DEFAULT_MESSAGES: ContactSubmissionMessages = {
+  security: "Security validation failed. Please try again.",
+  rateLimited: "Too many requests. Please wait {minutes} minutes before trying again.",
+  unavailable: "The contact service is temporarily unavailable. Please try again later.",
+  failed: "Failed to send message. Please try again.",
+};
+
 /**
  * Custom hook for handling contact form submission
  * Manages form submission, error handling, and success states
  */
 export const useContactSubmission = (
-  security: UseCSRFSecurityReturn
+  security: UseCSRFSecurityReturn,
+  messages: ContactSubmissionMessages = DEFAULT_MESSAGES
 ): UseContactSubmissionReturn => {
   // Submission state
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [isBlocked, setIsBlocked] = useState(false);
-  const [blockInfo, setBlockInfo] = useState<{
-    escalationLevel?: number;
-  } | null>(null);
 
   // Refs for timeout management
   const submitErrorTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -49,8 +58,6 @@ export const useContactSubmission = (
   const resetSubmissionState = () => {
     setIsSubmitted(false);
     setSubmitError(null);
-    setIsBlocked(false);
-    setBlockInfo(null);
 
     // Clear any active timeouts
     if (submitErrorTimeoutRef.current) {
@@ -68,7 +75,9 @@ export const useContactSubmission = (
     try {
       setSubmitError(null);
       security.clearSecurityError();
-      setIsBlocked(false);
+
+      let csrfToken = security.csrfToken;
+      let sessionId = security.sessionId;
 
       // Ensure we have a valid CSRF token
       if (!security.isTokenValid()) {
@@ -81,28 +90,31 @@ export const useContactSubmission = (
             : null,
         });
 
-        const tokenRefreshed = await security.fetchCSRFToken();
+        const refreshedCredential = await security.fetchCSRFToken();
 
-        if (!tokenRefreshed) {
-          throw new Error(
-            "Security validation failed. Please refresh the page."
-          );
+        if (!refreshedCredential) {
+          throw new Error(messages.security);
         }
+
+        csrfToken = refreshedCredential.token;
+        sessionId = refreshedCredential.sessionId;
+      }
+
+      if (!csrfToken || !sessionId) {
+        throw new Error(messages.security);
       }
 
       // Prepare submission data with security token
       const submissionData = {
         ...data,
-        csrfToken: security.csrfToken ?? "",
+        csrfToken,
       };
 
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
       };
 
-      if (security.sessionId) {
-        headers["x-session-id"] = security.sessionId;
-      }
+      headers["x-session-id"] = sessionId;
 
       const response = await fetch("/api/contact/", {
         method: "POST",
@@ -110,29 +122,24 @@ export const useContactSubmission = (
         body: JSON.stringify(submissionData),
       });
 
-      const result = await response.json();
+      let result: { code?: string } = {};
+      try {
+        result = (await response.json()) as { code?: string };
+      } catch {
+        result = {};
+      }
 
       if (!response.ok) {
-        // Handle enhanced rate limiting responses
         if (response.status === 429) {
-          const securityResult = result as SecurityError;
-
-          if (securityResult.blocked) {
-            setIsBlocked(true);
-            setBlockInfo({ escalationLevel: securityResult.escalationLevel });
-          }
-
           const retryAfter = response.headers.get("retry-after");
-          const minutes = retryAfter
-            ? Math.ceil(parseInt(retryAfter) / 60)
+          const retrySeconds = retryAfter
+            ? Number.parseInt(retryAfter, 10)
+            : Number.NaN;
+          const minutes = Number.isFinite(retrySeconds)
+            ? Math.max(1, Math.ceil(retrySeconds / 60))
             : 15;
-
-          const escalationMessage = securityResult.escalationLevel
-            ? ` (Level ${securityResult.escalationLevel})`
-            : "";
-
           throw new Error(
-            `Too many requests${escalationMessage}. Please wait ${minutes} minutes before trying again.`
+            messages.rateLimited.replace("{minutes}", String(minutes))
           );
         }
 
@@ -141,15 +148,17 @@ export const useContactSubmission = (
           // Try to refresh CSRF token for the next attempt
           await security.fetchCSRFToken();
 
-          throw new Error(
-            result.error || "Security validation failed. Please try again."
-          );
+          throw new Error(messages.security);
         }
 
-        throw new Error(result.error || "Failed to send message");
+        if (response.status === 503) {
+          throw new Error(messages.unavailable);
+        }
+
+        throw new Error(messages.failed);
       }
 
-      logger.dev.log("Email sent successfully:", result);
+      logger.dev.log("contact_submission_succeeded", { code: result.code });
 
       setIsSubmitted(true);
 
@@ -163,11 +172,7 @@ export const useContactSubmission = (
     } catch (error) {
       logger.error("Error sending email:", error);
 
-      setSubmitError(
-        error instanceof Error
-          ? error.message
-          : "Failed to send message. Please try again."
-      );
+      setSubmitError(error instanceof Error ? error.message : messages.failed);
 
       // Clear previous error timeout and set new one (10 seconds for security errors)
       if (submitErrorTimeoutRef.current) {
@@ -197,8 +202,6 @@ export const useContactSubmission = (
     // Submission state
     isSubmitted,
     submitError,
-    isBlocked,
-    blockInfo,
 
     // Functions
     onSubmit,

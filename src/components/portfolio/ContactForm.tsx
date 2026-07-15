@@ -2,11 +2,11 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AlertTriangle, CheckCircle, Shield, Send } from "lucide-react";
-import type { ReactNode } from "react";
+import { useId, type ReactNode } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
-import { type ContactFormData, SECURITY_CONSTANTS } from "@/types";
+import { type ContactFormData } from "@/types";
 import { useCSRFSecurity, useContactSubmission } from "@/hooks";
 import type { PortfolioContactContent } from "@/types/portfolio";
 
@@ -25,8 +25,14 @@ function buildMessageSubject(message: string, fallbackSubject: string) {
 }
 
 export function ContactForm({ content }: ContactFormProps) {
+  const formId = useId();
+  const fieldIds = {
+    name: `${formId}-name`,
+    email: `${formId}-email`,
+    message: `${formId}-message`,
+  };
   const security = useCSRFSecurity();
-  const submission = useContactSubmission(security);
+  const submission = useContactSubmission(security, content.errors);
   const fallbackSubject = content.placeholders.subject;
   const [successTitle, successBody] = content.success.split(/(?<=\.)\s+/, 2);
 
@@ -69,12 +75,15 @@ export function ContactForm({ content }: ContactFormProps) {
   const isDisabled =
     isSubmitting ||
     security.isSecurityLoading ||
-    !security.csrfToken ||
-    submission.isBlocked;
+    !security.csrfToken;
 
   if (submission.isSubmitted) {
     return (
-      <div className="surface-card flex min-h-[28rem] flex-col items-center justify-center gap-5 text-center">
+      <div
+        className="surface-card flex min-h-[28rem] flex-col items-center justify-center gap-5 text-center"
+        role="status"
+        aria-live="polite"
+      >
         <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-accent/25 bg-accent/10">
           <CheckCircle size={24} className="text-accent" />
         </div>
@@ -93,7 +102,7 @@ export function ContactForm({ content }: ContactFormProps) {
   }
 
   return (
-    <form onSubmit={onSubmit} className="surface-card space-y-6">
+    <form onSubmit={onSubmit} className="surface-card space-y-6" noValidate>
       <input
         {...register("honeypot")}
         type="text"
@@ -106,40 +115,57 @@ export function ContactForm({ content }: ContactFormProps) {
 
       <div className="grid gap-6 sm:grid-cols-2">
         <Field
+          id={fieldIds.name}
           label={content.nameLabel}
           error={errors.name?.message}
         >
           <input
             {...register("name")}
+            id={fieldIds.name}
+            autoComplete="name"
             placeholder={content.placeholders.name}
             aria-invalid={errors.name ? true : undefined}
+            aria-describedby={
+              errors.name ? `${fieldIds.name}-error` : undefined
+            }
             className="input-shell"
           />
         </Field>
 
         <Field
+          id={fieldIds.email}
           label={content.emailLabel}
           error={errors.email?.message}
         >
           <input
             {...register("email")}
+            id={fieldIds.email}
+            autoComplete="email"
             type="email"
             placeholder={content.placeholders.email}
             aria-invalid={errors.email ? true : undefined}
+            aria-describedby={
+              errors.email ? `${fieldIds.email}-error` : undefined
+            }
             className="input-shell"
           />
         </Field>
       </div>
 
       <Field
+        id={fieldIds.message}
         label={content.messageLabel}
         error={errors.message?.message}
       >
         <textarea
           {...register("message")}
+          id={fieldIds.message}
           rows={6}
           placeholder={content.placeholders.message}
           aria-invalid={errors.message ? true : undefined}
+          aria-describedby={
+            errors.message ? `${fieldIds.message}-error` : undefined
+          }
           className="input-shell min-h-40 resize-y"
         />
       </Field>
@@ -151,7 +177,7 @@ export function ContactForm({ content }: ContactFormProps) {
         {security.securityError ? (
           <Banner
             icon={<AlertTriangle size={16} />}
-            text={security.securityError}
+            text={content.errors.security}
             tone="error"
           />
         ) : null}
@@ -159,14 +185,7 @@ export function ContactForm({ content }: ContactFormProps) {
           <Banner
             icon={<AlertTriangle size={16} />}
             text={submission.submitError}
-            tone={submission.isBlocked ? "warning" : "error"}
-            meta={
-              submission.isBlocked && submission.blockInfo?.escalationLevel
-                ? `Level ${submission.blockInfo.escalationLevel}/${Object.keys(
-                    SECURITY_CONSTANTS.BLOCK_DURATIONS
-                  ).length}`
-                : undefined
-            }
+            tone="error"
           />
         ) : null}
         {!security.isSecurityLoading && security.csrfToken && !security.securityError ? (
@@ -177,11 +196,6 @@ export function ContactForm({ content }: ContactFormProps) {
       <button type="submit" disabled={isDisabled} className="primary-button w-full justify-center disabled:cursor-not-allowed disabled:opacity-50">
         {isSubmitting ? (
           <span>{content.submittingLabel}</span>
-        ) : submission.isBlocked ? (
-          <>
-            <AlertTriangle size={16} />
-            <span>{content.blocked}</span>
-          </>
         ) : (
           <>
             <Send size={16} />
@@ -194,20 +208,28 @@ export function ContactForm({ content }: ContactFormProps) {
 }
 
 function Field({
+  id,
   label,
   error,
   children,
 }: {
+  id: string;
   label: string;
   error?: string;
   children: ReactNode;
 }) {
   return (
-    <label className="block space-y-2">
-      <span className="mono-label text-muted-foreground">{label}</span>
+    <div className="block space-y-2">
+      <label htmlFor={id} className="block">
+        <span className="mono-label text-muted-foreground">{label}</span>
+      </label>
       {children}
-      {error ? <p className="text-sm text-error">{error}</p> : null}
-    </label>
+      {error ? (
+        <p id={`${id}-error`} className="text-sm text-error" role="alert">
+          {error}
+        </p>
+      ) : null}
+    </div>
   );
 }
 
@@ -222,6 +244,8 @@ function StatusLine({
 }) {
   return (
     <div
+      role="status"
+      aria-live="polite"
       className={`inline-flex items-center gap-2 text-sm ${
         success ? "text-accent" : "text-muted-foreground"
       }`}
@@ -251,7 +275,11 @@ function Banner({
       : "border-error/30 bg-error/10 text-foreground";
 
   return (
-    <div className={`rounded-2xl border px-4 py-3 ${toneClass}`}>
+    <div
+      className={`rounded-2xl border px-4 py-3 ${toneClass}`}
+      role={tone === "success" ? "status" : "alert"}
+      aria-live={tone === "success" ? "polite" : "assertive"}
+    >
       <div className="flex items-start gap-3">
         {icon}
         <div className="space-y-1">

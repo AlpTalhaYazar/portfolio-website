@@ -1,30 +1,68 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   checkRateLimitRedis,
-  getClientIP,
-  logSecurityEvent,
-  getRateLimitingMethod,
 } from "@/lib/redis-rate-limit";
+import { logSecurityEvent } from "@/lib/security";
 import { buildCSPHeader } from "@/lib/csp";
 import { buildRequestContextHeaders } from "@/lib/request-context";
 import type { RateLimitConfig } from "@/types";
 
 // Rate limiting configuration per endpoint
 const RATE_LIMIT_CONFIG: Record<string, RateLimitConfig> = {
-  "/api/contact/": { windowMs: 15 * 60 * 1000, maxRequests: 5 }, // 5 requests per 15 minutes
-  "/api/csrf-token/": { windowMs: 5 * 60 * 1000, maxRequests: 10 }, // 10 requests per 5 minutes
-  "/api/health/": { windowMs: 1 * 60 * 1000, maxRequests: 30 }, // 30 requests per minute (higher for health checks)
+  "/api/contact/": {
+    name: "contact",
+    windowMs: 15 * 60 * 1000,
+    maxRequests: 5,
+    failureMode: "closed",
+  },
+  "/api/csrf-token/": {
+    name: "csrf-token",
+    windowMs: 5 * 60 * 1000,
+    maxRequests: 10,
+    failureMode: "memory",
+  },
+  "/api/health/": {
+    name: "health",
+    windowMs: 1 * 60 * 1000,
+    maxRequests: 30,
+    failureMode: "memory",
+  },
   // Default for other API routes
-  "/api/": { windowMs: 10 * 60 * 1000, maxRequests: 20 }, // 20 requests per 10 minutes
+  "/api/": {
+    name: "api-default",
+    windowMs: 10 * 60 * 1000,
+    maxRequests: 20,
+    failureMode: "memory",
+  },
 };
 
-const SENSITIVE_PATHS = [
-  "/.env",
-  "/admin",
-  "/.git",
-  "/robots.txt",
-  "/sitemap.xml",
-];
+function isSensitivePath(pathname: string): boolean {
+  let decodedPathname: string;
+
+  try {
+    decodedPathname = decodeURIComponent(pathname);
+  } catch {
+    return true;
+  }
+
+  const normalizedPathname =
+    decodedPathname.replace(/\/{2,}/g, "/").replace(/\/+$/, "") || "/";
+  const normalizedLowerPathname = normalizedPathname.toLowerCase();
+  const segments = normalizedLowerPathname.split("/").filter(Boolean);
+
+  const containsSensitiveDotfile = segments.some(
+    (segment) =>
+      segment === ".git" ||
+      segment === ".env" ||
+      segment.startsWith(".env.")
+  );
+
+  return (
+    containsSensitiveDotfile ||
+    normalizedLowerPathname === "/admin" ||
+    normalizedLowerPathname.startsWith("/admin/")
+  );
+}
 
 /**
  * Generate a cryptographically secure nonce using Web Crypto API (Edge compatible)
@@ -43,9 +81,6 @@ async function applyRateLimit(
   request: NextRequest,
   pathname: string
 ): Promise<NextResponse | null> {
-  const clientIP = getClientIP(request);
-  const userAgent = request.headers.get("user-agent") || "unknown";
-
   // Find the most specific rate limit config for this path
   let rateLimitConfig: RateLimitConfig = RATE_LIMIT_CONFIG["/api/"]; // default
   for (const [path, pathConfig] of Object.entries(RATE_LIMIT_CONFIG)) {
@@ -59,43 +94,46 @@ async function applyRateLimit(
   const rateLimit = await checkRateLimitRedis(request, rateLimitConfig);
 
   if (!rateLimit.allowed) {
-    const severity =
-      (rateLimit.blockInfo?.escalationLevel ?? 0) >= 3 ? "high" : "medium";
+    if (rateLimit.reason === "dependency_unavailable") {
+      return NextResponse.json(
+        {
+          success: false,
+          code: "rate_limit_unavailable",
+          error: "Request protection is temporarily unavailable.",
+        },
+        {
+          status: 503,
+          headers: {
+            "Cache-Control": "no-store",
+            "Retry-After": "5",
+          },
+        }
+      );
+    }
 
     logSecurityEvent({
       type: "rate_limit",
-      ip: clientIP,
-      userAgent,
-      severity,
+      ip: "redacted",
+      severity: "medium",
       timestamp: new Date().toISOString(),
       details: {
         endpoint: pathname,
-        escalationLevel: rateLimit.blockInfo?.escalationLevel,
-        blockUntil: rateLimit.blockInfo?.blockUntil,
         windowMs: rateLimitConfig.windowMs,
         maxRequests: rateLimitConfig.maxRequests,
-        method: getRateLimitingMethod(), // Log which method is being used
+        method: rateLimit.backend,
+        degraded: rateLimit.degraded,
       },
     });
 
-    let retryAfter: number;
-    if (rateLimit.resetTime) {
-      retryAfter = Math.ceil((rateLimit.resetTime - Date.now()) / 1000);
-    } else if (rateLimit.blockInfo?.blockUntil) {
-      retryAfter = Math.ceil(
-        (rateLimit.blockInfo.blockUntil - Date.now()) / 1000
-      );
-    } else {
-      retryAfter = Math.ceil(rateLimitConfig.windowMs / 1000);
-    }
+    const retryAfter = rateLimit.resetTime
+      ? Math.max(1, Math.ceil((rateLimit.resetTime - Date.now()) / 1000))
+      : Math.max(1, Math.ceil(rateLimitConfig.windowMs / 1000));
 
     return NextResponse.json(
       {
+        success: false,
+        code: "rate_limit_exceeded",
         error: "Too many requests. Please try again later.",
-        ...(rateLimit.blockInfo?.isBlocked && {
-          blocked: true,
-          escalationLevel: rateLimit.blockInfo.escalationLevel,
-        }),
       },
       {
         status: 429,
@@ -124,7 +162,7 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(canonicalUrl, 308);
   }
 
-  if (SENSITIVE_PATHS.some((path) => pathname.includes(path))) {
+  if (isSensitivePath(pathname)) {
     return new NextResponse("Forbidden", { status: 403 });
   }
 
@@ -173,7 +211,13 @@ export async function proxy(request: NextRequest) {
   );
 
   // Add nonce-based Content Security Policy
-  response.headers.set("Content-Security-Policy", buildCSPHeader({ nonce }));
+  response.headers.set(
+    "Content-Security-Policy",
+    buildCSPHeader({
+      nonce,
+      upgradeInsecureRequests: request.nextUrl.protocol === "https:",
+    })
+  );
 
   return response;
 }

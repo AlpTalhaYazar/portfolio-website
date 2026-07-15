@@ -16,7 +16,13 @@ const mockSecurity: UseCSRFSecurityReturn = {
   tokenExpires: Date.now() + 60_000,
   isSecurityLoading: false,
   securityError: null,
-  fetchCSRFToken: vi.fn(async () => true),
+  fetchCSRFToken: vi.fn(async () => ({
+    success: true,
+    token: "csrf-token",
+    sessionId: "session-id",
+    expires: Date.now() + 60_000,
+    expiresIn: 60,
+  })),
   clearSecurityError: vi.fn(),
   isTokenExpired: vi.fn(() => false),
   isTokenValid: vi.fn(() => true),
@@ -25,8 +31,6 @@ const mockSecurity: UseCSRFSecurityReturn = {
 const mockSubmission: UseContactSubmissionReturn = {
   isSubmitted: false,
   submitError: null,
-  isBlocked: false,
-  blockInfo: null,
   onSubmit: vi.fn(async () => true),
   clearSubmitError: vi.fn(),
   resetSubmissionState: vi.fn(),
@@ -42,8 +46,6 @@ describe("ContactForm", () => {
     vi.clearAllMocks();
     mockSubmission.isSubmitted = false;
     mockSubmission.submitError = null;
-    mockSubmission.isBlocked = false;
-    mockSubmission.blockInfo = null;
     mockSubmission.onSubmit = vi.fn(async () => true);
   });
 
@@ -92,5 +94,24 @@ describe("ContactForm", () => {
       screen.queryByRole("button", { name: /Send Message/i })
     ).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Subject")).not.toBeInTheDocument();
+  });
+
+  it("associates validation errors and focuses the first invalid control", async () => {
+    render(<ContactForm content={getPortfolioContent("en").contact.form} />);
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole("button", { name: /Send Message/i }));
+
+    const nameInput = screen.getByLabelText("Name");
+    const nameError = await screen.findByText("Please enter your name.");
+
+    expect(nameInput).toHaveFocus();
+    expect(nameInput).toHaveAttribute("aria-invalid", "true");
+    expect(nameInput).toHaveAttribute("aria-describedby", nameError.id);
+    expect(nameError).toHaveAttribute("role", "alert");
+    expect(screen.getByLabelText("Email")).toHaveAttribute(
+      "aria-describedby",
+      expect.stringMatching(/email-error/)
+    );
   });
 });

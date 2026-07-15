@@ -1,461 +1,311 @@
-/**
- * Redis-backed Rate Limiting with Upstash
- *
- * This module provides distributed rate limiting using Upstash Redis.
- * Falls back to in-memory rate limiting if Redis is not configured.
- *
- * Environment Variables Required:
- * - UPSTASH_REDIS_REST_URL
- * - UPSTASH_REDIS_REST_TOKEN
- */
-
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
-import { NextRequest } from "next/server";
-import type {
-  RateLimitConfig,
-  RateLimitResult,
-  BlockInfo,
-  SecurityEvent,
-} from "@/types";
+import type { NextRequest } from "next/server";
+
+import { getCsrfSecret } from "@/lib/csrf";
 import { logger } from "@/lib/logger";
+import type { RateLimitConfig, RateLimitResult } from "@/types";
 
-// =================================================
-// REDIS CLIENT INITIALIZATION
-// =================================================
+type RedisState = "configured" | "unconfigured" | "invalid";
 
-let redis: Redis | null = null;
-let rateLimiter: Ratelimit | null = null;
-let isRedisAvailable = false;
+interface RedisLimitResult {
+  readonly success: boolean;
+  readonly remaining: number;
+  readonly reset: number;
+}
 
-/**
- * Initialize Redis client if environment variables are present
- */
-function initializeRedis(): boolean {
-  if (redis !== null) {
-    return isRedisAvailable;
+type RedisLimit = (
+  policy: RateLimitConfig,
+  identifier: string
+) => Promise<RedisLimitResult>;
+
+interface MemoryEntry {
+  count: number;
+  resetTime: number;
+}
+
+interface RateLimitServiceOptions {
+  readonly redisState?: RedisState;
+  readonly redisLimit?: RedisLimit;
+  readonly hashIdentifier?: (value: string) => Promise<string>;
+  readonly now?: () => number;
+  readonly maxMemoryEntries?: number;
+}
+
+export interface RateLimitService {
+  readonly check: (
+    request: NextRequest,
+    policy: RateLimitConfig
+  ) => Promise<RateLimitResult>;
+  readonly getMemoryEntryCount: () => number;
+}
+
+const DEFAULT_MAX_MEMORY_ENTRIES = 5_000;
+
+let productionRedis: Redis | null = null;
+const productionLimiters = new Map<string, Ratelimit>();
+
+function resolveRedisState(): RedisState {
+  const hasUrl = Boolean(process.env.UPSTASH_REDIS_REST_URL);
+  const hasToken = Boolean(process.env.UPSTASH_REDIS_REST_TOKEN);
+
+  if (!hasUrl && !hasToken) {
+    return "unconfigured";
+  }
+
+  return hasUrl && hasToken ? "configured" : "invalid";
+}
+
+function getProductionRedis(): Redis {
+  if (productionRedis) {
+    return productionRedis;
   }
 
   const url = process.env.UPSTASH_REDIS_REST_URL;
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
-
   if (!url || !token) {
-    logger.dev.warn("Redis not configured - using in-memory rate limiting");
-    isRedisAvailable = false;
-    return false;
+    throw new Error("Redis configuration is incomplete");
   }
 
-  try {
-    redis = new Redis({
-      url,
-      token,
-    });
+  productionRedis = new Redis({ url, token });
+  return productionRedis;
+}
 
-    // Create a default rate limiter instance
-    rateLimiter = new Ratelimit({
-      redis,
-      limiter: Ratelimit.slidingWindow(20, "10 m"), // Default: 20 requests per 10 minutes
-      analytics: true, // Enable analytics
-      prefix: "ratelimit:",
-    });
+async function productionRedisLimit(
+  policy: RateLimitConfig,
+  identifier: string
+): Promise<RedisLimitResult> {
+  const cacheKey = `${policy.name}:${policy.windowMs}:${policy.maxRequests}`;
+  let limiter = productionLimiters.get(cacheKey);
 
-    isRedisAvailable = true;
-    logger.dev.log("Redis rate limiting initialized successfully");
-    return true;
-  } catch (error) {
-    logger.error("Failed to initialize Redis:", error);
-    isRedisAvailable = false;
-    return false;
+  if (!limiter) {
+    const seconds = Math.max(1, Math.ceil(policy.windowMs / 1_000));
+    limiter = new Ratelimit({
+      redis: getProductionRedis(),
+      limiter: Ratelimit.slidingWindow(
+        policy.maxRequests,
+        `${seconds} s`
+      ),
+      analytics: false,
+      prefix: `portfolio:ratelimit:${policy.name}`,
+    });
+    productionLimiters.set(cacheKey, limiter);
+  }
+
+  const result = await limiter.limit(identifier);
+  return {
+    success: result.success,
+    remaining: result.remaining,
+    reset: result.reset,
+  };
+}
+
+async function defaultHashIdentifier(value: string): Promise<string> {
+  const material = new TextEncoder().encode(`${getCsrfSecret()}:${value}`);
+  const digest = await crypto.subtle.digest("SHA-256", material);
+
+  return Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("")
+    .slice(0, 40);
+}
+
+function validatePolicy(policy: RateLimitConfig): void {
+  if (!/^[a-z0-9][a-z0-9_-]{1,63}$/i.test(policy.name)) {
+    throw new Error("Rate-limit policy name is invalid");
+  }
+
+  if (
+    !Number.isSafeInteger(policy.windowMs) ||
+    policy.windowMs <= 0 ||
+    !Number.isSafeInteger(policy.maxRequests) ||
+    policy.maxRequests <= 0
+  ) {
+    throw new Error("Rate-limit policy values must be positive integers");
   }
 }
 
-// =================================================
-// IN-MEMORY FALLBACK STORES
-// =================================================
-
-interface RateLimitInfo {
-  count: number;
-  resetTime: number;
-  windowMs: number;
-}
-
-interface ProgressiveBlockInfo {
-  violations: number;
-  lastViolation: number;
-  blockUntil: number;
-  escalationLevel: number;
-}
-
-const rateLimitStore = new Map<string, RateLimitInfo>();
-const progressiveBlockStore = new Map<string, ProgressiveBlockInfo>();
-
-// Block duration constants (in ms)
-const BLOCK_DURATIONS = {
-  LEVEL_1: 5 * 60 * 1000, // 5 minutes
-  LEVEL_2: 10 * 60 * 1000, // 10 minutes
-  LEVEL_3: 30 * 60 * 1000, // 30 minutes
-  LEVEL_4: 60 * 60 * 1000, // 1 hour
-  LEVEL_5: 2 * 60 * 60 * 1000, // 2 hours
-  LEVEL_6: 24 * 60 * 60 * 1000, // 24 hours
-};
-
-// =================================================
-// RATE LIMITING FUNCTIONS
-// =================================================
-
-/**
- * Get client IP address from request headers
- */
 export function getClientIP(request: NextRequest): string {
-  const forwarded = request.headers.get("x-forwarded-for");
-  const realIP = request.headers.get("x-real-ip");
-  const cfIP = request.headers.get("cf-connecting-ip");
+  const candidates = [
+    request.headers.get("x-vercel-forwarded-for"),
+    request.headers.get("cf-connecting-ip"),
+    request.headers.get("x-forwarded-for")?.split(",")[0],
+    request.headers.get("x-real-ip"),
+  ];
+  const candidate = candidates
+    .find((value) => value?.trim())
+    ?.trim()
+    .slice(0, 128);
 
-  if (forwarded) {
-    return forwarded.split(",")[0].trim();
-  }
-  if (realIP) {
-    return realIP;
-  }
-  if (cfIP) {
-    return cfIP;
-  }
-
-  return "unknown";
+  return candidate || "unknown";
 }
 
-/**
- * Check rate limit using Redis (with fallback to in-memory)
- */
+function getClientFingerprint(request: NextRequest): string {
+  const ip = getClientIP(request);
+  if (ip !== "unknown") {
+    return `ip:${ip}`;
+  }
+
+  const userAgent = request.headers.get("user-agent")?.slice(0, 256) || "unknown";
+  return `unknown:${userAgent}`;
+}
+
+export function createRateLimitService(
+  options: RateLimitServiceOptions = {}
+): RateLimitService {
+  const memoryEntries = new Map<string, MemoryEntry>();
+  const now = options.now ?? Date.now;
+  const maxMemoryEntries =
+    options.maxMemoryEntries ?? DEFAULT_MAX_MEMORY_ENTRIES;
+  const hashIdentifier = options.hashIdentifier ?? defaultHashIdentifier;
+  const redisLimit = options.redisLimit ?? productionRedisLimit;
+
+  function cleanMemoryEntries(currentTime: number): void {
+    for (const [key, entry] of memoryEntries) {
+      if (entry.resetTime <= currentTime) {
+        memoryEntries.delete(key);
+      }
+    }
+  }
+
+  function enforceMemoryBound(currentTime: number): void {
+    cleanMemoryEntries(currentTime);
+
+    while (memoryEntries.size >= maxMemoryEntries) {
+      const oldestKey = memoryEntries.keys().next().value as string | undefined;
+      if (!oldestKey) {
+        break;
+      }
+      memoryEntries.delete(oldestKey);
+    }
+  }
+
+  function checkMemory(
+    identifier: string,
+    policy: RateLimitConfig,
+    degraded: boolean
+  ): RateLimitResult {
+    const currentTime = now();
+    const key = `${policy.name}:${identifier}`;
+    const existing = memoryEntries.get(key);
+
+    if (!existing || existing.resetTime <= currentTime) {
+      enforceMemoryBound(currentTime);
+      const resetTime = currentTime + policy.windowMs;
+      memoryEntries.set(key, { count: 1, resetTime });
+      return {
+        allowed: true,
+        backend: "memory",
+        degraded,
+        remainingRequests: Math.max(0, policy.maxRequests - 1),
+        resetTime,
+      };
+    }
+
+    if (existing.count >= policy.maxRequests) {
+      return {
+        allowed: false,
+        backend: "memory",
+        degraded,
+        reason: "limit_exceeded",
+        remainingRequests: 0,
+        resetTime: existing.resetTime,
+      };
+    }
+
+    existing.count += 1;
+    memoryEntries.delete(key);
+    memoryEntries.set(key, existing);
+
+    return {
+      allowed: true,
+      backend: "memory",
+      degraded,
+      remainingRequests: Math.max(0, policy.maxRequests - existing.count),
+      resetTime: existing.resetTime,
+    };
+  }
+
+  async function check(
+    request: NextRequest,
+    policy: RateLimitConfig
+  ): Promise<RateLimitResult> {
+    validatePolicy(policy);
+
+    let identifier: string;
+    try {
+      identifier = await hashIdentifier(getClientFingerprint(request));
+    } catch {
+      logger.error("rate_limit.identifier_failed", { policy: policy.name });
+      return {
+        allowed: false,
+        backend: "unavailable",
+        degraded: true,
+        reason: "dependency_unavailable",
+      };
+    }
+
+    const redisState = options.redisState ?? resolveRedisState();
+    if (redisState === "unconfigured") {
+      return checkMemory(identifier, policy, false);
+    }
+
+    if (redisState === "invalid") {
+      logger.error("rate_limit.redis_configuration_invalid", {
+        policy: policy.name,
+      });
+      return policy.failureMode === "memory"
+        ? checkMemory(identifier, policy, true)
+        : {
+            allowed: false,
+            backend: "unavailable",
+            degraded: true,
+            reason: "dependency_unavailable",
+          };
+    }
+
+    try {
+      const decision = await redisLimit(policy, identifier);
+      return {
+        allowed: decision.success,
+        backend: "redis",
+        degraded: false,
+        ...(decision.success ? {} : { reason: "limit_exceeded" as const }),
+        remainingRequests: Math.max(0, decision.remaining),
+        resetTime: decision.reset,
+      };
+    } catch {
+      logger.error("rate_limit.redis_unavailable", { policy: policy.name });
+      return policy.failureMode === "memory"
+        ? checkMemory(identifier, policy, true)
+        : {
+            allowed: false,
+            backend: "unavailable",
+            degraded: true,
+            reason: "dependency_unavailable",
+          };
+    }
+  }
+
+  return {
+    check,
+    getMemoryEntryCount: () => memoryEntries.size,
+  };
+}
+
+const defaultRateLimitService = createRateLimitService();
+
 export async function checkRateLimitRedis(
   request: NextRequest,
   config: RateLimitConfig
 ): Promise<RateLimitResult> {
-  const clientIP = getClientIP(request);
-  const identifier = `${clientIP}:${config.windowMs}:${config.maxRequests}`;
-
-  // Try Redis first
-  if (initializeRedis() && rateLimiter) {
-    return checkRateLimitWithRedis(identifier, config);
-  }
-
-  // Fallback to in-memory
-  return checkRateLimitInMemory(clientIP, config);
+  return defaultRateLimitService.check(request, config);
 }
 
-/**
- * Redis-backed rate limiting with Upstash Ratelimit
- */
-async function checkRateLimitWithRedis(
-  identifier: string,
-  config: RateLimitConfig
-): Promise<RateLimitResult> {
-  if (!redis) {
-    return {
-      allowed: true,
-      remainingRequests: config.maxRequests,
-      blockInfo: { isBlocked: false, escalationLevel: 0 },
-    };
-  }
-
-  try {
-    // Create a custom rate limiter for this specific config
-    const customLimiter = new Ratelimit({
-      redis,
-      limiter: Ratelimit.slidingWindow(
-        config.maxRequests,
-        `${Math.floor(config.windowMs / 1000)} s`
-      ),
-      prefix: `ratelimit:${config.windowMs}:`,
-    });
-
-    const { success, limit: _limit, remaining, reset } =
-      await customLimiter.limit(identifier);
-
-    if (!success) {
-      // Record progressive block in Redis
-      await recordProgressiveBlock(identifier);
-
-      const blockInfo = await getProgressiveBlockInfo(identifier);
-
-      return {
-        allowed: false,
-        resetTime: reset,
-        remainingRequests: remaining,
-        blockInfo,
-      };
-    }
-
-    return {
-      allowed: true,
-      resetTime: reset,
-      remainingRequests: remaining,
-      blockInfo: { isBlocked: false, escalationLevel: 0 },
-    };
-  } catch (error) {
-    logger.error("Redis rate limit check failed, falling back:", error);
-    // Fallback to allowing request on Redis error
-    return {
-      allowed: true,
-      remainingRequests: config.maxRequests,
-      blockInfo: { isBlocked: false, escalationLevel: 0 },
-    };
-  }
-}
-
-/**
- * Record progressive blocking in Redis
- */
-async function recordProgressiveBlock(identifier: string): Promise<void> {
-  if (!redis) return;
-
-  const key = `progressive_block:${identifier}`;
-
-  try {
-    const current = await redis.get<ProgressiveBlockInfo>(key);
-    const now = Date.now();
-
-    if (!current) {
-      await redis.setex(key, 86400, {
-        // 24 hour TTL
-        violations: 1,
-        lastViolation: now,
-        blockUntil: now + BLOCK_DURATIONS.LEVEL_1,
-        escalationLevel: 1,
-      });
-      return;
-    }
-
-    const violations = current.violations + 1;
-    let blockDuration: number;
-    let escalationLevel: number;
-
-    if (violations <= 2) {
-      blockDuration = BLOCK_DURATIONS.LEVEL_2;
-      escalationLevel = 2;
-    } else if (violations <= 3) {
-      blockDuration = BLOCK_DURATIONS.LEVEL_3;
-      escalationLevel = 3;
-    } else if (violations <= 5) {
-      blockDuration = BLOCK_DURATIONS.LEVEL_4;
-      escalationLevel = 4;
-    } else if (violations <= 8) {
-      blockDuration = BLOCK_DURATIONS.LEVEL_5;
-      escalationLevel = 5;
-    } else {
-      blockDuration = BLOCK_DURATIONS.LEVEL_6;
-      escalationLevel = 6;
-    }
-
-    await redis.setex(key, 86400, {
-      violations,
-      lastViolation: now,
-      blockUntil: now + blockDuration,
-      escalationLevel,
-    });
-  } catch (error) {
-    logger.error("Failed to record progressive block:", error);
-  }
-}
-
-/**
- * Get progressive block info from Redis
- */
-async function getProgressiveBlockInfo(identifier: string): Promise<BlockInfo> {
-  if (!redis) {
-    return { isBlocked: false, escalationLevel: 0 };
-  }
-
-  const key = `progressive_block:${identifier}`;
-
-  try {
-    const data = await redis.get<ProgressiveBlockInfo>(key);
-
-    if (!data) {
-      return { isBlocked: false, escalationLevel: 0 };
-    }
-
-    const now = Date.now();
-    if (now < data.blockUntil) {
-      return {
-        isBlocked: true,
-        blockUntil: data.blockUntil,
-        escalationLevel: data.escalationLevel,
-      };
-    }
-
-    return {
-      isBlocked: false,
-      escalationLevel: data.escalationLevel,
-    };
-  } catch (error) {
-    logger.error("Failed to get progressive block info:", error);
-    return { isBlocked: false, escalationLevel: 0 };
-  }
-}
-
-/**
- * In-memory fallback rate limiting
- */
-function checkRateLimitInMemory(
-  clientIP: string,
-  config: RateLimitConfig
-): RateLimitResult {
-  const now = Date.now();
-  const key = `rate_limit:${clientIP}`;
-
-  // Check progressive block
-  const blockInfo = checkProgressiveBlockInMemory(clientIP, now);
-  if (blockInfo.isBlocked) {
-    return { allowed: false, blockInfo };
-  }
-
-  const existing = rateLimitStore.get(key);
-
-  if (!existing || now > existing.resetTime) {
-    const resetTime = now + config.windowMs;
-    rateLimitStore.set(key, {
-      count: 1,
-      resetTime,
-      windowMs: config.windowMs,
-    });
-    return {
-      allowed: true,
-      resetTime,
-      remainingRequests: config.maxRequests - 1,
-      blockInfo: { isBlocked: false, escalationLevel: 0 },
-    };
-  }
-
-  if (existing.count >= config.maxRequests) {
-    triggerProgressiveBlockInMemory(clientIP, now);
-    return {
-      allowed: false,
-      resetTime: existing.resetTime,
-      remainingRequests: 0,
-      blockInfo: checkProgressiveBlockInMemory(clientIP, now),
-    };
-  }
-
-  existing.count++;
-  rateLimitStore.set(key, existing);
-
-  return {
-    allowed: true,
-    resetTime: existing.resetTime,
-    remainingRequests: config.maxRequests - existing.count,
-    blockInfo: { isBlocked: false, escalationLevel: 0 },
-  };
-}
-
-function checkProgressiveBlockInMemory(
-  clientIP: string,
-  now: number
-): BlockInfo {
-  const blockData = progressiveBlockStore.get(clientIP);
-
-  if (!blockData) {
-    return { isBlocked: false, escalationLevel: 0 };
-  }
-
-  if (now < blockData.blockUntil) {
-    return {
-      isBlocked: true,
-      blockUntil: blockData.blockUntil,
-      escalationLevel: blockData.escalationLevel,
-    };
-  }
-
-  return { isBlocked: false, escalationLevel: blockData.escalationLevel };
-}
-
-function triggerProgressiveBlockInMemory(clientIP: string, now: number): void {
-  const existing = progressiveBlockStore.get(clientIP);
-
-  if (!existing) {
-    progressiveBlockStore.set(clientIP, {
-      violations: 1,
-      lastViolation: now,
-      blockUntil: now + BLOCK_DURATIONS.LEVEL_1,
-      escalationLevel: 1,
-    });
-    return;
-  }
-
-  const violations = existing.violations + 1;
-  let blockDuration: number;
-  let escalationLevel: number;
-
-  if (violations <= 2) {
-    blockDuration = BLOCK_DURATIONS.LEVEL_2;
-    escalationLevel = 2;
-  } else if (violations <= 3) {
-    blockDuration = BLOCK_DURATIONS.LEVEL_3;
-    escalationLevel = 3;
-  } else if (violations <= 5) {
-    blockDuration = BLOCK_DURATIONS.LEVEL_4;
-    escalationLevel = 4;
-  } else if (violations <= 8) {
-    blockDuration = BLOCK_DURATIONS.LEVEL_5;
-    escalationLevel = 5;
-  } else {
-    blockDuration = BLOCK_DURATIONS.LEVEL_6;
-    escalationLevel = 6;
-  }
-
-  progressiveBlockStore.set(clientIP, {
-    violations,
-    lastViolation: now,
-    blockUntil: now + blockDuration,
-    escalationLevel,
-  });
-}
-
-// =================================================
-// SECURITY EVENT LOGGING
-// =================================================
-
-/**
- * Log security events with severity levels
- */
-export function logSecurityEvent(event: SecurityEvent): void {
-  const securityEvent: SecurityEvent = {
-    ...event,
-    timestamp: event.timestamp || new Date().toISOString(),
-  };
-
-  switch (event.severity) {
-    case "critical":
-      logger.error(`[SECURITY CRITICAL] ${event.type}`, securityEvent);
-      break;
-    case "high":
-      logger.error(`[SECURITY HIGH] ${event.type}`, securityEvent);
-      break;
-    case "medium":
-      logger.warn(`[SECURITY MEDIUM] ${event.type}`, securityEvent);
-      break;
-    case "low":
-      logger.security(`[SECURITY LOW] ${event.type}`, securityEvent);
-      break;
-    default:
-      logger.warn(`[SECURITY] ${event.type}`, securityEvent);
-  }
-}
-
-// =================================================
-// UTILITY EXPORTS
-// =================================================
-
-/**
- * Check if Redis is available
- */
 export function isRedisConfigured(): boolean {
-  return initializeRedis();
+  return resolveRedisState() === "configured";
 }
 
-/**
- * Get rate limiting method being used
- */
 export function getRateLimitingMethod(): "redis" | "memory" {
-  return initializeRedis() ? "redis" : "memory";
+  return isRedisConfigured() ? "redis" : "memory";
 }
