@@ -5,9 +5,14 @@ import {
   getLocaleFromPathname,
   isSupportedLocale,
   stripLocaleFromPathname,
+  publicPortfolioLocales,
 } from "./routing";
 
 describe("i18n routing helpers", () => {
+  it("publishes only Turkish and English", () => {
+    expect(publicPortfolioLocales).toEqual(["en", "tr"]);
+  });
+
   describe("isSupportedLocale", () => {
     it("returns true for supported locales", () => {
       expect(isSupportedLocale("en")).toBe(true);

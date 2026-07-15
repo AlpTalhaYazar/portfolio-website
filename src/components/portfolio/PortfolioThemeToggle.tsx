@@ -25,12 +25,6 @@ const themeToggleCopy = {
     switchToLight: "Açık temaya geç",
     switchToDark: "Koyu temaya geç",
   },
-  es: {
-    lightLabel: "CLARO",
-    darkLabel: "OSCURO",
-    switchToLight: "Cambiar a tema claro",
-    switchToDark: "Cambiar a tema oscuro",
-  },
 } as const;
 
 export function PortfolioThemeToggle({

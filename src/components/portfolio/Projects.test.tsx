@@ -23,7 +23,7 @@ describe("Projects", () => {
   it("renders dossier triggers for all project cards across locales", () => {
     mockViewport(false);
 
-    for (const locale of ["en", "tr", "es"] as const) {
+    for (const locale of ["en", "tr"] as const) {
       const content = getPortfolioContent(locale).projects;
       const { unmount } = render(<Projects content={content} />);
 

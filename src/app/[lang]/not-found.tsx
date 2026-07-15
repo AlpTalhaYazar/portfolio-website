@@ -3,6 +3,9 @@ import { headers } from "next/headers";
 import { NotFoundPage } from "@/components/portfolio";
 import { getPortfolioContent } from "@/lib/content/portfolio";
 import type { PortfolioLocale } from "@/types/portfolio";
+import { buildNotFoundMetadata } from "@/lib/seo/portfolio-metadata";
+
+export const metadata = buildNotFoundMetadata();
 
 export default async function LocaleNotFound() {
   const headersList = await headers();

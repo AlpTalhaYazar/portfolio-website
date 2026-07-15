@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { getPortfolioContent } from ".";
+import { getPortfolioContent, portfolioContentByLocale } from ".";
 
 describe("portfolio content", () => {
   it("returns the approved english hero copy", () => {
@@ -23,10 +23,14 @@ describe("portfolio content", () => {
     );
   });
 
-  it("returns translated content for spanish routes", () => {
-    const content = getPortfolioContent("es");
+  it("contains exactly the publicly maintained locales", () => {
+    expect(Object.keys(portfolioContentByLocale)).toEqual(["en", "tr"]);
+  });
 
-    expect(content.nav.items[1].label).toBe("Experiencia");
-    expect(content.notFound.title).toBe("Ruta no encontrada.");
+  it("keeps summary copy free of drifting numeric experience claims", () => {
+    for (const content of Object.values(portfolioContentByLocale)) {
+      expect(content.about.paragraphs.join(" ")).not.toMatch(/\b\d+\+\s*(years?|yıl)/i);
+      expect(content.capabilities.statLabel).not.toMatch(/\b\d+\+/);
+    }
   });
 });

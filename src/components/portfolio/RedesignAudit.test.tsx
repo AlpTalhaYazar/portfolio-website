@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { getPortfolioContent } from "@/lib/content/portfolio";
+import { AnalyticsConsentProvider } from "@/components/analytics";
 
 import { Capabilities } from "./Capabilities";
 import { Footer } from "./Footer";
@@ -34,17 +35,18 @@ describe("portfolio redesign fidelity", () => {
 
   it("keeps the footer compact and icon-driven", () => {
     render(
-      <Footer
-        content={content.footer}
-        nav={content.nav}
-      />
+      <AnalyticsConsentProvider locale="en">
+        <Footer content={content.footer} nav={content.nav} locale="en" />
+      </AnalyticsConsentProvider>
     );
 
     expect(screen.queryByTestId("language-switcher")).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "GitHub" })).toHaveAttribute(
-      "aria-label",
-      "GitHub"
-    );
+    const githubLink = screen.getByRole("link", { name: "GitHub" });
+    expect(githubLink).toHaveAttribute("aria-label", "GitHub");
+    expect(githubLink).toHaveClass("h-10", "w-10");
     expect(screen.queryByText("GitHub")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Privacy choices" })
+    ).not.toBeInTheDocument();
   });
 });

@@ -4,6 +4,8 @@ import { PortfolioPage } from "@/components/portfolio";
 import { getPortfolioContent } from "@/lib/content/portfolio";
 import { isSupportedLocale, publicPortfolioLocales } from "@/lib/i18n/routing";
 import { buildPortfolioMetadata } from "@/lib/seo/portfolio-metadata";
+import { buildNotFoundMetadata } from "@/lib/seo/portfolio-metadata";
+import StructuredData from "@/components/utils/StructuredData";
 
 interface LocalePageProps {
   params: Promise<{
@@ -15,7 +17,7 @@ export async function generateMetadata({ params }: LocalePageProps) {
   const { lang } = await params;
 
   if (!isSupportedLocale(lang) || lang === "tr") {
-    return buildPortfolioMetadata("tr");
+    return buildNotFoundMetadata();
   }
 
   return buildPortfolioMetadata(lang);
@@ -34,5 +36,10 @@ export default async function LocalePage({ params }: LocalePageProps) {
     notFound();
   }
 
-  return <PortfolioPage content={getPortfolioContent(lang)} locale={lang} />;
+  return (
+    <>
+      <StructuredData locale={lang} />
+      <PortfolioPage content={getPortfolioContent(lang)} locale={lang} />
+    </>
+  );
 }

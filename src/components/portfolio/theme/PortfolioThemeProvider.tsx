@@ -1,5 +1,6 @@
 "use client";
 
+import { MotionConfig } from "framer-motion";
 import {
   createContext,
   useCallback,
@@ -22,6 +23,7 @@ interface PortfolioThemeContextValue {
   readonly isDark: boolean;
   readonly toggleTheme: () => void;
   readonly setTheme: (theme: PortfolioTheme) => void;
+  readonly isHydrated: boolean;
 }
 
 const PortfolioThemeContext = createContext<
@@ -55,9 +57,19 @@ export function PortfolioThemeProvider({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [theme, setThemeState] = useState<PortfolioTheme>(getInitialTheme);
+  // The deterministic initial value keeps server and first-client markup equal.
+  // The nonce bootstrap has already applied the visual root class before paint.
+  const [theme, setThemeState] = useState<PortfolioTheme>("light");
+  const [isHydrated, setIsHydrated] = useState(false);
 
   useEffect(() => {
+    setThemeState(getInitialTheme());
+    setIsHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isHydrated) return;
+
     applyPortfolioTheme(theme);
 
     try {
@@ -65,7 +77,7 @@ export function PortfolioThemeProvider({
     } catch {
       // Storage access can fail in hardened browsers; keep the active DOM theme.
     }
-  }, [theme]);
+  }, [isHydrated, theme]);
 
   const setTheme = useCallback((nextTheme: PortfolioTheme) => {
     setThemeState(nextTheme);
@@ -83,13 +95,14 @@ export function PortfolioThemeProvider({
       isDark: theme === "dark",
       toggleTheme,
       setTheme,
+      isHydrated,
     }),
-    [setTheme, theme, toggleTheme]
+    [isHydrated, setTheme, theme, toggleTheme]
   );
 
   return (
     <PortfolioThemeContext.Provider value={contextValue}>
-      {children}
+      <MotionConfig reducedMotion="user">{children}</MotionConfig>
     </PortfolioThemeContext.Provider>
   );
 }

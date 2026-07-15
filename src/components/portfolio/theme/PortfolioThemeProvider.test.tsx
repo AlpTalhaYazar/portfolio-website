@@ -2,7 +2,10 @@
 
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it } from "vitest";
+import { act } from "react";
+import { hydrateRoot } from "react-dom/client";
+import { renderToString } from "react-dom/server";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { PortfolioThemeProvider, usePortfolioTheme } from "./PortfolioThemeProvider";
 import {
@@ -76,5 +79,36 @@ describe("PortfolioThemeProvider", () => {
     expect(
       document.querySelector('meta[name="theme-color"]')
     ).toHaveAttribute("content", PORTFOLIO_THEME_COLOR.dark);
+  });
+
+  it("hydrates stored dark preference without a recoverable mismatch", async () => {
+    const markup = renderToString(
+      <PortfolioThemeProvider>
+        <ThemeHarness />
+      </PortfolioThemeProvider>
+    );
+    const container = document.createElement("div");
+    container.innerHTML = markup;
+    document.body.append(container);
+    localStorage.setItem(PORTFOLIO_THEME_STORAGE_KEY, "dark");
+    document.documentElement.className = "dark-theme";
+    const onRecoverableError = vi.fn();
+
+    let root: ReturnType<typeof hydrateRoot>;
+    await act(async () => {
+      root = hydrateRoot(
+        container,
+        <PortfolioThemeProvider>
+          <ThemeHarness />
+        </PortfolioThemeProvider>,
+        { onRecoverableError }
+      );
+    });
+
+    expect(onRecoverableError).not.toHaveBeenCalled();
+    expect(container.querySelector("button")).toHaveTextContent("dark");
+
+    await act(async () => root.unmount());
+    container.remove();
   });
 });

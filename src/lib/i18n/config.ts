@@ -1,6 +1,6 @@
 /**
  * Internationalization Configuration
- * Supports Turkish (tr), English (en), and Spanish (es)
+ * Supports the two publicly maintained portfolio locales.
  */
 
 export const languages = {
@@ -14,12 +14,6 @@ export const languages = {
     code: "tr",
     name: "Türkçe",
     flag: "🇹🇷",
-    dir: "ltr",
-  },
-  es: {
-    code: "es",
-    name: "Español",
-    flag: "🇪🇸",
     dir: "ltr",
   },
 } as const;

@@ -5,6 +5,7 @@ import {
   socialPreviewSize,
 } from "@/lib/seo/social-preview";
 import type { PortfolioLocale } from "@/types/portfolio";
+import { notFound } from "next/navigation";
 
 export const alt = getSocialPreviewAlt("en");
 export const size = socialPreviewSize;
@@ -18,7 +19,8 @@ interface LocaleImageProps {
 
 export default async function LocaleTwitterImage({ params }: LocaleImageProps) {
   const { lang } = await params;
-  const locale: PortfolioLocale = lang === "en" ? "en" : "tr";
+  if (lang !== "en") notFound();
+  const locale: PortfolioLocale = "en";
 
   return buildSocialPreviewImage(locale);
 }

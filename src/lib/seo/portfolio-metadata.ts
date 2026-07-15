@@ -15,8 +15,22 @@ import {
 const localeToOpenGraph = {
   en: "en_US",
   tr: "tr_TR",
-  es: "es_ES",
 } as const;
+
+export function buildNotFoundMetadata(): Metadata {
+  return {
+    title: "Page not found | Alp Talha Yazar",
+    description: "The requested portfolio page could not be found.",
+    robots: {
+      index: false,
+      follow: false,
+      googleBot: {
+        index: false,
+        follow: false,
+      },
+    },
+  };
+}
 
 export function getCanonicalUrl(locale: PortfolioLocale): string {
   return locale === defaultLanguage

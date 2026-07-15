@@ -19,6 +19,9 @@ export const portfolioContentEn: PortfolioContent = {
     letsTalkLabel: "Let's Talk",
     closeMenuLabel: "Close navigation",
     openMenuLabel: "Open navigation",
+    primaryNavLabel: "Primary navigation",
+    mobileNavLabel: "Mobile navigation",
+    footerNavLabel: "Footer navigation",
   },
   hero: {
     eyebrow: "SENIOR BACKEND ENGINEER",
@@ -54,7 +57,7 @@ export const portfolioContentEn: PortfolioContent = {
     sectionNumber: "03",
     sectionTitle: "EXPERIENCE",
     intro:
-      "Four-plus years building systems that need to keep operating under real production constraints.",
+      "I build systems that need to keep operating under real production constraints, with a focus on architecture, reliability, and operational clarity.",
     items: [
       {
         number: "01",
@@ -331,7 +334,7 @@ export const portfolioContentEn: PortfolioContent = {
     ],
     callout:
       "My strongest edge is backend architecture and engineering judgment: building systems other engineers can extend, operate, and trust under pressure.",
-    statLabel: "5+ YEARS · PRODUCTION SYSTEMS",
+    statLabel: "PRODUCTION SYSTEMS · ENGINEERING DEPTH",
   },
   contact: {
     sectionNumber: "06",
@@ -364,7 +367,14 @@ export const portfolioContentEn: PortfolioContent = {
       success: "Message received. I'll get back to you as soon as possible.",
       securityLoading: "Securing form...",
       secured: "Form secured",
-      blocked: "Temporarily blocked",
+      errors: {
+        security: "Security validation failed. Please try again.",
+        rateLimited:
+          "Too many requests. Please wait {minutes} minutes before trying again.",
+        unavailable:
+          "The contact service is temporarily unavailable. Please try again later.",
+        failed: "Failed to send message. Please try again.",
+      },
     },
   },
   footer: {

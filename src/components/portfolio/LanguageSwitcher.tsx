@@ -10,7 +10,6 @@ import type { PortfolioLocale } from "@/types/portfolio";
 const LABELS: Record<PortfolioLocale, string> = {
   en: "EN",
   tr: "TR",
-  es: "ES",
 };
 
 interface LanguageSwitcherProps {

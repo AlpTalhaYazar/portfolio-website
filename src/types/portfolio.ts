@@ -1,4 +1,4 @@
-export type PortfolioLocale = "en" | "tr" | "es";
+export type PortfolioLocale = "en" | "tr";
 
 export interface PortfolioNavItem {
   readonly label: string;
@@ -78,7 +78,12 @@ export interface PortfolioContactFormCopy {
   readonly success: string;
   readonly securityLoading: string;
   readonly secured: string;
-  readonly blocked: string;
+  readonly errors: {
+    readonly security: string;
+    readonly rateLimited: string;
+    readonly unavailable: string;
+    readonly failed: string;
+  };
 }
 
 export interface PortfolioContactContent {
@@ -116,6 +121,9 @@ export interface PortfolioContent {
     readonly letsTalkLabel: string;
     readonly closeMenuLabel: string;
     readonly openMenuLabel: string;
+    readonly primaryNavLabel: string;
+    readonly mobileNavLabel: string;
+    readonly footerNavLabel: string;
   };
   readonly hero: PortfolioHeroContent;
   readonly about: PortfolioAboutContent;

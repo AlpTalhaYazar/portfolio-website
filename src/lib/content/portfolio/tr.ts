@@ -19,6 +19,9 @@ export const portfolioContentTr: PortfolioContent = {
     letsTalkLabel: "Konuşalım",
     closeMenuLabel: "Navigasyonu kapat",
     openMenuLabel: "Navigasyonu aç",
+    primaryNavLabel: "Ana navigasyon",
+    mobileNavLabel: "Mobil navigasyon",
+    footerNavLabel: "Alt bilgi navigasyonu",
   },
   hero: {
     eyebrow: "SENIOR BACKEND ENGINEER",
@@ -55,7 +58,7 @@ export const portfolioContentTr: PortfolioContent = {
     sectionNumber: "03",
     sectionTitle: "DENEYİM",
     intro:
-      "Gerçek production kısıtları altında çalışması gereken sistemler geliştirerek geçen 5+ yıl.",
+      "Gerçek production kısıtları altında çalışması gereken sistemleri; mimari, güvenilirlik ve operasyonel netlik odağıyla geliştiriyorum.",
     items: [
       {
         number: "01",
@@ -332,7 +335,7 @@ export const portfolioContentTr: PortfolioContent = {
     ],
     callout:
       "En güçlü tarafım backend mimarisi ve mühendislik muhakemesi: başka mühendislerin rahatça geliştirebildiği, işletebildiği ve baskı altında güvenebildiği sistemler kurmak.",
-    statLabel: "5+ YIL · PRODUCTION SİSTEMLER",
+    statLabel: "PRODUCTION SİSTEMLER · MÜHENDİSLİK DERİNLİĞİ",
   },
   contact: {
     sectionNumber: "06",
@@ -364,7 +367,14 @@ export const portfolioContentTr: PortfolioContent = {
       success: "Mesaj alındı. En kısa sürede dönüş yapacağım.",
       securityLoading: "Form güvenliği hazırlanıyor...",
       secured: "Form güvenli",
-      blocked: "Geçici olarak engellendi",
+      errors: {
+        security: "Güvenlik doğrulaması başarısız. Lütfen tekrar deneyin.",
+        rateLimited:
+          "Çok fazla istek gönderildi. Lütfen {minutes} dakika sonra tekrar deneyin.",
+        unavailable:
+          "İletişim servisi geçici olarak kullanılamıyor. Lütfen daha sonra tekrar deneyin.",
+        failed: "Mesaj gönderilemedi. Lütfen tekrar deneyin.",
+      },
     },
   },
   footer: {

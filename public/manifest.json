@@ -1,12 +1,12 @@
 {
-  "name": "Alp Talha Yazar - Senior Backend Developer Portfolio",
+  "name": "Alp Talha Yazar - Senior Backend Engineer Portfolio",
   "short_name": "Alp Talha Yazar",
-  "description": "Senior Backend Developer with 5+ years experience in .NET, C#, microservices, and enterprise applications. Professional portfolio showcasing projects and expertise.",
+  "description": "Senior Backend Engineer focused on reliable .NET, C#, microservices, and enterprise systems.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#000000",
-  "theme_color": "#080808",
-  "lang": "en",
+  "background_color": "#f4f2ed",
+  "theme_color": "#f4f2ed",
+  "lang": "tr",
   "scope": "/",
   "orientation": "portrait-primary",
   "categories": ["business", "productivity", "developer", "portfolio"],
@@ -25,21 +25,21 @@
   ],
   "shortcuts": [
     {
-      "name": "About",
-      "short_name": "About",
-      "description": "Learn about my background and experience",
+      "name": "Hakkımda",
+      "short_name": "Hakkımda",
+      "description": "Geçmişim ve deneyimim hakkında bilgi alın",
       "url": "/#about"
     },
     {
-      "name": "Projects",
-      "short_name": "Projects",
-      "description": "View my latest projects and work",
+      "name": "Projeler",
+      "short_name": "Projeler",
+      "description": "Projelerimi ve çalışmalarımı inceleyin",
       "url": "/#projects"
     },
     {
-      "name": "Contact",
-      "short_name": "Contact",
-      "description": "Get in touch for opportunities",
+      "name": "İletişim",
+      "short_name": "İletişim",
+      "description": "Fırsatlar ve iş birlikleri için iletişime geçin",
       "url": "/#contact"
     }
   ],

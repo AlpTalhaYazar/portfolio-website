@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { buildPortfolioMetadata } from "./portfolio-metadata";
+import {
+  buildNotFoundMetadata,
+  buildPortfolioMetadata,
+} from "./portfolio-metadata";
 
 describe("portfolio metadata", () => {
   it("builds turkish canonical metadata for the root route", () => {
@@ -54,5 +57,14 @@ describe("portfolio metadata", () => {
         },
       ],
     });
+  });
+
+  it("does not emit homepage discovery metadata for unsupported locales", () => {
+    const metadata = buildNotFoundMetadata();
+
+    expect(metadata.robots).toMatchObject({ index: false, follow: false });
+    expect(metadata.alternates).toBeUndefined();
+    expect(metadata.openGraph).toBeUndefined();
+    expect(metadata.twitter).toBeUndefined();
   });
 });
