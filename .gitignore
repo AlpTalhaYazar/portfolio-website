@@ -57,3 +57,6 @@ playwright-report/
 
 # local worktrees
 .worktrees/
+
+# local implementation plans
+/docs/superpowers/plans/2026-07-25-recruiter-positioning-refresh.md

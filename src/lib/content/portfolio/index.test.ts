@@ -10,8 +10,52 @@ describe("portfolio content", () => {
       "I build backend systems that stay reliable under real load."
     );
     expect(content.hero.supportingText).toBe(
-      "Architecture, reliability, and scale for enterprise software in production."
+      "Architecture, reliability, and delivery ownership for enterprise software in production."
     );
+  });
+
+  it("keeps backend positioning and official roles aligned across locales", () => {
+    const en = getPortfolioContent("en");
+    const tr = getPortfolioContent("tr");
+
+    expect(en.hero.techTags).toEqual([
+      ".NET 9",
+      "C#",
+      "ASP.NET Core",
+      "PostgreSQL",
+      "RabbitMQ / MassTransit",
+      "Redis",
+      "Docker",
+    ]);
+    expect(tr.hero.techTags).toEqual(en.hero.techTags);
+
+    expect(
+      en.experience.items.map(({ company, role }) => ({ company, role }))
+    ).toEqual([
+      { company: "DİAS Teknoloji", role: "Software Developer" },
+      { company: "Wiro AI", role: "Software Engineer" },
+      { company: "Jetlink", role: "Software Engineer" },
+    ]);
+    expect(
+      tr.experience.items.map(({ company, role }) => ({ company, role }))
+    ).toEqual([
+      { company: "DİAS Teknoloji", role: "Yazılım Geliştirme Uzmanı" },
+      { company: "Wiro AI", role: "Software Engineer" },
+      { company: "Jetlink", role: "Software Engineer" },
+    ]);
+
+    expect(en.capabilities.groups.map((group) => group.category)).toEqual([
+      "Backend",
+      "Data",
+      "Platform",
+      "Adjacent Delivery",
+    ]);
+    expect(tr.capabilities.groups.map((group) => group.category)).toEqual([
+      "Backend",
+      "Veri",
+      "Platform",
+      "Tamamlayıcı Yetkinlikler",
+    ]);
   });
 
   it("returns translated content for turkish routes", () => {
@@ -32,5 +76,9 @@ describe("portfolio content", () => {
       expect(content.about.paragraphs.join(" ")).not.toMatch(/\b\d+\+\s*(years?|yıl)/i);
       expect(content.capabilities.statLabel).not.toMatch(/\b\d+\+/);
     }
+  });
+
+  it("does not publish Kubernetes as a maintained portfolio skill", () => {
+    expect(JSON.stringify(portfolioContentByLocale)).not.toMatch(/Kubernetes/i);
   });
 });

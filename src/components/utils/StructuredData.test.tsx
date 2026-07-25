@@ -28,4 +28,23 @@ describe("StructuredData", () => {
     expect(data["@graph"][1].url).toBe("https://www.alptalha.dev/en/");
     expect(data["@graph"][2].url).toBe("https://www.alptalha.dev/en/");
   });
+
+  it("publishes the approved backend technology profile", () => {
+    const data = getStructuredData("en");
+    const person = data["@graph"][0];
+
+    expect(person.knowsAbout).toEqual([
+      ".NET",
+      "C#",
+      "ASP.NET Core",
+      "Entity Framework Core",
+      "PostgreSQL",
+      "Redis",
+      "RabbitMQ",
+      "MassTransit",
+      "Docker",
+      "System Architecture",
+    ]);
+    expect(JSON.stringify(data)).not.toMatch(/Kubernetes/i);
+  });
 });
