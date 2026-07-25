@@ -30,10 +30,10 @@ describe("Projects", () => {
       expect(
         screen.getByRole("heading", { name: content.intro })
       ).toBeInTheDocument();
-      expect(screen.getAllByRole("article")).toHaveLength(content.items.length);
+      expect(screen.getAllByRole("article")).toHaveLength(6);
       expect(
         screen.getAllByRole("button", { name: new RegExp(content.expandLabel, "i") })
-      ).toHaveLength(content.items.length);
+      ).toHaveLength(6);
 
       const wiroArticle = screen
         .getByRole("heading", { name: /wiro ai/i })
@@ -51,7 +51,7 @@ describe("Projects", () => {
     }
   });
 
-  it("reveals the active Dias dossier inline on mobile and shows item-level disclosure", async () => {
+  it("reveals the active DİAS dossier inline on mobile and shows item-level disclosure", async () => {
     mockViewport(false);
 
     const content = getPortfolioContent("en").projects;
@@ -73,7 +73,9 @@ describe("Projects", () => {
       })
     ).toBeInTheDocument();
     const activeArticle = screen
-      .getAllByRole("heading", { name: /enterprise management platform/i })[0]
+      .getAllByRole("heading", {
+        name: /regulated monitoring & management platform/i,
+      })[0]
       .closest("article");
 
     expect(activeArticle).not.toBeNull();
@@ -96,12 +98,10 @@ describe("Projects", () => {
         content.items[0].details?.badgeLabel ?? ""
       )
     ).toBeInTheDocument();
-    expect(
-      screen.getByText(/massTransit-based communication patterns/i)
-    ).toBeInTheDocument();
+    expect(screen.getByText(/public-safe engineering scope/i)).toBeInTheDocument();
   });
 
-  it("reveals Wiro and Jetlink dossiers inline on mobile", async () => {
+  it("reveals Wiro, Jetlink, and ScopePoker dossiers inline on mobile", async () => {
     mockViewport(false);
 
     const content = getPortfolioContent("en").projects;
@@ -110,7 +110,7 @@ describe("Projects", () => {
 
     const user = userEvent.setup();
     const wiroArticle = screen
-      .getByRole("heading", { name: /wiro ai ml infrastructure platform/i })
+      .getByRole("heading", { name: /wiro ai infrastructure platform/i })
       .closest("article");
 
     expect(wiroArticle).not.toBeNull();
@@ -119,12 +119,12 @@ describe("Projects", () => {
 
     expect(
       within(wiroArticle as HTMLElement).getByText(
-        /Blazor \+ Tailwind UI for model testing/i
+        /worker processing and request coordination/i
       )
     ).toBeInTheDocument();
 
     const jetlinkArticle = screen
-      .getByRole("heading", { name: /jetlink multi-project chatbot platform/i })
+      .getByRole("heading", { name: /jetlink chatbot platform/i })
       .closest("article");
 
     expect(jetlinkArticle).not.toBeNull();
@@ -133,12 +133,41 @@ describe("Projects", () => {
 
     await waitFor(() => {
       expect(
-        screen.queryByText(/Blazor \+ Tailwind UI for model testing/i)
+        screen.queryByText(/worker processing and request coordination/i)
       ).not.toBeInTheDocument();
     });
     expect(
       within(jetlinkArticle as HTMLElement).getByText(
         /Windows Server and IIS deployment model/i
+      )
+    ).toBeInTheDocument();
+
+    const scopePokerArticle = screen
+      .getByRole("heading", {
+        name: /scopepoker real-time estimation platform/i,
+      })
+      .closest("article");
+
+    expect(scopePokerArticle).not.toBeNull();
+    await user.click(
+      within(scopePokerArticle as HTMLElement).getByRole("button")
+    );
+
+    await waitFor(() => {
+      expect(
+        within(jetlinkArticle as HTMLElement).queryByText(
+          /Windows Server and IIS deployment model/i
+        )
+      ).not.toBeInTheDocument();
+    });
+    expect(
+      within(scopePokerArticle as HTMLElement).getAllByText(
+        /secure session flows/i
+      )
+    ).toHaveLength(2);
+    expect(
+      within(scopePokerArticle as HTMLElement).getByText(
+        /Fastify APIs and shared TypeScript contracts/i
       )
     ).toBeInTheDocument();
   });
@@ -151,18 +180,28 @@ describe("Projects", () => {
     const { container } = render(<Projects content={content} />);
     const rows = container.querySelectorAll("[data-project-row]");
 
-    expect(rows).toHaveLength(2);
+    expect(rows).toHaveLength(3);
+    expect(
+      within(rows[2] as HTMLElement).getByText(/Jetlink Chatbot Platform/i)
+    ).toBeInTheDocument();
+    expect(
+      within(rows[2] as HTMLElement).getByText(
+        /ScopePoker Real-time Estimation Platform/i
+      )
+    ).toBeInTheDocument();
 
     const user = userEvent.setup();
     await user.click(
       screen.getAllByRole("button", {
         name: new RegExp(content.expandLabel, "i"),
-      })[2]
+      })[3]
     );
 
     expect(rows[0]?.querySelector(".project-dossier")).toBeNull();
     expect(rows[1]?.querySelector(".project-dossier")).not.toBeNull();
-    expect(screen.getByText(/gpu-enabled workloads/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/worker processing and request coordination/i)
+    ).toBeInTheDocument();
 
     await user.click(
       screen.getAllByRole("button", {
@@ -171,13 +210,15 @@ describe("Projects", () => {
     );
 
     await waitFor(() => {
-      expect(screen.queryByText(/gpu-enabled workloads/i)).not.toBeInTheDocument();
+      expect(
+        screen.queryByText(/worker processing and request coordination/i)
+      ).not.toBeInTheDocument();
     });
     expect(rows[0]?.querySelector(".project-dossier")).not.toBeNull();
     expect(rows[1]?.querySelector(".project-dossier")).toBeNull();
     expect(
       screen.getByText(content.items[0].details?.badgeLabel ?? "")
     ).toBeInTheDocument();
-    expect(screen.getByText(/MassTransit-based communication patterns/i)).toBeInTheDocument();
+    expect(screen.getByText(/public-safe engineering scope/i)).toBeInTheDocument();
   });
 });

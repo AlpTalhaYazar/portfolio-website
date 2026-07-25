@@ -81,4 +81,39 @@ describe("portfolio content", () => {
   it("does not publish Kubernetes as a maintained portfolio skill", () => {
     expect(JSON.stringify(portfolioContentByLocale)).not.toMatch(/Kubernetes/i);
   });
+
+  it("publishes six confidentiality-safe selected-work case studies", () => {
+    const en = getPortfolioContent("en");
+    const tr = getPortfolioContent("tr");
+
+    expect(en.projects.items.map(({ name }) => name)).toEqual([
+      "Regulated Monitoring & Management Platform",
+      "Regulated Asset Tracking Platform",
+      "Regulated Workflow & Verification Platform",
+      "Wiro AI Infrastructure Platform",
+      "Jetlink Chatbot Platform",
+      "ScopePoker Real-time Estimation Platform",
+    ]);
+    expect(tr.projects.items.map(({ name }) => name)).toEqual([
+      "Regüle İzleme ve Yönetim Platformu",
+      "Regüle Varlık Takip Platformu",
+      "Regüle İş Akışı ve Doğrulama Platformu",
+      "Wiro AI Altyapı Platformu",
+      "Jetlink Chatbot Platformu",
+      "ScopePoker Gerçek Zamanlı Tahmin Platformu",
+    ]);
+
+    for (const content of [en, tr]) {
+      expect(content.projects.items).toHaveLength(6);
+      expect(
+        content.projects.items
+          .slice(0, 3)
+          .every(
+            (item) =>
+              item.company === "DİAS Teknoloji" && Boolean(item.details?.note)
+          )
+      ).toBe(true);
+      expect(content.projects.items[5]?.company).toMatch(/Personal|Kişisel/);
+    }
+  });
 });
