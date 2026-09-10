@@ -115,4 +115,28 @@ describe("repo conventions", () => {
 
     expect(vercelConfig.headers).toBeUndefined();
   });
+
+  it("keeps every committed production env secret encrypted", () => {
+    const envPath = join(repoRoot, ".env.production");
+    if (!existsSync(envPath)) return;
+
+    // `NEXT_PUBLIC_*` values ship to the browser and dotenvx public keys are
+    // non-secret by design; every other value must be encrypted at rest.
+    const nonSecretKey = /^(NEXT_PUBLIC_|DOTENV_PUBLIC_KEY)/;
+
+    // Only key names are reported: a failing diff must never print secrets.
+    const unencryptedSecretNames = readFileSync(envPath, "utf8")
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line && !line.startsWith("#") && line.includes("="))
+      .map((line) => [
+        line.slice(0, line.indexOf("=")),
+        line.slice(line.indexOf("=") + 1).trim(),
+      ])
+      .filter(([name]) => !nonSecretKey.test(name))
+      .filter(([, value]) => value !== "" && !value.startsWith("encrypted:"))
+      .map(([name]) => name);
+
+    expect(unencryptedSecretNames).toEqual([]);
+  });
 });
