@@ -31,20 +31,20 @@ describe("repo conventions", () => {
       "utf8"
     );
 
-    expect(packageJson.packageManager).toBe("npm@12.0.1");
+    expect(packageJson.packageManager).toBe("npm@12.0.2");
     expect(packageJson.engines).toEqual({
       node: ">=24.15.0 <25",
-      npm: ">=12.0.1 <13",
+      npm: ">=12.0.2 <13",
     });
     expect(nodeVersion).toBe("24");
-    expect(ciWorkflow).toContain("npm install --global npm@12.0.1");
+    expect(ciWorkflow).toContain("npm install --global npm@12.0.2");
     expect(packageJson.scripts?.["audit:dependencies"]).toBe(
       "npm audit --audit-level=high && npm audit --omit=dev --audit-level=moderate"
     );
     expect(ciWorkflow).toContain("npm run audit:dependencies");
     expect(packageJson.overrides).toEqual({
-      postcss: "8.5.19",
-      "minimatch@3.1.5": { "brace-expansion": "1.1.13" },
+      postcss: "8.5.28",
+      "minimatch@3.1.5": { "brace-expansion": "1.1.18" },
       "flat-cache": { flatted: "3.4.2" },
       "webpack-bundle-analyzer": { ws: "7.5.12" },
     });

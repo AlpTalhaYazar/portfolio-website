@@ -2,10 +2,10 @@
   "name": "portfolio-website",
   "version": "0.1.0",
   "private": true,
-  "packageManager": "npm@12.0.1",
+  "packageManager": "npm@12.0.2",
   "engines": {
     "node": ">=24.15.0 <25",
-    "npm": ">=12.0.1 <13"
+    "npm": ">=12.0.2 <13"
   },
   "scripts": {
     "dev": "next dev --turbopack",
@@ -31,47 +31,47 @@
     "pre-commit": "npm run lint && npm run type-check && npm run validate:env && npm run test:run"
   },
   "dependencies": {
-    "@hookform/resolvers": "^5.4.0",
+    "@hookform/resolvers": "^5.9.1",
     "@next/env": "^16.3.4",
     "@next/third-parties": "^16.3.4",
     "@upstash/ratelimit": "^2.0.8",
-    "@upstash/redis": "^1.38.0",
+    "@upstash/redis": "^1.38.4",
     "clsx": "^2.1.1",
-    "framer-motion": "^12.42.2",
-    "lucide-react": "^1.24.0",
+    "framer-motion": "^13.2.0",
+    "lucide-react": "^1.44.0",
     "next": "^16.3.4",
-    "nodemailer": "^9.0.3",
-    "react": "^19.2.7",
-    "react-dom": "^19.2.7",
-    "react-hook-form": "^7.81.0",
+    "nodemailer": "^10.0.3",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "react-hook-form": "^7.87.0",
     "tailwind-merge": "^3.6.0",
-    "zod": "^4.4.3"
+    "zod": "^4.6.1"
   },
   "devDependencies": {
-    "@axe-core/playwright": "^4.12.1",
-    "@dotenvx/dotenvx": "^2.10.0",
-    "@eslint/eslintrc": "^3.3.6",
+    "@axe-core/playwright": "^4.13.0",
+    "@dotenvx/dotenvx": "^2.23.0",
+    "@eslint/eslintrc": "^3.3.7",
     "@next/bundle-analyzer": "^16.3.4",
-    "@playwright/test": "^1.61.1",
-    "@tailwindcss/postcss": "^4.3.2",
-    "@testing-library/jest-dom": "^6.9.1",
-    "@testing-library/react": "^16.3.2",
-    "@testing-library/user-event": "^14.6.1",
+    "@playwright/test": "^1.63.0",
+    "@tailwindcss/postcss": "^4.3.3",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.7",
     "@types/node": "^26.1.1",
     "@types/nodemailer": "^8.0.1",
-    "@types/react": "^19.2.17",
-    "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^6.0.3",
-    "@vitest/coverage-v8": "^4.1.10",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.1",
+    "@vitest/coverage-v8": "^5.0.0",
     "dotenv": "^17.4.2",
     "eslint": "^9.39.5",
     "eslint-config-next": "^16.3.4",
-    "jsdom": "^29.1.1",
-    "tailwindcss": "^4.3.2",
-    "tsx": "^4.23.1",
+    "jsdom": "^30.0.1",
+    "tailwindcss": "^4.3.3",
+    "tsx": "^4.23.13",
     "typescript": "^6.0.3",
-    "vite": "^8.1.4",
-    "vitest": "^4.1.10"
+    "vite": "^8.3.0",
+    "vitest": "^5.0.0"
   },
   "allowScripts": {
     "esbuild@0.28.1": true,
@@ -80,9 +80,9 @@
     "fsevents": false
   },
   "overrides": {
-    "postcss": "8.5.19",
+    "postcss": "8.5.28",
     "minimatch@3.1.5": {
-      "brace-expansion": "1.1.13"
+      "brace-expansion": "1.1.18"
     },
     "flat-cache": {
       "flatted": "3.4.2"
