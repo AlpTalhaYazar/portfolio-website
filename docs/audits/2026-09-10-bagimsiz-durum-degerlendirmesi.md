@@ -9,13 +9,29 @@
 | Dal / commit | `main` @ `aa6ccce` |
 | Çalışma ağacı durumu | Temiz (inceleme sırasında yalnızca bu rapor eklendi) |
 | Dayanak | `docs/audits/2026-07-15-comprehensive-project-audit.md` ve `...-remediation.md` |
-| Bulgu sayısı | **P1: 3 / P2: 3 / P3: 4** |
+| Bulgu sayısı | **P1: 3 / P2: 5 / P3: 6** |
 
 Bu rapor, 2026-07-15 audit'inin "tüm bulgular çözüldü" iddiasını **bağımsız olarak doğrulamak** ve o tarihten sonra oluşan **yeni sorunları** tespit etmek için hazırlanmıştır.
 
 ---
 
-## 2. Yönetici özeti
+## 2. Düzeltme durumu
+
+Bu rapor yazıldıktan sonra aşağıdaki bulgular giderilmiştir. Ayrıntı için commit geçmişine bakın.
+
+| Bulgu | Durum | Kanıt |
+| --- | --- | --- |
+| Y-01 CI denetim kapısı | ✅ **Çözüldü** | `npm run audit:dependencies` exit **0** |
+| Y-02 Next.js kritik açıkları | ✅ **Çözüldü** | `next` 16.3.4'e yükseltildi; kritik bulgular kapandı |
+| Y-03 nodemailer / postcss / brace-expansion | ✅ **Çözüldü** | `npm audit` hem tam ağaçta hem production'da **0 açık** |
+| Y-10 bağımlılık güncelliği | ✅ **Çözüldü** | React 19.3, framer-motion 13, vitest 5, jsdom 30, jest-dom 7, nodemailer 10 |
+| Y-04 build env bağımlılığı | ⚠️ **Kısmi** | Build geçici env ile exit 0 veriyor; kalıcı çözüm için lokal env gerekiyor |
+
+**Bilinçli olarak yükseltilmeyenler:** ESLint 10 ve TypeScript 7. İkisi de denendi ve geri alındı — ESLint 10 `eslint-plugin-react`'i (`contextOrFilename.getFilename is not a function`), TypeScript 7 ise `eslint-config-next` içindeki `@typescript-eslint/typescript-estree`'yi kırıyor. Bu, README'nin zaten belgelediği kısıtı doğrular.
+
+---
+
+## 3. Yönetici özeti
 
 Proje, önceki audit'ten bu yana **gerçekten ve kapsamlı biçimde iyileştirilmiş**. Kod düzeyinde doğruladığım kadarıyla remediation raporundaki iddiaların çoğu abartı değil: durumsuz imzalı CSRF, uç nokta bazlı rate-limit hata politikaları, HTML e-posta kaçışlama, liveness/readiness ayrımı, gerçek analytics onay akışı ve ölü paralel UI ağacının kaldırılması — hepsinin kaynak kodda karşılığı var.
 
@@ -29,7 +45,7 @@ Ayrıca **`npm run build` ve `npm run e2e` lokalde çalışmıyor** — ikisi de
 
 ---
 
-## 3. Çalıştırılan doğrulamalar
+## 4. Çalıştırılan doğrulamalar
 
 | Komut | Exit | Sonuç |
 | --- | ---: | --- |
@@ -48,7 +64,7 @@ Ayrıca **`npm run build` ve `npm run e2e` lokalde çalışmıyor** — ikisi de
 
 ---
 
-## 4. Önceki audit bulgularının bağımsız doğrulaması
+## 5. Önceki audit bulgularının bağımsız doğrulaması
 
 | Eski bulgu | Doğrulanan durum | Kanıt |
 | --- | --- | --- |
@@ -75,7 +91,7 @@ Kod düzeyinde en etkileyici düzeltme `Header.tsx`: odak tuzağı, Escape, `ine
 
 ---
 
-## 5. Bulgular
+## 6. Bulgular
 
 ### Y-01 — CI bağımlılık kapısı başarısız (P1)
 
@@ -184,11 +200,35 @@ locator('footer') resolved to 2 elements:
 
 ---
 
-### Y-07 — `.env.production` sürüm kontrolünde (P3)
+### Y-07 — Public repoda düz metin sırlar (P1 — KRİTİK)
 
-`.gitignore` `.env*` dosyalarını dışlarken `!.env.production` istisnasıyla bu dosyayı bilinçli olarak depoya alıyor. Tasarım dotenvx şifrelemesine dayanıyor ve `.env.keys` takip edilmiyor — yaklaşım makul.
+**Bu, incelemenin en ciddi bulgusudur ve acil müdahale gerektirir.**
 
-İçeriği bu incelemede **okunmadı** (sır koruması devrede), dolayısıyla tamamen şifreli olduğu doğrulanamadı. Risk: şifrelenmemiş tek bir satır sırrı kalıcı olarak git geçmişine yazar. **Öneri:** CI'da "her değer `encrypted:` ile başlamalı" bütünlük kontrolü.
+`.gitignore` `.env*` dosyalarını dışlarken `!.env.production` istisnasıyla bu dosyayı bilinçli olarak depoya alıyor. Tasarım dotenvx şifrelemesine dayanıyor — ancak **dosyadaki yedi değer şifrelenmemiş**.
+
+Depo **herkese açık**: `https://github.com/AlpTalhaYazar/portfolio-website` (GitHub sayfası "Public" olarak doğrulandı) ve `.env.production` kök dizin listesinde görünüyor. Dosya 2026-03-08'de eklenmiş, 2026-03-18'de güncellenmiş — yaklaşık altı aydır açıkta.
+
+**Şifrelenmemiş anahtarlar** (yalnızca adlar raporlanmıştır; değerler hiçbir aşamada okunmadı veya yazdırılmadı):
+
+| Anahtar | Nitelik |
+| --- | --- |
+| `GMAIL_APP_PASSWORD` | **Kimlik bilgisi** — posta gönderme yetkisi |
+| `UPSTASH_REDIS_REST_TOKEN` | **Kimlik bilgisi** — rate-limit deposuna tam erişim |
+| `UPSTASH_REDIS_REST_URL` | Servis uç noktası |
+| `CONTACT_SECRET` | Uygulama sırrı (kodda kullanım izi bulunamadı) |
+| `GMAIL_USER` | Hesap adresi |
+| `EMAIL_TO` / `EMAIL_FROM` | Posta adresleri |
+
+Şifreli değerler ile düz metin değerler **aynı dosyada** duruyor; yani dotenvx akışı kurulmuş ama bu yedi anahtar akışın dışında kalmış.
+
+**Etki.** Posta gönderme kimlik bilgisi ve Redis token'ı altı aydır kamuya açık. Bu, iletişim formunun alıcı hesabı üzerinden spam gönderimi ve rate-limit deposunun okunması/değiştirilmesi riskini doğurur. Değerlerin hâlâ geçerli olup olmadığı bu incelemede doğrulanamadı (kişisel hesap erişimi gerektirir) — bu nedenle risk **"potansiyel" değil, "doğrulanmamış aktif sızıntı"** olarak ele alınmalıdır.
+
+**Önerilen müdahale, bu sırayla:**
+
+1. **Kimlik bilgilerini derhal döndürün (rotate).** Gmail uygulama şifresini iptal edip yenisini üretin; Upstash token'ını yenileyin. Bu adım, dosyayı düzeltmekten önce gelir — çünkü değerler zaten git geçmişine kalıcı olarak yazılmıştır.
+2. `dotenvx` ile bu yedi değeri şifreleyin (`npm run sync:env:production`) ve düz metin sürümünü repodan çıkarın.
+3. Repo'yu private yapmayı veya geçmişi temizlemeyi değerlendirin. Geçmiş temizliği tek başına yeterli değildir: anahtar döndürme yapılmadan eski commit'lerden okunabilir.
+4. Regresyon koruması olarak eklenen test (`src/lib/repo-conventions.test.ts`) bu durumu yakalar ve şifreleme tamamlanana kadar **başarısız kalır**.
 
 ---
 
@@ -214,6 +254,43 @@ Küresel eşik %60 olduğu için bu boşluklar geçiyor. Sunucu/istemci sır sı
 
 ---
 
+### Y-11 — Yayınlanan içerikte teknoloji tutarsızlıkları (P2)
+
+**Jetlink aynı işveren için iki farklı stack iddiası taşıyor:**
+
+| Yer | İddia |
+| --- | --- |
+| Experience (`en.ts:105-116`) | `.NET Framework/Core`, `C#`, `MongoDB`, `SQL Server`, `WebSockets`, `React`, `IIS` |
+| Selected Work kartı (`en.ts:311`) | `.NET 6`, `MongoDB`, `WebSockets`, `React`, **`TypeScript`**, `IIS` |
+| Kart dosyası (`en.ts:314-322`) | "legacy .NET 4.7" → ".NET 6", **"ASP.NET MVC"** + React |
+
+Aynı 2021-2023 rolü için iki bölüm çelişiyor: `TypeScript` ve `ASP.NET MVC` yalnızca proje kartında, `SQL Server` yalnızca Experience'ta geçiyor; sürüm ifadesi de (`16.2.10` yerine) `.NET Framework/Core` ile `.NET 6` arasında tutarsız. `tr.ts:312-323` aynı tutarsızlığı Türkçe tekrarlıyor. Hiçbir test iki bölümü karşılaştırmadığı için yeşil kalıyor.
+
+**PWA manifest'i eski konumlandırmayı taşıyor:** `public/manifest.json:4` hâlâ *"Senior Backend Engineer focused on reliable .NET, C#, microservices, and enterprise systems"* diyor. Oysa "microservices" iddiası hero `techTags`'ten (`en.ts:34-42`), `StructuredData.knowsAbout`'tan ve tüm proje/deneyim etiketlerinden kaldırılmış durumda. Kurulum istemi ve tarayıcı önbelleği, sayfanın artık sahiplenmediği bir iddiayı gösterebilir. `pwa-assets.test.ts` yalnızca sayısal iddiaları reddettiği için bu sapma yakalanmıyor.
+
+**Not.** Bu rapor hangi ifadenin doğru olduğuna dair bir yargı içermez — içerik sahibi tarafından teyit edilmelidir. Tespit edilen şey bölümler arası **tutarsızlıktır**.
+
+---
+
+### Y-12 — Testler yanlış güven veren zayıf assertion'lar içeriyor (P3)
+
+Yeni eklenen içerik testlerindeki boşluklar:
+
+- `src/lib/content/portfolio/index.test.ts:116` — `items.slice(0,3)` yalnızca 01-03 kartlarını kapsıyor; **Wiro AI ve Jetlink'in işveren etiketi hiç doğrulanmıyor**, ScopePoker ise `/Personal|Kişisel/` alternasyonuyla kontrol edildiği için her iki locale'de de geçiyor. Bir işveren etiketi karışsa veya yer değiştirse suite yeşil kalır.
+- `src/components/portfolio/Projects.test.tsx:101` — kart-01'e özgü tek kontrol (footprint metni) silinmiş, yerine 01/02/03 kartlarında **birebir aynı** olan bir not metni kullanılmış; bu nedenle kart→dosya eşleşmesi kaysa bile test geçer.
+- `Projects.test.tsx:167` — ScopePoker için assertion, dosya içeriğine özgü olmayan bir tema etiketinin **sayısı** (`2`); kapalı kartta da aynı etiket bulunursa test bozulmadan geçer.
+- `Projects.test.tsx:197` — masaüstü testi tıklanacak kartı **adıyla değil konumla** (`[3]`) seçiyor; kartlar yeniden sıralanırsa test sessizce başka bir kartı dener.
+
+Ayrıca `src/lib/content/portfolio/tr.ts:268` — Wiro kartının ilk teması Türkçe içerikte İngilizce kalmış (`"Worker processing"`), oysa aynı dosyanın deneyim bölümü aynı kavramı `"worker tabanlı işleme"` olarak çeviriyor.
+
+---
+
+### Y-13 — İzlenen kod-üretim prompt'ları eski konumlandırmayı taşıyor (P3)
+
+`.codex/prompts/figma-make-portfolio-redesign.md:33` hâlâ kaldırılmış konumlandırmayı (Kubernetes uzmanlığı, *"Dias (Atlastek)"*, "Enterprise Management Platform") kodluyor. Bu dosyalar lint/type-check/build kapsamı dışında olduğundan hiçbir kontrol onları doğrulamıyor; prompt yeniden kullanılırsa temizlenen iddialar geri üretilir.
+
+---
+
 ### Y-10 — Bağımlılıkların güncelliği (P3)
 
 `npm outdated`: **35 paket** geride. Güvenlik açıklarını kapatanlar:
@@ -235,7 +312,7 @@ Küresel eşik %60 olduğu için bu boşluklar geçiyor. Sunucu/istemci sır sı
 
 ---
 
-## 6. Öncelikli aksiyon listesi
+## 7. Öncelikli aksiyon listesi
 
 | # | Aksiyon | Bağlı bulgu | Çaba |
 | --- | --- | --- | --- |
@@ -251,7 +328,7 @@ Küresel eşik %60 olduğu için bu boşluklar geçiyor. Sunucu/istemci sır sı
 
 ---
 
-## 7. Yöntem ve sınırlamalar
+## 8. Yöntem ve sınırlamalar
 
 **Yapılanlar.** Kaynak kod okuması (`src/proxy.ts`, `src/lib/csrf.ts`, `src/lib/redis-rate-limit.ts`, `src/lib/security.ts`, `src/lib/logger.ts`, `src/lib/health.ts`, `src/lib/env-validation.ts`, `src/app/api/contact/route.ts`, `src/app/layout.tsx`, tema sağlayıcısı, `Header.tsx`, `ContactForm.tsx`, `theme-script.ts`, E2E spesifikasyonları, CI iş akışı); tüm komutların bağımsız çalıştırılması; `npm audit` çıktısının paket bazında ayrıştırılması; izole ortamda üç E2E turu.
 
