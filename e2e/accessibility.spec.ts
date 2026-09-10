@@ -14,7 +14,10 @@ for (const route of ["/", "/en"] as const) {
       }, theme);
       await page.emulateMedia({ reducedMotion: "reduce" });
       await page.goto(route);
-      await page.locator("footer").scrollIntoViewIfNeeded();
+      // The Next.js dev overlay injects its own <footer>; scope to the app footer.
+      await page
+        .locator("footer:not([data-nextjs-error-overlay-footer])")
+        .scrollIntoViewIfNeeded();
       await page.waitForTimeout(500);
       await page.locator("#hero").scrollIntoViewIfNeeded();
       await page.waitForTimeout(500);
