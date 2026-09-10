@@ -126,9 +126,11 @@ function validatePolicy(policy: RateLimitConfig): void {
 }
 
 export function getClientIP(request: NextRequest): string {
+  // Only headers the deployment platform is known to overwrite may be used.
+  // `cf-connecting-ip` is deliberately absent: Vercel does not strip it, so a
+  // client could otherwise spoof its own identity and slip past the limiter.
   const candidates = [
     request.headers.get("x-vercel-forwarded-for"),
-    request.headers.get("cf-connecting-ip"),
     request.headers.get("x-forwarded-for")?.split(",")[0],
     request.headers.get("x-real-ip"),
   ];
