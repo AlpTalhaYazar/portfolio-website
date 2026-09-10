@@ -24,8 +24,15 @@ Bu rapor yazıldıktan sonra aşağıdaki bulgular giderilmiştir. Ayrıntı iç
 | Y-01 CI denetim kapısı | ✅ **Çözüldü** | `npm run audit:dependencies` exit **0** |
 | Y-02 Next.js kritik açıkları | ✅ **Çözüldü** | `next` 16.3.4'e yükseltildi; kritik bulgular kapandı |
 | Y-03 nodemailer / postcss / brace-expansion | ✅ **Çözüldü** | `npm audit` hem tam ağaçta hem production'da **0 açık** |
+| Y-07 düz metin sırlar | ✅ **Şifreleme yapıldı** / ❌ **Rotate bekliyor** | 22 anahtarın tamamı şifreli; regresyon testi eklendi. **Kimlik bilgileri hâlâ döndürülmeli** |
+| Y-08 IP güven zinciri | ✅ **Çözüldü** | `cf-connecting-ip` kaldırıldı |
 | Y-10 bağımlılık güncelliği | ✅ **Çözüldü** | React 19.3, framer-motion 13, vitest 5, jsdom 30, jest-dom 7, nodemailer 10 |
 | Y-04 build env bağımlılığı | ⚠️ **Kısmi** | Build geçici env ile exit 0 veriyor; kalıcı çözüm için lokal env gerekiyor |
+| Y-05 hydration uyuşmazlığı | ✅ **Dev-only olduğu doğrulandı** | Production E2E: 96 geçti / 0 başarısız |
+| Y-06 erişilebilirlik testi | ✅ **Çözüldü** | Locator daraltıldı; axe matrisi artık gerçekten çalışıyor |
+| Y-11 içerik tutarsızlığı | ⬜ **Açık** | İçerik sahibinin kararı gerekiyor |
+| Y-12 test kalitesi | ⬜ **Açık** | — |
+| Y-13 prompt dosyaları | ⬜ **Açık** | — |
 
 **Bilinçli olarak yükseltilmeyenler:** ESLint 10 ve TypeScript 7. İkisi de denendi ve geri alındı — ESLint 10 `eslint-plugin-react`'i (`contextOrFilename.getFilename is not a function`), TypeScript 7 ise `eslint-config-next` içindeki `@typescript-eslint/typescript-estree`'yi kırıyor. Bu, README'nin zaten belgelediği kısıtı doğrular.
 
@@ -58,6 +65,7 @@ Ayrıca **`npm run build` ve `npm run e2e` lokalde çalışmıyor** — ikisi de
 | `npm run build` | **1** | **`CSRF_SECRET is required in production`** |
 | `npm run e2e` | **1** | **Build'de durdu; Playwright hiç çalışmadı** |
 | `npm run e2e:dev` | 1 | Çalıştı: **86 geçti / 10 başarısız / 16 atlandı** |
+| `npx playwright test` (production build) | **0** | **96 geçti / 0 başarısız / 16 atlandı** — 4 tarayıcı projesi |
 | `git status` / `git diff --summary` | 0 | Temiz; mod farkı yok |
 
 > **İki ölçüm tuzağı ve uyarı.** (a) `npm run e2e` ilk çalıştırmada `| tail` ile borulandığı için kabuk exit kodu 0 göründü; gerçek kod ayrıca ölçüldü: **1**. (b) İlk iki E2E denemesi **geçersizdi**: port 3000'de önceki turdan kalan bir dev sunucusu vardı, yeni sunucu 3001'e kaçtı, testler ise 3000'e istek attı. Aşağıdaki sonuçlar tüm sunucular öldürülüp portlar boşaltıldıktan sonra yapılan **üçüncü, izole** turdan alınmıştır.
@@ -176,7 +184,7 @@ didn't match the client properties. This won't be patched up.
 
 **Etki.** React sunucu işaretlemesini istemcide yeniden üretiyor — gereksiz iş, sunucu-render durumunun atılması ve her sayfa yüklemesinde 45 console hatası. Bu tam olarak AUD-008'in düzeltmeye çalıştığı sınıftır; `suppressHydrationWarning` yalnızca `<html>` üzerinde olduğu için bu farkı bastırmıyor.
 
-**Not.** Gözlem dev modda yapıldı; production'da doğrulanamadı çünkü build çalışmıyor (Y-04). Ancak nonce üretimi request-time olduğundan production'da da geçerli olması beklenir — **Y-04 giderildikten sonra mutlaka doğrulanmalı.**
+**Not — sonradan yapılan doğrulama bu bulguyu daralttı.** Karar, dev modda alınmıştı çünkü o anda production build çalıştırılamıyordu. Y-04 giderildikten sonra production modunda çalıştırılan E2E paketi **96 testi geçti, 0 başarısız** verdi; responsive testleri console hatası toplamadı. Dolayısıyla bu uyuşmazlık **dev ortamına özgüdür** — Next.js dev overlay'i kendi inline script'lerini eklerken nonce karşılaştırmasını bozmaktadır. Kullanıcıyı etkileyen bir üretim hatası değildir; geliştirici konsolunu kirletmesi ve dev-mode regresyonlarını maskelediği için yine de giderilmelidir.
 
 ---
 
